@@ -12,6 +12,12 @@
     "url": "https://github.com/bpinhosilva/agent-orchestrator/issues"
   },
   "homepage": "https://github.com/bpinhosilva/agent-orchestrator#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -26,10 +32,10 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky",
-    "cli:build": "tsc src/cli.ts --outDir dist --esModuleInterop --skipLibCheck --target es2020 --moduleResolution node --module commonjs --experimentalDecorators --emitDecoratorMetadata"
+    "cli:build": "tsc src/cli.ts --outDir dist --esModuleInterop --skipLibCheck --target es2020 --moduleResolution node --module commonjs --experimentalDecorators --emitDecoratorMetadata && chmod +x dist/cli.js"
   },
   "bin": {
-    "agent-orchestrator": "./dist/cli.js"
+    "agent-orchestrator": "dist/cli.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
