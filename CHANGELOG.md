@@ -1,3 +1,10 @@
+# [1.0.0-alpha.2](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* trigger release with updated build steps ([1ad13b0](https://github.com/bpinhosilva/agent-orchestrator/commit/1ad13b0eb64adb603762edecb82b27f6672fb847))
+
 # 1.0.0-alpha.1 (2026-03-17)
 
 
