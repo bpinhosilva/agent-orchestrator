@@ -31,11 +31,13 @@ describe('AgentsService', () => {
   describe('processRequest', () => {
     it('should delegate processText to the default agent', async () => {
       const expectedResponse = { content: 'test response' };
-      jest.spyOn(geminiAgent, 'processText').mockResolvedValue(expectedResponse);
+      const processTextSpy = jest
+        .spyOn(geminiAgent, 'processText')
+        .mockResolvedValue(expectedResponse);
 
       const result = await service.processRequest({ input: 'test input' });
 
-      expect(geminiAgent.processText).toHaveBeenCalledWith('test input');
+      expect(processTextSpy).toHaveBeenCalledWith('test input');
       expect(result).toBe(expectedResponse);
     });
   });

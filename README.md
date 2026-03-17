@@ -1,5 +1,9 @@
 # Agent Orchestrator
 
+[![CI](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/ci.yml)
+[![Release](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/release.yml/badge.svg)](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/release.yml)
+[![Gitleaks](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/gitleaks.yml)
+
 Agent Orchestrator is an open-source project designed to manage and orchestrate AI agents using both back-end services and front-end applications. It provides an automated agentic execution environment where you can create multiple agent profiles (e.g., Head Agent, Researcher, CMO) and delegate tasks to them through automated workflows.
 
 ## Features (In Progress & Planned)

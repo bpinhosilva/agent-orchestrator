@@ -9,7 +9,9 @@ export class AgentsController {
 
   @Post('process')
   @HttpCode(HttpStatus.OK)
-  async processText(@Body() requestDto: AgentRequestDto): Promise<AgentResponse> {
+  async processText(
+    @Body() requestDto: AgentRequestDto,
+  ): Promise<AgentResponse> {
     return this.agentsService.processRequest(requestDto);
   }
 }

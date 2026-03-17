@@ -10,7 +10,9 @@ export class AgentsService {
 
   constructor(private readonly geminiAgent: GeminiAgent) {
     this.defaultAgent = geminiAgent;
-    this.logger.log(`Initialized AgentsService with default agent: ${this.defaultAgent.getName()}`);
+    this.logger.log(
+      `Initialized AgentsService with default agent: ${this.defaultAgent.getName()}`,
+    );
   }
 
   async processRequest(requestDto: AgentRequestDto): Promise<AgentResponse> {

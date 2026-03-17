@@ -33,11 +33,13 @@ describe('AgentsController', () => {
     it('should call service with the correctly validated dto', async () => {
       const dto: AgentRequestDto = { input: 'hello AI' };
       const expectedResponse: AgentResponse = { content: 'hello human' };
-      jest.spyOn(service, 'processRequest').mockResolvedValue(expectedResponse);
+      const processRequestSpy = jest
+        .spyOn(service, 'processRequest')
+        .mockResolvedValue(expectedResponse);
 
       const result = await controller.processText(dto);
 
-      expect(service.processRequest).toHaveBeenCalledWith(dto);
+      expect(processRequestSpy).toHaveBeenCalledWith(dto);
       expect(result).toBe(expectedResponse);
     });
   });

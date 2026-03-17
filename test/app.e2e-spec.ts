@@ -25,27 +25,32 @@ describe('AppController (e2e)', () => {
       .overrideProvider(GeminiAgent)
       .useValue({
         getName: () => 'MockedGeminiAgent',
-        processText: async () => ({ content: 'mocked agent response' }),
+        processText: () =>
+          Promise.resolve({ content: 'mocked agent response' }),
       })
       .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api/v1');
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
     await app.init();
   });
 
   it('/api/v1/agents/process (POST)', () => {
     // We mock Gemini agent response since providing a fake api key still attempts a real network request.
     const agentsService = app.get(AgentsService);
-    jest.spyOn(agentsService, 'processRequest').mockResolvedValue({ content: 'mocked output from e2e' });
+    jest
+      .spyOn(agentsService, 'processRequest')
+      .mockResolvedValue({ content: 'mocked output from e2e' });
 
-    return request(app.getHttpServer() as any)
+    return request(app.getHttpServer())
       .post('/api/v1/agents/process')
       .send({ input: 'hello' })
       .expect(200)
       .expect((res) => {
-        expect(res.body.content).toBe('mocked output from e2e');
+        expect(res.body).toEqual({ content: 'mocked output from e2e' });
       });
   });
 });

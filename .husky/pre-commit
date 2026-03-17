@@ -1,5 +1,6 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+npm run lint
+npm test
+
 
 # Note: Local gitleaks execution via npm is disabled because the executable isn't reliably available across environments.
 # The GitHub Action will still enforce secret scanning on all Pull Requests and pushes.

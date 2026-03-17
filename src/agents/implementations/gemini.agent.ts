@@ -23,7 +23,9 @@ export class GeminiAgent implements Agent {
   async processText(input: string): Promise<AgentResponse> {
     this.logger.debug(`Processing input with GeminiAgent`);
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash-lite',
+      });
       const result = await model.generateContent(input);
       const output = result.response.text();
 
@@ -34,7 +36,14 @@ export class GeminiAgent implements Agent {
         },
       };
     } catch (error) {
-      this.logger.error(`Error processing text: ${error.message}`, error.stack);
+      if (error instanceof Error) {
+        this.logger.error(
+          `Error processing text: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Error processing text: ${String(error)}`);
+      }
       throw error;
     }
   }
