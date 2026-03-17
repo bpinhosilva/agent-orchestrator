@@ -1,10 +1,17 @@
 {
-  "name": "tmp-nest-app",
+  "name": "agent-orchestrator",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
-  "private": true,
-  "license": "UNLICENSED",
+  "description": "An open-source AI agent orchestrator platform built with NestJS.",
+  "author": "bpinhosilva",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bpinhosilva/agent-orchestrator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bpinhosilva/agent-orchestrator/issues"
+  },
+  "homepage": "https://github.com/bpinhosilva/agent-orchestrator#readme",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
