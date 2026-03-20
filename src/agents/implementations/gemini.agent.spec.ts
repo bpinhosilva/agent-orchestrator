@@ -1,15 +1,13 @@
 import { GeminiAgent } from './gemini.agent';
 
-jest.mock('@google/generative-ai', () => {
+jest.mock('@google/genai', () => {
   return {
-    GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-      getGenerativeModel: jest.fn().mockReturnValue({
+    GoogleGenAI: jest.fn().mockImplementation(() => ({
+      models: {
         generateContent: jest.fn().mockResolvedValue({
-          response: {
-            text: () => 'mocked text output',
-          },
+          text: 'mocked text output',
         }),
-      }),
+      },
     })),
   };
 });
