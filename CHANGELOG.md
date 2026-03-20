@@ -1,3 +1,10 @@
+# [1.0.0-alpha.3](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2026-03-17)
+
+
+### Bug Fixes
+
+* compatibility with path-to-regexp for serve-static excluding ([3675042](https://github.com/bpinhosilva/agent-orchestrator/commit/3675042ed0b2b7588c236b6d774aa2136e4835b8))
+
 # [1.0.0-alpha.2](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2026-03-17)
 
 
