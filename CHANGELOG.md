@@ -1,3 +1,10 @@
+# [1.0.0-alpha.4](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2026-03-20)
+
+
+### Features
+
+* update Google Gemini API client library, adapt agent implementation and tests ([46a52dd](https://github.com/bpinhosilva/agent-orchestrator/commit/46a52dd518f27cded3213248e9646300b6bc2fb8))
+
 # [1.0.0-alpha.3](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2026-03-17)
 
 
