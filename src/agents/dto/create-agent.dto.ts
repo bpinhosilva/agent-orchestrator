@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateAgentDto {
   @IsString()
@@ -8,6 +8,10 @@ export class CreateAgentDto {
   @IsString()
   @IsNotEmpty()
   profile: string;
+
+  @IsString()
+  @IsOptional()
+  role?: string;
 
   @IsUUID()
   @IsNotEmpty()

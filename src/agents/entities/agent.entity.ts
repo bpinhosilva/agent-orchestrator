@@ -19,6 +19,9 @@ export class Agent {
   @Column('text')
   profile: string;
 
+  @Column({ type: 'text', nullable: true })
+  role: string | null;
+
   @ManyToOne(() => Model, (model) => model.agents, {
     nullable: false,
     eager: true,

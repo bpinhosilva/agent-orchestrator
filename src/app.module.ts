@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProvidersModule } from './providers/providers.module';
 import { ModelsModule } from './models/models.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { ModelsModule } from './models/models.module';
     AgentsModule,
     ProvidersModule,
     ModelsModule,
+    TasksModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
