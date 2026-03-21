@@ -1,17 +1,31 @@
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { AgentsModule } from './agents/agents.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ProvidersModule } from './providers/providers.module';
+import { ModelsModule } from './models/models.module';
 
 @Module({
   imports: [
+    TypeOrmModule.forRoot({
+      type: process.env.DATABASE_URL ? 'postgres' : 'sqlite',
+      database: process.env.DATABASE_URL
+        ? undefined
+        : join(__dirname, '..', 'local.sqlite'),
+      url: process.env.DATABASE_URL,
+      autoLoadEntities: true,
+      synchronize: true, // Use only in development
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
       exclude: ['/api*'],
     }),
     AgentsModule,
+    ProvidersModule,
+    ModelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
