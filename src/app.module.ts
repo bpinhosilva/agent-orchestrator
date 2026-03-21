@@ -9,6 +9,7 @@ import { ProvidersModule } from './providers/providers.module';
 import { ModelsModule } from './models/models.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ProjectsModule } from './projects/projects.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProjectsModule } from './projects/projects.module';
     ModelsModule,
     TasksModule,
     ProjectsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

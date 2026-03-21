@@ -24,6 +24,10 @@ export class CreateTaskDto {
   @IsOptional()
   priority?: TaskPriority;
 
+  @IsString()
+  @IsOptional()
+  output?: string;
+
   @IsUUID()
   @IsOptional()
   assigneeId?: string;

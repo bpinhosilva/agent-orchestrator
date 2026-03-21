@@ -48,6 +48,9 @@ export class Task {
   })
   priority: TaskPriority;
 
+  @Column('text', { nullable: true })
+  output?: string;
+
   @ManyToOne(() => Agent, { nullable: true, eager: true, onDelete: 'SET NULL' })
   assignee: Agent;
 
