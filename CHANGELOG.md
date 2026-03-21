@@ -1,3 +1,15 @@
+# [1.0.0-alpha.5](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2026-03-21)
+
+
+### Bug Fixes
+
+* **ci:** use legacy-peer-deps to resolve peer dependency conflicts ([b450b45](https://github.com/bpinhosilva/agent-orchestrator/commit/b450b4500ff02addb1bca6cc7f6a40c93e442e7f))
+
+
+### Features
+
+* implement models and providers modules add swagger documentation, and update agents ([b6e8245](https://github.com/bpinhosilva/agent-orchestrator/commit/b6e824547f4f603cecf0352b383d20a078fe6662))
+
 # [1.0.0-alpha.4](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2026-03-20)
 
 
