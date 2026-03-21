@@ -1,3 +1,10 @@
+# [1.0.0-alpha.7](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2026-03-21)
+
+
+### Features
+
+* add user management module, introduce task output field, and include a design document ([7d0717d](https://github.com/bpinhosilva/agent-orchestrator/commit/7d0717d5a566435641e46b2f4b40101df0f62ed6))
+
 # [1.0.0-alpha.6](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2026-03-21)
 
 
