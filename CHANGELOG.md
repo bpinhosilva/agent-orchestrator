@@ -1,3 +1,10 @@
+# [1.0.0-alpha.6](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2026-03-21)
+
+
+### Features
+
+* implement project and task management modules, including entities, DTOs, services, controllers ([3df2c2a](https://github.com/bpinhosilva/agent-orchestrator/commit/3df2c2a6d0bdf4e3e4edbf12f544a8e12970e2dd))
+
 # [1.0.0-alpha.5](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2026-03-21)
 
 
