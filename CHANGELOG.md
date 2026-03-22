@@ -1,3 +1,10 @@
+# [1.0.0-alpha.8](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2026-03-22)
+
+
+### Features
+
+* add initial user interface for agent management and orchestration ([7a27019](https://github.com/bpinhosilva/agent-orchestrator/commit/7a270197691453384e5827987574f94e93cad7fb))
+
 # [1.0.0-alpha.7](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2026-03-21)
 
 
