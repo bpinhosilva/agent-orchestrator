@@ -1,23 +1,36 @@
-import React from 'react';
-import { MoreVertical, Brain, Sparkles, Activity } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MoreVertical, Brain, Sparkles, Activity, Settings, Terminal, Trash2, XCircle } from 'lucide-react';
 
 interface AgentCardProps {
+  id: string;
   name: string;
   expertise: string;
   model: string;
-  status: 'active' | 'idle' | 'updating';
+  status: 'active' | 'idle' | 'updating' | 'inactive';
   metricLabel: string;
   metricValue: string;
+  onProbe?: (id: string) => void;
+  onConfigure?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onActivate?: (id: string) => void;
 }
 
 const AgentCard: React.FC<AgentCardProps> = ({ 
+  id,
   name, 
   expertise, 
   model, 
   status, 
   metricLabel, 
-  metricValue 
+  metricValue,
+  onProbe,
+  onConfigure,
+  onDelete,
+  onActivate
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const statusConfig = {
     active: {
       color: 'text-secondary',
@@ -40,9 +53,28 @@ const AgentCard: React.FC<AgentCardProps> = ({
       animate: 'animate-ping',
       icon: Activity,
     },
+    inactive: {
+      color: 'text-error/60',
+      bg: 'bg-error/5',
+      dot: 'bg-error/40',
+      animate: '',
+      icon: XCircle,
+    },
   };
 
   const config = statusConfig[status];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   return (
     <div className="group relative bg-surface-container-low rounded-xl p-6 transition-all duration-300 hover:translate-y-[-4px] shadow-lg border border-transparent hover:border-outline-variant/20">
@@ -73,12 +105,80 @@ const AgentCard: React.FC<AgentCardProps> = ({
       </div>
 
       <div className="mt-6 flex gap-2">
-        <button className="flex-1 py-2 rounded bg-surface-container-high text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors">
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onConfigure?.(id);
+          }}
+          className="flex-1 py-2 rounded bg-surface-container-high text-xs font-semibold text-on-surface hover:bg-surface-container-highest transition-colors"
+        >
           Configure
         </button>
-        <button className="px-3 py-2 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors">
-          <MoreVertical size={16} />
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMenuOpen(!isMenuOpen);
+            }}
+            className={`px-3 py-2 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors h-full ${isMenuOpen ? 'bg-surface-container-highest text-white' : ''}`}
+          >
+            <MoreVertical size={16} />
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute bottom-full right-0 mb-2 w-48 bg-surface-container-highest rounded-lg shadow-2xl py-2 ring-1 ring-outline-variant/20 animate-in fade-in slide-in-from-bottom-2 duration-200 z-20">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProbe?.(id);
+                  setIsMenuOpen(false);
+                }}
+                disabled={status === 'inactive'}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-on-surface-variant hover:text-white hover:bg-primary/10 transition-colors group disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
+              >
+                <Terminal size={14} className="group-hover:text-primary" />
+                Probe Agent
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfigure?.(id);
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-on-surface-variant hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <Settings size={14} />
+                Control Matrix
+              </button>
+              <div className="my-1 border-t border-outline-variant/10" />
+              {status === 'inactive' ? (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onActivate?.(id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-secondary/60 hover:text-secondary hover:bg-secondary/10 transition-colors"
+                >
+                  <Brain size={14} />
+                  Activate Node
+                </button>
+              ) : (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(id);
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-error/60 hover:text-error hover:bg-error/10 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  Decommission
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

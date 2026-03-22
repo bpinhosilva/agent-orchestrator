@@ -3,14 +3,20 @@ import { Grid2X2, List, Plus, Loader2 } from 'lucide-react';
 import AgentCard from './AgentCard';
 import AgentConfigDrawer from './AgentConfigDrawer';
 import CreateAgentModal from './CreateAgentModal';
+import ProbeAgentModal from './ProbeAgentModal';
+import ConfirmDialog from './ConfirmDialog';
 import { agentsApi, type Agent } from '../api/agents';
+import { useNotification } from '../hooks/useNotification';
 
 const AgentFleet = () => {
+  const { notifySuccess, notifyError } = useNotification();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProbeModalOpen, setIsProbeModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
@@ -29,13 +35,51 @@ const AgentFleet = () => {
     }
   };
 
+  const handleConfigure = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setIsDrawerOpen(true);
+  };
+
+  const handleProbe = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setIsProbeModalOpen(true);
+  };
+
+  const handleDeleteRequest = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedAgent) return;
+    
+    try {
+      await agentsApi.delete(selectedAgent.id);
+      notifySuccess('Agent Inactivated', 'Neural node has been marked as inactive.');
+      setIsConfirmOpen(false);
+      fetchAgents();
+    } catch {
+      notifyError('Operation Failed', 'Could not decommission the agent.');
+    }
+  };
+
+  const handleActivate = async (id: string) => {
+    try {
+      await agentsApi.update(id, { status: 'active' });
+      notifySuccess('Neural Link Restored', 'The agent has been reactivated and synchronized.');
+      fetchAgents();
+    } catch {
+      notifyError('Activation Failed', 'Could not restore the neural link.');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-end justify-between">
         <div>
           <h2 className="text-4xl font-extrabold font-headline tracking-tight text-white">Agent Fleet</h2>
           <p className="text-on-surface-variant mt-2 font-body text-sm">
-            Commanding <span className="text-secondary font-bold">12</span> active neural nodes across the network.
+            Commanding <span className="text-secondary font-bold">{agents.filter(a => a.status !== 'inactive').length}</span> active neural nodes across the network.
           </p>
         </div>
         <div className="flex gap-2">
@@ -61,17 +105,19 @@ const AgentFleet = () => {
       ) : (
         <div className={viewMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
           {agents.map((agent) => (
-            <div key={agent.id} onClick={() => {
-              setSelectedAgent(agent);
-              setIsDrawerOpen(true);
-            }}>
+            <div key={agent.id} onClick={() => handleConfigure(agent)} className={agent.status === 'inactive' ? 'opacity-50 grayscale hover:grayscale-0 transition-all' : ''}>
               <AgentCard 
+                id={agent.id}
                 name={agent.name}
                 expertise={agent.role || 'General Assistant'}
                 model={agent.model?.name || agent.modelId}
-                status={(agent.status as any) || 'active'}
+                status={agent.status || 'active'}
                 metricLabel="Provider"
                 metricValue={agent.provider}
+                onConfigure={() => handleConfigure(agent)}
+                onProbe={() => handleProbe(agent)}
+                onDelete={() => handleDeleteRequest(agent)}
+                onActivate={() => handleActivate(agent.id)}
               />
             </div>
           ))}
@@ -98,10 +144,26 @@ const AgentFleet = () => {
         agent={selectedAgent} 
       />
 
+      <ProbeAgentModal 
+        isOpen={isProbeModalOpen}
+        onClose={() => setIsProbeModalOpen(false)}
+        agent={selectedAgent}
+      />
+
       <CreateAgentModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onCreated={fetchAgents}
+      />
+
+      <ConfirmDialog 
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Decommission Neural Node?"
+        message={`This will mark ${selectedAgent?.name} as inactive. The agent will remain in the database but will no longer be available for automated tasks or direct neural connection.`}
+        confirmText="Decommission"
+        variant="danger"
       />
     </div>
   );

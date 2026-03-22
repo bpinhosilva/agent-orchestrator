@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { providersApi } from '../api/providers';
 import { modelsApi } from '../api/models';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotification } from '../hooks/useNotification';
 
 interface RegisterProviderModalProps {
   isOpen: boolean;

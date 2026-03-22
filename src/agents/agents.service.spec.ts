@@ -11,8 +11,6 @@ describe('AgentsService', () => {
   let service: AgentsService;
   let geminiAgent: GeminiAgent;
   let repository: Repository<AgentEntity>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let moduleRef: ModuleRef;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -48,6 +46,7 @@ describe('AgentsService', () => {
             findOne: jest.fn(),
             preload: jest.fn(),
             remove: jest.fn(),
+            update: jest.fn(),
           },
         },
       ],
@@ -70,17 +69,17 @@ describe('AgentsService', () => {
       const agentId = 'agent-1';
 
       // Mock the agent in the internal map
-      // We can't access private map easily but we can trigger syncAgentInstance indirectly or mock it
-      // For the test, we'll manually set it or rely on a mocked internal state if we refactor more.
-      // Actually, let's just test that it calls the map.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      (service as any).agentInstances.set(agentId, geminiAgent);
+      (
+        service as unknown as {
+          agentInstances: Map<string, typeof geminiAgent>;
+        }
+      ).agentInstances.set(agentId, geminiAgent);
 
-      jest
-        .spyOn(geminiAgent, 'processText')
-        .mockResolvedValue(expectedResponse);
+      const processTextSpy = jest.fn().mockResolvedValue(expectedResponse);
+      geminiAgent.processText = processTextSpy;
       const result = await service.processRequest(agentId, 'test input');
       expect(result).toBe(expectedResponse);
+      expect(processTextSpy).toHaveBeenCalled();
     });
   });
 
@@ -90,6 +89,7 @@ describe('AgentsService', () => {
       name: 'Agent Smith',
       description: 'Test Description',
       systemInstructions: 'Test Instructions',
+      role: 'Test Role',
       model: { id: 'model-123', name: 'gpt-4' },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -98,10 +98,12 @@ describe('AgentsService', () => {
     it('should create an agent', async () => {
       jest.spyOn(repository, 'create').mockReturnValue(mockAgent);
       jest.spyOn(repository, 'save').mockResolvedValue(mockAgent);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockAgent);
       const createDto = {
         name: mockAgent.name,
         description: mockAgent.description,
         systemInstructions: 'Test Instructions',
+        role: 'Test Role',
         modelId: 'model-123',
       };
       expect(await service.create(createDto)).toEqual(mockAgent);
@@ -125,15 +127,18 @@ describe('AgentsService', () => {
     });
 
     it('should update an agent', async () => {
-      jest.spyOn(repository, 'preload').mockResolvedValue(mockAgent);
-      jest.spyOn(repository, 'save').mockResolvedValue(mockAgent);
+      const updateResult = { affected: 1, raw: [], generatedMaps: [] };
+      jest.spyOn(repository, 'update').mockResolvedValue(updateResult);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockAgent);
       expect(await service.update('uuid-123', { name: 'Updated' })).toEqual(
         mockAgent,
       );
     });
 
     it('should throw NotFoundException on update if not found', async () => {
-      jest.spyOn(repository, 'preload').mockResolvedValue(undefined);
+      const updateResult = { affected: 0, raw: [], generatedMaps: [] };
+      jest.spyOn(repository, 'update').mockResolvedValue(updateResult);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
       await expect(
         service.update('uuid-123', { name: 'Updated' }),
       ).rejects.toThrow(NotFoundException);

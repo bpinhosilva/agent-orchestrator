@@ -11,8 +11,18 @@ export interface Agent {
   model?: {
     id: string;
     name: string;
+    provider?: {
+      id: string;
+      name: string;
+    };
   };
-  status?: string;
+  status?: 'active' | 'inactive' | 'idle' | 'updating';
+}
+
+export interface AgentResponse {
+  content: string;
+  image?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export const agentsApi = {
@@ -21,4 +31,5 @@ export const agentsApi = {
   create: (data: Partial<Agent>) => client.post<Agent>('/agents', data),
   update: (id: string, data: Partial<Agent>) => client.patch<Agent>(`/agents/${id}`, data),
   delete: (id: string) => client.delete(`/agents/${id}`),
+  probe: (agentId: string, input: string) => client.post<AgentResponse>('/agents/probe', { agentId, input }),
 };

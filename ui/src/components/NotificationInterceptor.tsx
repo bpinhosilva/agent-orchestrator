@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotification } from '../hooks/useNotification';
 import { setupInterceptors } from '../api/client';
 
 const NotificationInterceptor: React.FC = () => {

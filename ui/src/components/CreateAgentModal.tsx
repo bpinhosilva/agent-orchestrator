@@ -12,7 +12,7 @@ import MarkdownField from './MarkdownField';
 import { agentsApi } from '../api/agents';
 import { providersApi, type Provider } from '../api/providers';
 import { modelsApi, type Model } from '../api/models';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotification } from '../hooks/useNotification';
 
 interface CreateAgentModalProps {
   isOpen: boolean;

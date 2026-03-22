@@ -15,6 +15,7 @@ export class GeminiAgent implements Agent {
   private role?: string;
   private provider: string = 'Google';
   private model: string;
+  private enableGrounding: boolean = true;
 
   constructor(@Optional() model: string = 'gemini-2.5-flash-lite') {
     this.model = model;
@@ -59,13 +60,21 @@ export class GeminiAgent implements Agent {
     if (config['role']) this.role = config['role'] as string;
     if (config['provider']) this.provider = config['provider'] as string;
     if (config['model']) this.model = config['model'] as string;
+    if (config['enableGrounding'] !== undefined)
+      this.enableGrounding = !!config['enableGrounding'];
   }
 
   async processText(input: string): Promise<AgentResponse> {
-    this.logger.debug(`Processing input with GeminiAgent`);
+    const isGrounded = this.isGroundingSupported();
+    this.logger.debug(
+      `Processing input with GeminiAgent. Model: ${this.model}, Grounding Supported: ${isGrounded}, Grounding Enabled: ${this.enableGrounding}`,
+    );
     try {
       const contents = input;
-
+      const tools = this.getTools();
+      if (tools.length > 0) {
+        this.logger.debug(`Adding tools to request: ${JSON.stringify(tools)}`);
+      }
       const response = await this.genAI.models.generateContent({
         model: this.model,
         contents,
@@ -82,25 +91,86 @@ export class GeminiAgent implements Agent {
           ]
             .filter(Boolean)
             .join('\n'),
+          tools,
         },
       });
 
+      const candidate = response.candidates?.[0];
+      const groundingMetadata = candidate?.groundingMetadata;
+
+      if (groundingMetadata) {
+        this.logger.debug(
+          `Grounding Metadata found: ${JSON.stringify(groundingMetadata, null, 2)}`,
+        );
+      }
+
       return {
-        content: response.text ?? '',
+        content: response.text || '',
+        image: response.data,
         metadata: {
           model: this.model,
+          groundingMetadata: groundingMetadata || undefined,
+          usage: response.usageMetadata,
         },
       };
     } catch (error) {
-      if (error instanceof Error) {
-        this.logger.error(
-          `Error processing text: ${error.message}`,
-          error.stack,
-        );
-      } else {
-        this.logger.error(`Error processing text: ${String(error)}`);
-      }
+      this.logger.error(`Gemini Error: ${error}`);
       throw error;
     }
+  }
+
+  isFeatureSupported(feature: string): boolean {
+    if (feature === 'grounding' || feature === 'googleSearch') {
+      return this.isGroundingSupported();
+    }
+    return false;
+  }
+
+  private getTools(): any[] {
+    const tools: any[] = [];
+    if (this.enableGrounding && this.isGroundingSupported()) {
+      tools.push({
+        googleSearch: {
+          searchTypes: {
+            webSearch: {},
+          },
+        },
+      });
+    }
+    return tools;
+  }
+
+  private isGroundingSupported(): boolean {
+    const supportedPrefixes = [
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash',
+      'gemini-2.0-pro',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-3.1-flash',
+      'gemini-3.1-pro',
+      'gemini-3-flash',
+    ];
+
+    const excludedSuffixes = [
+      '-image',
+      '-vision',
+      '-thinking',
+      '-experimental',
+    ];
+
+    const modelName = this.model.startsWith('models/')
+      ? this.model.slice(7)
+      : this.model;
+
+    const hasSupportedPrefix = supportedPrefixes.some((p) =>
+      modelName.startsWith(p),
+    );
+    const hasExcludedSuffix = excludedSuffixes.some((s) =>
+      modelName.includes(s),
+    );
+
+    return hasSupportedPrefix && !hasExcludedSuffix;
   }
 }

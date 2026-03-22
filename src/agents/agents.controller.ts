@@ -54,4 +54,10 @@ export class AgentsController {
       requestDto.input,
     );
   }
+
+  @Post('probe')
+  @HttpCode(HttpStatus.OK)
+  async probe(@Body() requestDto: AgentRequestDto): Promise<AgentResponse> {
+    return this.agentsService.probe(requestDto.agentId, requestDto.input);
+  }
 }

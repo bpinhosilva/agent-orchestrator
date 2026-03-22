@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, 
   Activity, 
@@ -32,7 +32,7 @@ const Providers = () => {
   const provider = providers.find(p => p.id === selectedProvider);
   const providerModels = models;
 
-  const fetchProviders = async () => {
+  const fetchProviders = useCallback(async () => {
     try {
       setLoading(true);
       const res = await providersApi.findAll();
@@ -45,7 +45,7 @@ const Providers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedProvider]);
 
   const fetchModelsForProvider = async (providerId: string) => {
     try {
@@ -62,7 +62,7 @@ const Providers = () => {
 
   useEffect(() => {
     fetchProviders();
-  }, []);
+  }, [fetchProviders]);
 
   useEffect(() => {
     if (selectedProvider) {

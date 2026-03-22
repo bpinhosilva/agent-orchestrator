@@ -1,23 +1,63 @@
 import React, { useEffect, useState } from 'react';
-import { X, Edit2, ChevronDown, Check } from 'lucide-react';
-import { useNotification } from '../contexts/NotificationContext';
+import { X, Edit2, ChevronDown, Check, Copy, Loader2 } from 'lucide-react';
+import { useNotification } from '../hooks/useNotification';
 import MarkdownField from './MarkdownField';
-import { agentsApi } from '../api/agents';
+import { agentsApi, type Agent } from '../api/agents';
+import { modelsApi, type Model } from '../api/models';
 
 interface AgentConfigDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdated?: () => void;
-  agent: any;
+  agent: Agent | null;
 }
 
 const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, onUpdated, agent }) => {
-  const { notifyError } = useNotification();
+  const { notifyError, notifySuccess } = useNotification();
   const [saving, setSaving] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const [name, setName] = useState(agent?.name || '');
   const [description, setDescription] = useState(agent?.description || '');
   const [systemInstructions, setSystemInstructions] = useState(agent?.systemInstructions || '');
+  const [availableModels, setAvailableModels] = useState<Model[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState(agent?.model?.id || '');
+
+  useEffect(() => {
+    if (isOpen && agent?.model?.provider?.id) {
+      fetchModels(agent.model.provider.id);
+    }
+  }, [isOpen, agent?.model?.provider?.id]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(agent?.name || '');
+      setDescription(agent?.description || '');
+      setSystemInstructions(agent?.systemInstructions || '');
+      setSelectedModelId(agent?.model?.id || '');
+    }
+  }, [isOpen, agent]);
+
+  const fetchModels = async (providerId: string) => {
+    try {
+      setLoadingModels(true);
+      const { data } = await modelsApi.findByProvider(providerId);
+      setAvailableModels(data);
+    } catch (error) {
+      console.error('Failed to fetch models:', error);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  const handleCopyId = () => {
+    if (!agent?.id) return;
+    navigator.clipboard.writeText(agent.id);
+    setCopied(true);
+    notifySuccess('Copied', 'Agent ID copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSave = async () => {
     if (!agent?.id) return;
@@ -26,11 +66,12 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, 
       await agentsApi.update(agent.id, {
         name,
         description,
-        systemInstructions
+        systemInstructions,
+        modelId: selectedModelId
       });
       onUpdated?.();
       onClose();
-    } catch (error) {
+    } catch {
       notifyError('Update Failed', 'An error occurred while saving the configuration.');
     } finally {
       setSaving(false);
@@ -83,6 +124,24 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, 
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">Agent ID</label>
+                <div className="flex gap-2">
+                  <input 
+                    className="flex-1 bg-surface-container-lowest/50 border-none rounded-md text-[10px] font-mono text-on-surface-variant focus:ring-0 h-8 px-3 cursor-default" 
+                    type="text" 
+                    value={agent?.id || ''} 
+                    readOnly
+                  />
+                  <button 
+                    onClick={handleCopyId}
+                    className="p-1.5 rounded bg-surface-container-highest hover:bg-surface-container-highest/80 text-on-surface-variant transition-colors flex items-center justify-center aspect-square h-8"
+                    title="Copy ID"
+                  >
+                    {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -99,13 +158,23 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, 
 
         {/* Model Selection */}
         <section className="space-y-3">
-          <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">Model Engine</label>
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">Model Engine</label>
+            {loadingModels && <Loader2 size={12} className="animate-spin text-primary" />}
+          </div>
           <div className="relative">
-            <select className="w-full bg-surface-container-lowest border-none rounded-md text-sm text-on-surface focus:ring-1 focus:ring-primary h-11 appearance-none px-4">
-              <option>GPT-4o (Omni Reasoning)</option>
-              <option>Claude 3.5 Sonnet</option>
-              <option>Gemini 1.5 Pro</option>
-              <option>Llama 3 (70B)</option>
+            <select 
+              className="w-full bg-surface-container-lowest border-none rounded-md text-sm text-on-surface focus:ring-1 focus:ring-primary h-11 appearance-none px-4 disabled:opacity-50"
+              value={selectedModelId}
+              onChange={(e) => setSelectedModelId(e.target.value)}
+              disabled={loadingModels}
+            >
+              {availableModels.length === 0 && !loadingModels && (
+                <option value="">No models available for this provider</option>
+              )}
+              {availableModels.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
             </select>
             <ChevronDown className="absolute right-3 top-3 pointer-events-none text-on-surface-variant/60" size={18} />
           </div>

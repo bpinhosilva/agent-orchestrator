@@ -1,5 +1,6 @@
 export interface AgentResponse {
   content: string;
+  image?: string;
   metadata?: Record<string, any>;
 }
 
