@@ -23,8 +23,7 @@ import { UsersModule } from './users/users.module';
       synchronize: true, // Use only in development
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      exclude: ['/api*'],
+      rootPath: join(__dirname, '..', '..', 'ui', 'dist'),
     }),
     AgentsModule,
     ProvidersModule,
