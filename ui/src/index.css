@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-primary: #adc6ff;
@@ -34,6 +35,15 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
+  }
+
+  button, 
+  [role="button"],
+  a,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"] {
+    cursor: pointer;
   }
 }
 

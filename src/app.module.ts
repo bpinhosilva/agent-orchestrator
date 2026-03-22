@@ -17,7 +17,7 @@ import { UsersModule } from './users/users.module';
       type: process.env.DATABASE_URL ? 'postgres' : 'sqlite',
       database: process.env.DATABASE_URL
         ? undefined
-        : join(__dirname, '..', 'local.sqlite'),
+        : join(process.cwd(), 'local.sqlite'),
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true, // Use only in development

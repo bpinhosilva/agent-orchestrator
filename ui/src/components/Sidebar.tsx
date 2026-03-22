@@ -5,15 +5,18 @@ import {
   LayoutDashboard, 
   Calendar, 
   Network, 
-  Bot
+  Bot,
+  Server
 } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 
 const Sidebar = () => {
   const navItems = [
-    { icon: LayoutDashboard, label: 'Task Manager', active: false },
-    { icon: Calendar, label: 'Scheduler', active: false },
-    { icon: Network, label: 'Flow Builder', active: false },
-    { icon: Bot, label: 'Agents', active: true },
+    { icon: LayoutDashboard, label: 'Task Manager', path: '/' },
+    { icon: Calendar, label: 'Scheduler', path: '/scheduler' },
+    { icon: Bot, label: 'Agents', path: '/agents' },
+    { icon: Network, label: 'Flow Builder', path: '/flow' },
+    { icon: Server, label: 'Providers', path: '/providers' },
   ];
 
   return (
@@ -25,18 +28,18 @@ const Sidebar = () => {
 
       <nav className="flex-1 px-3 space-y-2">
         {navItems.map((item, index) => (
-          <a
+          <NavLink
             key={index}
-            href="#"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
-              item.active 
+            to={item.path}
+            className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
+              isActive 
                 ? 'text-secondary border-r-2 border-secondary bg-gradient-to-r from-secondary/10 to-transparent' 
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
             }`}
           >
             <item.icon size={20} />
             <span className="font-body text-sm">{item.label}</span>
-          </a>
+          </NavLink>
         ))}
       </nav>
 

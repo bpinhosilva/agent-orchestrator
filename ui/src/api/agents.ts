@@ -4,8 +4,14 @@ export interface Agent {
   id: string;
   name: string;
   role?: string;
+  description?: string;
+  systemInstructions?: string;
   provider: string;
   modelId: string;
+  model?: {
+    id: string;
+    name: string;
+  };
   status?: string;
 }
 

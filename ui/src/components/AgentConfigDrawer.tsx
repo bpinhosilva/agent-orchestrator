@@ -1,13 +1,52 @@
-import React from 'react';
-import { X, Edit2, ChevronDown } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Edit2, ChevronDown, Check } from 'lucide-react';
+import { useNotification } from '../contexts/NotificationContext';
+import MarkdownField from './MarkdownField';
+import { agentsApi } from '../api/agents';
 
 interface AgentConfigDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onUpdated?: () => void;
   agent: any;
 }
 
-const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, agent }) => {
+const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, onUpdated, agent }) => {
+  const { notifyError } = useNotification();
+  const [saving, setSaving] = useState(false);
+  
+  const [name, setName] = useState(agent?.name || '');
+  const [description, setDescription] = useState(agent?.description || '');
+  const [systemInstructions, setSystemInstructions] = useState(agent?.systemInstructions || '');
+
+  const handleSave = async () => {
+    if (!agent?.id) return;
+    try {
+      setSaving(true);
+      await agentsApi.update(agent.id, {
+        name,
+        description,
+        systemInstructions
+      });
+      onUpdated?.();
+      onClose();
+    } catch (error) {
+      notifyError('Update Failed', 'An error occurred while saving the configuration.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -40,20 +79,23 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, 
                 <input 
                   className="w-full bg-surface-container-lowest border-none rounded-md text-sm text-on-surface focus:ring-1 focus:ring-primary h-9 px-3" 
                   type="text" 
-                  defaultValue={agent?.name || 'Logic Specialist'}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">Expertise</label>
-                <input 
-                  className="w-full bg-surface-container-lowest border-none rounded-md text-sm text-on-surface focus:ring-1 focus:ring-primary h-9 px-3" 
-                  type="text" 
-                  defaultValue={agent?.expertise || 'Logic Specialist'}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
             </div>
           </div>
         </section>
+
+        {/* Description Section */}
+        <MarkdownField 
+          label="Description"
+          value={description}
+          onChange={setDescription}
+          placeholder="Detailed agent profile..."
+          height="h-32"
+          maxLength={1000}
+        />
 
         {/* Model Selection */}
         <section className="space-y-3">
@@ -94,26 +136,30 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, 
         </section>
 
         {/* System Instructions */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">System Instructions</label>
-            <button className="text-[10px] text-primary hover:underline">Insert Template</button>
-          </div>
-          <textarea 
-            className="w-full bg-surface-container-lowest border-none rounded-md text-xs text-on-surface focus:ring-1 focus:ring-primary h-40 font-mono leading-relaxed resize-none p-4" 
-            spellCheck="false"
-            defaultValue={`You are the Logic Specialist for the Orchestrator Network. 
-
-Your core objective is to analyze technical inputs with 100% precision. 
-1. Use chain-of-thought reasoning for all complex queries.
-2. Flag any logical inconsistencies in user prompts.`}
-          />
-        </section>
+        <MarkdownField 
+          label="System Instructions"
+          value={systemInstructions}
+          onChange={setSystemInstructions}
+          placeholder="Define operational logic..."
+          height="h-64"
+          maxLength={2000}
+        />
       </div>
 
       <div className="p-6 bg-surface-container-high border-t border-outline-variant/10 flex gap-3">
-        <button className="flex-1 bg-primary text-on-primary py-2.5 rounded font-bold text-sm shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all">
-          Save Changes
+        <button 
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 bg-primary text-on-primary py-2.5 rounded font-bold text-sm shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+        >
+          {saving ? (
+            <span className="w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
+          ) : (
+            <>
+              <Check size={16} />
+              Save Changes
+            </>
+          )}
         </button>
         <button onClick={onClose} className="px-4 py-2.5 rounded border border-outline-variant text-on-surface-variant hover:text-white transition-all">
           Reset

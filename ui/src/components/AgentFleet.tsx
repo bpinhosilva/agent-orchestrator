@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Grid2X2, List, Plus, Loader2 } from 'lucide-react';
 import AgentCard from './AgentCard';
 import AgentConfigDrawer from './AgentConfigDrawer';
+import CreateAgentModal from './CreateAgentModal';
 import { agentsApi, type Agent } from '../api/agents';
 
 const AgentFleet = () => {
@@ -9,6 +10,8 @@ const AgentFleet = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     fetchAgents();
@@ -36,10 +39,16 @@ const AgentFleet = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="p-2 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors">
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-surface-container-high text-white' : 'text-on-surface-variant hover:text-white'}`}
+          >
             <Grid2X2 size={20} />
           </button>
-          <button className="p-2 rounded text-on-surface-variant hover:text-white transition-colors">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-surface-container-high text-white' : 'text-on-surface-variant hover:text-white'}`}
+          >
             <List size={20} />
           </button>
         </div>
@@ -50,7 +59,7 @@ const AgentFleet = () => {
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6" : "flex flex-col gap-4"}>
           {agents.map((agent) => (
             <div key={agent.id} onClick={() => {
               setSelectedAgent(agent);
@@ -59,7 +68,7 @@ const AgentFleet = () => {
               <AgentCard 
                 name={agent.name}
                 expertise={agent.role || 'General Assistant'}
-                model={agent.modelId}
+                model={agent.model?.name || agent.modelId}
                 status={(agent.status as any) || 'active'}
                 metricLabel="Provider"
                 metricValue={agent.provider}
@@ -68,7 +77,10 @@ const AgentFleet = () => {
           ))}
           
           {/* New Agent Placeholder */}
-          <div className="border-2 border-dashed border-outline-variant/30 rounded-xl p-6 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-primary/50 transition-all hover:bg-primary/5">
+          <div 
+            onClick={() => setIsModalOpen(true)}
+            className="border-2 border-dashed border-outline-variant/30 rounded-xl p-6 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-primary/50 transition-all hover:bg-primary/5"
+          >
             <div className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Plus size={24} className="text-primary" />
             </div>
@@ -79,9 +91,17 @@ const AgentFleet = () => {
       )}
 
       <AgentConfigDrawer 
+        key={selectedAgent?.id || 'none'}
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)} 
+        onUpdated={fetchAgents}
         agent={selectedAgent} 
+      />
+
+      <CreateAgentModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onCreated={fetchAgents}
       />
     </div>
   );

@@ -22,11 +22,21 @@ export class ModelsService {
   }
 
   async findAll(): Promise<Model[]> {
-    return this.modelRepository.find();
+    return this.modelRepository.find({ relations: ['provider'] });
+  }
+
+  async findByProviderId(providerId: string): Promise<Model[]> {
+    return this.modelRepository.find({
+      where: { provider: { id: providerId } },
+      relations: ['provider'],
+    });
   }
 
   async findOne(id: string): Promise<Model> {
-    const model = await this.modelRepository.findOne({ where: { id } });
+    const model = await this.modelRepository.findOne({
+      where: { id },
+      relations: ['provider'],
+    });
     if (!model) {
       throw new NotFoundException(`Model #${id} not found`);
     }

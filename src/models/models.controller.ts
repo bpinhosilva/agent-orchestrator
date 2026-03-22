@@ -25,6 +25,11 @@ export class ModelsController {
     return this.modelsService.findAll();
   }
 
+  @Get('provider/:providerId')
+  findByProvider(@Param('providerId') providerId: string) {
+    return this.modelsService.findByProviderId(providerId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.modelsService.findOne(id);

@@ -4,9 +4,10 @@ import {
   Entity,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Agent } from '../../agents/entities/agent.entity';
+import { AgentEntity } from '../../agents/entities/agent.entity';
 
 export enum ProjectStatus {
   PLANNING = 'planning',
@@ -34,12 +35,15 @@ export class Project {
   })
   status: ProjectStatus;
 
-  @ManyToOne(() => Agent, {
+  @OneToMany(() => AgentEntity, (agent) => agent.project)
+  agents: AgentEntity[];
+
+  @ManyToOne(() => AgentEntity, {
     nullable: false,
     eager: true,
     onDelete: 'RESTRICT',
   })
-  defaultAgent: Agent;
+  defaultAgent: AgentEntity;
 
   @CreateDateColumn()
   createdAt: Date;

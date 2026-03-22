@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AgentsService } from './agents.service';
+import { ModuleRef } from '@nestjs/core';
 import { GeminiAgent } from './implementations/gemini.agent';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Agent as AgentEntity } from './entities/agent.entity';
+import { AgentEntity } from './entities/agent.entity';
 import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 
@@ -10,6 +11,8 @@ describe('AgentsService', () => {
   let service: AgentsService;
   let geminiAgent: GeminiAgent;
   let repository: Repository<AgentEntity>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let moduleRef: ModuleRef;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -19,7 +22,21 @@ describe('AgentsService', () => {
           provide: GeminiAgent,
           useValue: {
             getName: jest.fn().mockReturnValue('MockedGeminiAgent'),
+            getDescription: jest.fn().mockReturnValue('Test Description'),
+            getSystemInstructions: jest
+              .fn()
+              .mockReturnValue('Test Instructions'),
+            getRole: jest.fn().mockReturnValue('Test Role'),
+            getProvider: jest.fn().mockReturnValue('Google'),
+            getModel: jest.fn().mockReturnValue('gemini-pro'),
+            updateConfig: jest.fn(),
             processText: jest.fn(),
+          },
+        },
+        {
+          provide: ModuleRef,
+          useValue: {
+            get: jest.fn(),
           },
         },
         {
@@ -48,12 +65,21 @@ describe('AgentsService', () => {
   });
 
   describe('processRequest', () => {
-    it('should delegate processText to the default agent', async () => {
+    it('should delegate processText to a resolved agent instance', async () => {
       const expectedResponse = { content: 'test response' };
+      const agentId = 'agent-1';
+
+      // Mock the agent in the internal map
+      // We can't access private map easily but we can trigger syncAgentInstance indirectly or mock it
+      // For the test, we'll manually set it or rely on a mocked internal state if we refactor more.
+      // Actually, let's just test that it calls the map.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      (service as any).agentInstances.set(agentId, geminiAgent);
+
       jest
         .spyOn(geminiAgent, 'processText')
         .mockResolvedValue(expectedResponse);
-      const result = await service.processRequest({ input: 'test input' });
+      const result = await service.processRequest(agentId, 'test input');
       expect(result).toBe(expectedResponse);
     });
   });
@@ -62,7 +88,8 @@ describe('AgentsService', () => {
     const mockAgent = {
       id: 'uuid-123',
       name: 'Agent Smith',
-      profile: 'Test Profile',
+      description: 'Test Description',
+      systemInstructions: 'Test Instructions',
       model: { id: 'model-123', name: 'gpt-4' },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -73,7 +100,8 @@ describe('AgentsService', () => {
       jest.spyOn(repository, 'save').mockResolvedValue(mockAgent);
       const createDto = {
         name: mockAgent.name,
-        profile: mockAgent.profile,
+        description: mockAgent.description,
+        systemInstructions: 'Test Instructions',
         modelId: 'model-123',
       };
       expect(await service.create(createDto)).toEqual(mockAgent);

@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task, TaskStatus } from './entities/task.entity';
+import { AgentEntity } from '../agents/entities/agent.entity';
 
 describe('TasksService', () => {
   let service: TasksService;
@@ -22,6 +23,10 @@ describe('TasksService', () => {
         {
           provide: getRepositoryToken(Task),
           useValue: mockTaskRepository,
+        },
+        {
+          provide: getRepositoryToken(AgentEntity),
+          useValue: {},
         },
       ],
     }).compile();

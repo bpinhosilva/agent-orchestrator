@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Agent } from '../../agents/entities/agent.entity';
+import { AgentEntity } from '../../agents/entities/agent.entity';
 import { Project } from '../../projects/entities/project.entity';
 
 export enum TaskStatus {
@@ -51,8 +51,12 @@ export class Task {
   @Column('text', { nullable: true })
   output?: string;
 
-  @ManyToOne(() => Agent, { nullable: true, eager: true, onDelete: 'SET NULL' })
-  assignee: Agent;
+  @ManyToOne(() => AgentEntity, {
+    nullable: true,
+    eager: true,
+    onDelete: 'SET NULL',
+  })
+  assignee: AgentEntity | null;
 
   @ManyToOne(() => Project, {
     nullable: false,

@@ -4,11 +4,12 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Provider } from '../../providers/entities/provider.entity';
-import { Agent } from '../../agents/entities/agent.entity';
+import { AgentEntity } from '../../agents/entities/agent.entity';
 
 @Entity('models')
 export class Model {
@@ -20,11 +21,13 @@ export class Model {
 
   @ManyToOne(() => Provider, (provider) => provider.models, {
     onDelete: 'CASCADE',
+    eager: true,
   })
+  @JoinColumn({ name: 'providerId' })
   provider: Provider;
 
-  @OneToMany(() => Agent, (agent) => agent.model)
-  agents: Agent[];
+  @OneToMany(() => AgentEntity, (agent) => agent.model)
+  agents: AgentEntity[];
 
   @CreateDateColumn()
   createdAt: Date;

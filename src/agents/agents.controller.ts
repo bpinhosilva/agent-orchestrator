@@ -49,6 +49,9 @@ export class AgentsController {
   async processText(
     @Body() requestDto: AgentRequestDto,
   ): Promise<AgentResponse> {
-    return this.agentsService.processRequest(requestDto);
+    return this.agentsService.processRequest(
+      requestDto.agentId,
+      requestDto.input,
+    );
   }
 }

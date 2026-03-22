@@ -9,6 +9,7 @@ const Converter = require('openapi-to-postmanv2');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: false });
+  app.setGlobalPrefix('api/v1');
 
   const config = new DocumentBuilder()
     .setTitle('Agent Orchestrator API')

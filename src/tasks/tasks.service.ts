@@ -1,32 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Project } from '../projects/entities/project.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
-import { Agent } from '../agents/entities/agent.entity';
+import { AgentEntity } from '../agents/entities/agent.entity';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly tasksRepository: Repository<Task>,
+    @InjectRepository(AgentEntity)
+    private readonly agentsRepository: Repository<AgentEntity>,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
     const task = this.tasksRepository.create({
-      title: createTaskDto.title,
-      description: createTaskDto.description,
+      ...createTaskDto,
       status: createTaskDto.status ?? TaskStatus.BACKLOG,
       priority: createTaskDto.priority ?? TaskPriority.MEDIUM,
-      project: { id: createTaskDto.projectId } as Project,
+      assignee: createTaskDto.assigneeId
+        ? ({ id: createTaskDto.assigneeId } as AgentEntity)
+        : null,
     });
-
-    if (createTaskDto.assigneeId) {
-      task.assignee = { id: createTaskDto.assigneeId } as Agent;
-    }
-
     return this.tasksRepository.save(task);
   }
 
@@ -46,9 +43,9 @@ export class TasksService {
     const task = await this.findOne(id);
 
     if (updateTaskDto.assigneeId) {
-      task.assignee = { id: updateTaskDto.assigneeId } as Agent;
+      task.assignee = { id: updateTaskDto.assigneeId } as AgentEntity;
     } else if (updateTaskDto.assigneeId === null) {
-      task.assignee = null as unknown as Agent;
+      task.assignee = null;
     }
 
     if (updateTaskDto.title !== undefined) task.title = updateTaskDto.title;

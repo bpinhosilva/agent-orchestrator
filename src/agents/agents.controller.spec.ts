@@ -5,7 +5,7 @@ import { AgentRequestDto } from './dto/agent-request.dto';
 import { AgentResponse } from './interfaces/agent.interface';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
-import { Agent as AgentEntity } from './entities/agent.entity';
+import { AgentEntity } from './entities/agent.entity';
 
 describe('AgentsController', () => {
   let controller: AgentsController;
@@ -39,10 +39,13 @@ describe('AgentsController', () => {
 
   describe('processText', () => {
     it('should call service with the correctly validated dto', async () => {
-      const dto: AgentRequestDto = { input: 'hello AI' };
+      const dto: AgentRequestDto = { agentId: 'agent-1', input: 'hello AI' };
       const expectedResponse: AgentResponse = { content: 'hello human' };
-      jest.spyOn(service, 'processRequest').mockResolvedValue(expectedResponse);
+      const processRequestSpy = jest
+        .spyOn(service, 'processRequest')
+        .mockResolvedValue(expectedResponse);
       expect(await controller.processText(dto)).toBe(expectedResponse);
+      expect(processRequestSpy).toHaveBeenCalledWith('agent-1', 'hello AI');
     });
   });
 
@@ -50,7 +53,8 @@ describe('AgentsController', () => {
     const mockAgent = {
       id: 'uuid-123',
       name: 'Agent Smith',
-      profile: 'Test Profile',
+      description: 'Test Description',
+      systemInstructions: 'Test Instructions',
       model: { id: 'model-123', name: 'gpt-4' },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -59,7 +63,8 @@ describe('AgentsController', () => {
     it('should create an agent', async () => {
       const dto: CreateAgentDto = {
         name: 'Agent Smith',
-        profile: 'Test Profile',
+        description: 'Test Description',
+        systemInstructions: 'Test Instructions',
         modelId: 'model-123',
       };
       jest.spyOn(service, 'create').mockResolvedValue(mockAgent);

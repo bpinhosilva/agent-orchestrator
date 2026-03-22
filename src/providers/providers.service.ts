@@ -18,7 +18,7 @@ export class ProvidersService {
   }
 
   async findAll(): Promise<Provider[]> {
-    return this.providerRepository.find();
+    return this.providerRepository.find({ relations: ['models'] });
   }
 
   async findOne(id: string): Promise<Provider> {

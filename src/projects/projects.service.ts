@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Agent } from '../agents/entities/agent.entity';
+import { AgentEntity } from '../agents/entities/agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -18,7 +18,7 @@ export class ProjectsService {
       title: createProjectDto.title,
       description: createProjectDto.description,
       status: createProjectDto.status ?? ProjectStatus.PLANNING,
-      defaultAgent: { id: createProjectDto.defaultAgentId } as Agent,
+      defaultAgent: { id: createProjectDto.defaultAgentId } as AgentEntity,
     });
     return this.projectsRepository.save(project);
   }
@@ -48,7 +48,9 @@ export class ProjectsService {
     if (updateProjectDto.status !== undefined)
       project.status = updateProjectDto.status;
     if (updateProjectDto.defaultAgentId !== undefined)
-      project.defaultAgent = { id: updateProjectDto.defaultAgentId } as Agent;
+      project.defaultAgent = {
+        id: updateProjectDto.defaultAgentId,
+      } as AgentEntity;
 
     return this.projectsRepository.save(project);
   }
