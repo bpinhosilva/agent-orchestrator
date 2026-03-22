@@ -1,3 +1,10 @@
+# [1.0.0-alpha.9](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2026-03-22)
+
+
+### Features
+
+* implement provider and model management UI and API, and enhance agent configuration ([01dbe34](https://github.com/bpinhosilva/agent-orchestrator/commit/01dbe345b8763da433682d7bc185c017e5b5d5d9))
+
 # [1.0.0-alpha.8](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2026-03-22)
 
 
