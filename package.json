@@ -12,6 +12,13 @@
     "url": "https://github.com/bpinhosilva/agent-orchestrator/issues"
   },
   "homepage": "https://github.com/bpinhosilva/agent-orchestrator#readme",
+  "keywords": [
+    "agent orchestrator",
+    "generative ai",
+    "agentic dashboard",
+    "nestjs",
+    "typescript"
+  ],
   "files": [
     "dist",
     "README.md",
