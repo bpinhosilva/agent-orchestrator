@@ -30,6 +30,11 @@ export class ProvidersController {
     return this.providersService.findOne(id);
   }
 
+  @Get(':id/models')
+  findModels(@Param('id') id: string) {
+    return this.providersService.findProviderModels(id);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,

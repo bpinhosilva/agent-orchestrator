@@ -28,13 +28,16 @@ jobs:
           node-version: '24'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
+
+      - name: Install UI dependencies
+        run: npm ci --prefix ui --legacy-peer-deps
 
       - name: Run tests
-        run: npm test
+        run: npm run test:all
 
-      - name: Build application
-        run: npm run build
+      - name: Build all components
+        run: npm run build:all
 
       - name: Build CLI
         run: npm run cli:build

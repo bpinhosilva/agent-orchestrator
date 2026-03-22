@@ -18,7 +18,7 @@ import {
 import RegisterProviderModal from '../components/RegisterProviderModal';
 import CreateModelModal from '../components/CreateModelModal';
 import { providersApi, type Provider } from '../api/providers';
-import { modelsApi, type Model } from '../api/models';
+import { type Model } from '../api/models';
 
 const Providers = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +50,7 @@ const Providers = () => {
   const fetchModelsForProvider = async (providerId: string) => {
     try {
       setIsLoadingModels(true);
-      const res = await modelsApi.findByProvider(providerId);
+      const res = await providersApi.findModels(providerId);
       setModels(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error('Failed to fetch models:', error);

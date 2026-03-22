@@ -18,7 +18,7 @@ export class ProvidersService {
   }
 
   async findAll(): Promise<Provider[]> {
-    return this.providerRepository.find({ relations: ['models'] });
+    return this.providerRepository.find();
   }
 
   async findOne(id: string): Promise<Provider> {
@@ -27,6 +27,21 @@ export class ProvidersService {
       throw new NotFoundException(`Provider #${id} not found`);
     }
     return provider;
+  }
+
+  async findProviderModels(id: string): Promise<any[]> {
+    const provider = await this.providerRepository.findOne({
+      where: { id },
+      relations: ['models'],
+    });
+    if (!provider) {
+      throw new NotFoundException(`Provider #${id} not found`);
+    }
+    return provider.models.map((model) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { provider: _, ...modelWithoutProvider } = model;
+      return modelWithoutProvider;
+    });
   }
 
   async update(

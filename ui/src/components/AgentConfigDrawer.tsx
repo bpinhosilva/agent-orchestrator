@@ -3,7 +3,8 @@ import { X, Edit2, ChevronDown, Check, Copy, Loader2 } from 'lucide-react';
 import { useNotification } from '../hooks/useNotification';
 import MarkdownField from './MarkdownField';
 import { agentsApi, type Agent } from '../api/agents';
-import { modelsApi, type Model } from '../api/models';
+import { type Model } from '../api/models';
+import { providersApi } from '../api/providers';
 
 interface AgentConfigDrawerProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({ isOpen, onClose, 
   const fetchModels = async (providerId: string) => {
     try {
       setLoadingModels(true);
-      const { data } = await modelsApi.findByProvider(providerId);
+      const { data } = await providersApi.findModels(providerId);
       setAvailableModels(data);
     } catch (error) {
       console.error('Failed to fetch models:', error);

@@ -11,7 +11,7 @@ import {
 import MarkdownField from './MarkdownField';
 import { agentsApi } from '../api/agents';
 import { providersApi, type Provider } from '../api/providers';
-import { modelsApi, type Model } from '../api/models';
+import { type Model } from '../api/models';
 import { useNotification } from '../hooks/useNotification';
 
 interface CreateAgentModalProps {
@@ -80,7 +80,7 @@ Return all results in Markdown tables with clear citations.`);
   const fetchModels = async (providerId: string) => {
     try {
       setFetchingData(true);
-      const res = await modelsApi.findByProvider(providerId);
+      const res = await providersApi.findModels(providerId);
       setAvailableModels(res.data);
       if (res.data.length > 0) {
         setSelectedModelId(res.data[0].id);
