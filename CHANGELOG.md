@@ -1,3 +1,10 @@
+# [1.0.0-alpha.10](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2026-03-22)
+
+
+### Features
+
+* add agent probing functionality with a new API endpoint, service logic ([f71abb6](https://github.com/bpinhosilva/agent-orchestrator/commit/f71abb601745b7f2ae5c1f8be53143429302c1d2))
+
 # [1.0.0-alpha.9](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2026-03-22)
 
 
