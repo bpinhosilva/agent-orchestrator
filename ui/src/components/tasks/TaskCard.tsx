@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Clock, Paperclip, MessageSquare, Zap, Eye, Check } from 'lucide-react';
+import { Clock, Paperclip, MessageSquare, Zap, Check } from 'lucide-react';
 import type { Task } from './types';
 
 interface TaskCardProps {
@@ -47,20 +47,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isOverlay }) => {
   const isDone = task.status === 'done';
   const isActive = task.isActive;
 
-  let cardClasses = 'group rounded-xl p-4 border transition-all duration-300 shadow-xl cursor-grab active:cursor-grabbing relative overflow-hidden';
+  const isProminent = isDragging || isOverlay;
+  const showActiveDetails = isActive && isProminent;
+
+  let cardClasses = 'group rounded-xl p-4 border transition-all duration-300 shadow-xl cursor-grab active:cursor-grabbing relative overflow-hidden flex flex-col h-full';
   
   if (isDragging) {
-    cardClasses += ' opacity-50 ring-2 ring-primary bg-surface-container-high border-primary/50';
+    cardClasses += ' opacity-40 bg-surface-container-low border-outline-variant/20';
   } else if (isDone) {
-    cardClasses += ' opacity-70 hover:opacity-100 surface-container-low border-outline-variant/10 shadow-sm grayscale hover:grayscale-0';
-  } else if (isActive) {
-    cardClasses += ' bg-surface-container-high border-primary/40 shadow-[0_0_20px_rgba(173,198,255,0.1)]';
+    cardClasses += ' opacity-70 hover:opacity-100 bg-surface-container-low border-outline-variant/10 shadow-sm grayscale hover:grayscale-0';
+  } else if (showActiveDetails) {
+    cardClasses += ' bg-surface-container-high border-primary/40 shadow-[0_0_30px_rgba(173,198,255,0.15)] ring-1 ring-primary/20 scale-[1.02] z-50';
   } else {
-    cardClasses += ' surface-container-low border-outline-variant/10 hover:border-primary/30 hover:shadow-primary/5';
-  }
-
-  if (isOverlay) {
-    cardClasses += ' rotate-2 scale-105 shadow-2xl z-50';
+    cardClasses += ' bg-surface-container-low border-outline-variant/10 hover:border-primary/30 hover:shadow-primary/5';
   }
 
   return (
@@ -74,14 +73,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isOverlay }) => {
         if (!isOverlay) navigate(`/tasks/${task.id}`);
       }}
     >
-      {isActive && (
-        <div className="absolute top-0 right-0 p-2">
-          <Zap size={16} className="text-primary fill-primary" />
+      {showActiveDetails && (
+        <div className="absolute top-0 right-0 p-3">
+          <Zap size={18} className="text-secondary fill-secondary drop-shadow-[0_0_8px_rgba(78,222,163,0.5)]" />
         </div>
       )}
 
       <div className="flex justify-between items-start mb-3">
-        <span className={`text-[10px] font-bold font-label px-2 py-0.5 rounded ${isActive ? 'text-primary bg-primary-container/50' : 'text-outline bg-surface-container-lowest'}`}>
+        <span className={`text-[10px] font-black font-headline px-2 py-0.5 rounded tracking-widest uppercase transition-colors ${showActiveDetails ? 'text-primary bg-primary-container/30 border border-primary/20' : 'text-on-surface-variant/40 bg-surface-container-highest/30'}`}>
           {task.code}
         </span>
         {isDone ? (
@@ -89,63 +88,36 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isOverlay }) => {
             <Check size={10} className="text-secondary font-bold" />
           </div>
         ) : (
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${getPriorityColor(task.priority)}`}>
+          <span className={`text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase transition-colors ${showActiveDetails ? getPriorityColor(task.priority) : 'text-on-surface-variant/60 bg-transparent'}`}>
             {task.priority || 'LOW'}
           </span>
         )}
       </div>
 
-      <h4 className={`font-headline font-bold mb-4 leading-tight transition-colors ${isDone ? 'text-outline line-through' : 'text-on-surface group-hover:text-primary'}`}>
+      <h4 className={`font-headline font-extrabold mb-4 leading-tight transition-colors text-base ${isDone ? 'text-outline line-through' : 'text-on-surface group-hover:text-primary'}`}>
         {task.title}
       </h4>
 
-      {isActive && task.progress !== undefined && (
-        <>
-          <p className="text-[11px] text-outline mb-4">Processing nodes...</p>
-          <div className="space-y-1.5 mb-4">
-            <div className="flex justify-between text-[10px] font-bold text-on-surface-variant">
-              <span>PROGRESS</span>
-              <span>{task.progress}%</span>
-            </div>
-            <div className="h-1.5 w-full bg-surface-container-lowest rounded-full overflow-hidden">
-              <div className="h-full bg-secondary rounded-full" style={{ width: `${task.progress}%` }}></div>
-            </div>
-          </div>
-        </>
-      )}
 
-      {!isActive && task.progress !== undefined && (
-        <div className="space-y-1.5 mb-4">
-          <div className="h-1.5 w-full bg-surface-container-lowest rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full" style={{ width: `${task.progress}%` }}></div>
-          </div>
-        </div>
-      )}
-
-      {task.awaitingReview && (
-        <div className="bg-tertiary-container/10 border border-tertiary/10 p-2 rounded-lg mb-4">
-          <div className="flex items-center gap-2 text-[10px] text-tertiary font-bold">
-            <Eye size={12} /> Awaiting Human Validation
-          </div>
-        </div>
-      )}
 
       <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-2">
-          <img 
-            src={task.agent.avatar} 
-            alt="Agent" 
-            className={`h-6 w-6 rounded object-cover ${task.agent.colorClass || 'bg-surface-container-highest border border-outline-variant/30'} ${isDone ? 'grayscale' : ''}`}
-          />
-          <span className={`text-[11px] font-medium ${isActive ? 'text-on-surface' : (isDone ? 'text-outline/50' : 'text-outline')}`}>
+        <div className="flex items-center gap-2.5">
+          <div className={`p-1 rounded bg-surface-container-highest/50 border border-outline-variant/10 ${showActiveDetails ? 'border-primary/30' : ''}`}>
+            <img 
+              src={task.agent.avatar} 
+              alt="Agent" 
+              className={`h-5 w-5 rounded-sm object-cover ${isDone ? 'grayscale' : ''}`}
+            />
+          </div>
+          <span className={`text-[11px] font-bold tracking-tight ${showActiveDetails ? 'text-on-surface' : 'text-on-surface-variant/40'}`}>
             {task.agent.name}
           </span>
         </div>
         
         {isDone ? (
-          <span className="text-[10px] text-secondary font-bold">COMPLETED</span>
-        ) : task.timeIcon && (
-          <div className="flex items-center text-outline text-[11px]">
+          <span className="text-[10px] text-secondary font-black tracking-widest">COMPLETED</span>
+        ) : task.timeIcon && !showActiveDetails && (
+          <div className="flex items-center text-on-surface-variant/30 text-[10px] font-black uppercase tracking-widest">
             {renderTimeIcon()} {task.timeValue}
           </div>
         )}

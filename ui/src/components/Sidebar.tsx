@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   Plus, 
   HelpCircle, 
@@ -6,11 +7,18 @@ import {
   Calendar, 
   Network, 
   Bot,
-  Server
+  Server,
+  Layout,
+  Briefcase
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useProject } from '../hooks/useProject';
+import CreateProjectModal from './CreateProjectModal';
 
 const Sidebar = () => {
+  const { activeProject, loading, refreshProjects } = useProject();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const navItems = [
     { icon: LayoutDashboard, label: 'Task Manager', path: '/' },
     { icon: Calendar, label: 'Scheduler', path: '/scheduler' },
@@ -21,10 +29,53 @@ const Sidebar = () => {
 
   return (
     <aside className="h-screen w-64 sticky top-0 bg-surface-container-low flex flex-col py-6 shadow-xl z-50 transition-all duration-300">
-      <div className="px-6 mb-10">
+      <div className="px-6 mb-8">
         <h1 className="text-lg font-black text-primary font-headline tracking-tight uppercase">Orchestrator</h1>
         <p className="text-[10px] text-on-surface-variant font-medium tracking-[0.2em] mt-1">AI CONTROL CENTER</p>
       </div>
+
+      {/* Project Selector Block */}
+      <div className="px-3 mb-8">
+        {loading ? (
+          <div className="mx-3 h-16 bg-surface-container-highest/20 rounded-xl animate-pulse border border-outline-variant/10"></div>
+        ) : activeProject ? (
+          <NavLink 
+            to={`/projects/${activeProject.id}`}
+            className={({ isActive }) => `group relative mx-2 p-4 rounded-xl bg-surface-container-high border transition-all cursor-pointer overflow-hidden block ${
+              isActive ? 'border-primary shadow-lg shadow-primary/5 ring-1 ring-primary/20' : 'border-outline-variant/10 hover:border-primary/30'
+            }`}
+          >
+            <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-30 transition-opacity">
+              <Briefcase size={24} className="text-primary" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                <Layout size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 leading-none mb-1">Active Sector</p>
+                <h3 className="text-xs font-bold text-white truncate">{activeProject.title}</h3>
+              </div>
+            </div>
+          </NavLink>
+        ) : (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="w-full mx-auto px-4 py-4 rounded-xl bg-secondary/10 border border-secondary/20 hover:bg-secondary/20 hover:border-secondary/40 transition-all group flex flex-col items-center gap-2 text-center"
+          >
+            <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+              <Plus size={16} />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Construct Sector</span>
+          </button>
+        )}
+      </div>
+
+      <CreateProjectModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onCreated={refreshProjects}
+      />
 
       <nav className="flex-1 px-3 space-y-2">
         {navItems.map((item, index) => (

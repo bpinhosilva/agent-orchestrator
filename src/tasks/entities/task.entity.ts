@@ -3,11 +3,13 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 import { Project } from '../../projects/entities/project.entity';
+import { TaskComment } from './comment.entity';
 
 export enum TaskStatus {
   BACKLOG = 'backlog',
@@ -64,6 +66,9 @@ export class Task {
     onDelete: 'CASCADE',
   })
   project: Project;
+
+  @OneToMany(() => TaskComment, (comment) => comment.task)
+  comments: TaskComment[];
 
   @CreateDateColumn()
   createdAt: Date;

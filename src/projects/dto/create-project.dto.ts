@@ -21,6 +21,6 @@ export class CreateProjectDto {
   status?: ProjectStatus;
 
   @IsUUID()
-  @IsNotEmpty()
-  defaultAgentId: string;
+  @IsOptional()
+  ownerAgentId?: string | null;
 }

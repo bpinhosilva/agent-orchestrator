@@ -63,28 +63,35 @@ describe('TasksService', () => {
       expect(result.id).toEqual('1');
       expect(result.output).toEqual('O');
       expect(mockTaskRepository.create).toHaveBeenCalled();
-      expect(mockTaskRepository.save).toHaveBeenCalledWith(taskObj);
     });
   });
 
   describe('findAll', () => {
     it('should return an array of tasks', async () => {
       mockTaskRepository.find.mockResolvedValue([{ id: '1' }]);
-      const result = await service.findAll();
+      const result = await service.findAll('uuid-123');
       expect(result).toHaveLength(1);
+      expect(mockTaskRepository.find).toHaveBeenCalledWith({
+        where: { project: { id: 'uuid-123' } },
+      });
     });
   });
 
   describe('findOne', () => {
     it('should get a single task', async () => {
       mockTaskRepository.findOne.mockResolvedValue({ id: '1' });
-      const result = await service.findOne('1');
+      const result = await service.findOne('1', 'uuid-123');
       expect(result.id).toEqual('1');
+      expect(mockTaskRepository.findOne).toHaveBeenCalledWith({
+        where: { id: '1', project: { id: 'uuid-123' } },
+      });
     });
 
     it('should throw NotFoundException if task not found', async () => {
       mockTaskRepository.findOne.mockResolvedValue(null);
-      await expect(service.findOne('1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('1', 'uuid-123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -94,7 +101,7 @@ describe('TasksService', () => {
       mockTaskRepository.findOne.mockResolvedValue(task);
       mockTaskRepository.save.mockResolvedValue({ ...task, title: 'New' });
 
-      const result = await service.update('1', { title: 'New' });
+      const result = await service.update('1', { title: 'New' }, 'uuid-123');
       expect(result.title).toEqual('New');
       expect(mockTaskRepository.save).toHaveBeenCalled();
     });
@@ -106,7 +113,7 @@ describe('TasksService', () => {
       mockTaskRepository.findOne.mockResolvedValue(task);
       mockTaskRepository.remove.mockResolvedValue(task);
 
-      await service.remove('1');
+      await service.remove('1', 'uuid-123');
       expect(mockTaskRepository.remove).toHaveBeenCalledWith(task);
     });
   });

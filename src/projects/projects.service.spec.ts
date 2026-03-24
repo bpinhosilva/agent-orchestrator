@@ -42,7 +42,7 @@ describe('ProjectsService', () => {
       const createDto = {
         title: 'T',
         description: 'D',
-        defaultAgentId: 'uuid-123',
+        ownerAgentId: 'uuid-123',
       };
       const projectObj = {
         title: 'T',

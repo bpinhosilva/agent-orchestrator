@@ -10,6 +10,8 @@ import { ModelsModule } from './models/models.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ProjectsModule } from './projects/projects.module';
 import { UsersModule } from './users/users.module';
+import { CommonModule } from './common/common.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { UsersModule } from './users/users.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'ui', 'dist'),
     }),
+    CommonModule,
+    UploadsModule,
     AgentsModule,
     ProvidersModule,
     ModelsModule,

@@ -41,7 +41,7 @@ describe('ProjectsController', () => {
       const createDto = {
         title: 'Test Project',
         description: 'Desc',
-        defaultAgentId: 'uuid-123',
+        ownerAgentId: 'uuid-123',
       };
       mockProjectsService.create.mockResolvedValue({
         id: '1',

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
+import { Project } from '../projects/entities/project.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
@@ -16,31 +17,41 @@ export class TasksService {
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    const { projectId, assigneeId, ...rest } = createTaskDto;
     const task = this.tasksRepository.create({
-      ...createTaskDto,
+      ...rest,
       status: createTaskDto.status ?? TaskStatus.BACKLOG,
       priority: createTaskDto.priority ?? TaskPriority.MEDIUM,
-      assignee: createTaskDto.assigneeId
-        ? ({ id: createTaskDto.assigneeId } as AgentEntity)
-        : null,
+      project: { id: projectId } as Project,
+      assignee: assigneeId ? ({ id: assigneeId } as AgentEntity) : null,
     });
     return this.tasksRepository.save(task);
   }
 
-  async findAll(): Promise<Task[]> {
-    return this.tasksRepository.find();
+  async findAll(projectId: string): Promise<Task[]> {
+    return this.tasksRepository.find({
+      where: { project: { id: projectId } },
+    });
   }
 
-  async findOne(id: string): Promise<Task> {
-    const task = await this.tasksRepository.findOne({ where: { id } });
+  async findOne(id: string, projectId?: string): Promise<Task> {
+    const where: FindOptionsWhere<Task> = { id };
+    if (projectId) {
+      where.project = { id: projectId };
+    }
+    const task = await this.tasksRepository.findOne({ where });
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
     return task;
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
-    const task = await this.findOne(id);
+  async update(
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+    projectId?: string,
+  ): Promise<Task> {
+    const task = await this.findOne(id, projectId);
 
     if (updateTaskDto.assigneeId) {
       task.assignee = { id: updateTaskDto.assigneeId } as AgentEntity;
@@ -58,8 +69,8 @@ export class TasksService {
     return this.tasksRepository.save(task);
   }
 
-  async remove(id: string): Promise<void> {
-    const task = await this.findOne(id);
+  async remove(id: string, projectId?: string): Promise<void> {
+    const task = await this.findOne(id, projectId);
     await this.tasksRepository.remove(task);
   }
 }

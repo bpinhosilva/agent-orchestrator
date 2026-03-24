@@ -1,19 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ChevronRight, 
-  Activity, 
-  Check, 
   ArrowLeftRight, 
   Settings2, 
   Zap, 
   Wallet, 
-  ShieldCheck 
+  ShieldCheck
 } from 'lucide-react';
+import CommentSection from '../components/tasks/CommentSection';
+import MarkdownField from '../components/MarkdownField';
 
 const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const [description, setDescription] = useState('Execute comprehensive linguistic analysis across social channels to determine bullish/bearish divergence for $ALPHA asset class. Correlate with 24h volume spikes.');
 
   return (
     <div className="max-w-7xl mx-auto w-full space-y-8">
@@ -84,81 +85,23 @@ const TaskDetail: React.FC = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-on-surface-variant">Description</label>
-                <textarea 
-                  className="w-full bg-surface-container-lowest border-none rounded-md px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary transition-all resize-none outline-none" 
-                  rows={3}
-                  defaultValue="Execute comprehensive linguistic analysis across social channels to determine bullish/bearish divergence for $ALPHA asset class. Correlate with 24h volume spikes."
-                ></textarea>
-              </div>
+              <MarkdownField
+                label="Task Description"
+                value={description}
+                onChange={setDescription}
+                placeholder="Enter task description..."
+                height="h-44"
+                helperText="Supports GitHub Flavored Markdown"
+              />
               
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-on-surface-variant">Tags</label>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-surface-container-highest text-primary text-[0.75rem] rounded border border-primary/20">Finance</span>
-                  <span className="px-2 py-1 bg-surface-container-highest text-primary text-[0.75rem] rounded border border-primary/20">Sentiment</span>
-                  <span className="px-2 py-1 bg-surface-container-highest text-primary text-[0.75rem] rounded border border-primary/20">Crypto</span>
-                  <button className="px-2 py-1 bg-primary/10 text-primary text-[0.75rem] rounded border border-dashed border-primary/40 hover:bg-primary/20 transition-colors">+ Add Tag</button>
-                </div>
-              </div>
+
             </div>
           </div>
           
-          {/* Progress Tracker / Timeline */}
-          <div className="bg-surface-container-low rounded-xl border border-outline-variant/10 overflow-hidden">
-            <div className="p-6 border-b border-outline-variant/5">
-              <h3 className="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
-                <Activity className="text-tertiary" size={20} />
-                Agent Execution Log
-              </h3>
-            </div>
-            <div className="p-6 space-y-6">
-              <div className="relative pl-8 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-outline-variant/30">
-                
-                <div className="relative">
-                  <div className="absolute -left-8 mt-1 h-6 w-6 bg-secondary-container rounded-full flex items-center justify-center border-4 border-background">
-                    <Check className="text-on-secondary-container" size={14} />
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-semibold text-on-surface">Fetched 500 tweets from X-API</p>
-                      <p className="text-xs text-on-surface-variant">Source: Global Feed [Filtered: #Alpha, $Alpha]</p>
-                    </div>
-                    <span className="text-[0.65rem] font-mono text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded">09:12:04</span>
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <div className="absolute -left-8 mt-1 h-6 w-6 bg-secondary-container rounded-full flex items-center justify-center border-4 border-background">
-                    <Check className="text-on-secondary-container" size={14} />
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-semibold text-on-surface">Sentiment analysis complete</p>
-                      <p className="text-xs text-on-surface-variant">Model: Llama-3-Agentic (Score: 0.74 Bullish)</p>
-                    </div>
-                    <span className="text-[0.65rem] font-mono text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded">09:14:12</span>
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <div className="absolute -left-8 mt-1 h-6 w-6 bg-primary-container rounded-full flex items-center justify-center border-4 border-background">
-                    <span className="animate-pulse h-2 w-2 rounded-full bg-primary"></span>
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-semibold text-primary">Generating summary...</p>
-                      <p className="text-xs text-on-surface-variant">Consolidating insights for reporting node</p>
-                    </div>
-                    <span className="text-[0.65rem] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">Running</span>
-                  </div>
-                </div>
-                
-              </div>
-            </div>
+          {/* Comments & Activity Section */}
+          <div className="flex-1 min-h-0">
+            <CommentSection taskId={taskId || 'demo-task'} />
           </div>
-          
         </div>
         
         {/* Right Column: Meta & Resources */}

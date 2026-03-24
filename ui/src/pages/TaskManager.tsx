@@ -1,10 +1,57 @@
-import React from 'react';
-import { ListPlus, Sparkles, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ListPlus, Sparkles, ArrowRight, ShieldAlert } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import TaskBoard from '../components/tasks/TaskBoard';
+import CreateTaskModal from '../components/tasks/CreateTaskModal';
+import { projectsApi, type Project } from '../api/projects';
 
 const TaskManager: React.FC = () => {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await projectsApi.findAll();
+        setProjects(res.data);
+      } catch (error) {
+        console.error('Failed to fetch projects in TaskManager:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  const activeProject = projects.length > 0 ? projects[0] : null;
+  const missingLead = activeProject && !activeProject.ownerAgent;
+
   return (
     <div className="space-y-10">
+      {/* Missing Lead Warning */}
+      {!loading && missingLead && (
+        <div className="bg-error/10 border border-error/20 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 shadow-lg shadow-error/5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-error/20 flex items-center justify-center text-error border border-error/30">
+              <ShieldAlert size={24} />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-white uppercase tracking-tight">Administrative Protocol Warning</h4>
+              <p className="text-xs text-on-surface-variant max-w-2xl leading-relaxed mt-0.5">
+                The <span className="text-error font-bold italic">"{activeProject.title}"</span> sector currently lacks a Designated Lead Agent. 
+                A lead is required to oversee autonomous task assignment, token allocation, and critical sector operations.
+              </p>
+            </div>
+          </div>
+          <NavLink 
+            to={`/projects/${activeProject.id}`} 
+            className="w-full md:w-auto px-6 py-2.5 rounded-xl bg-error text-on-error text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap text-center shadow-lg shadow-error/20"
+          >
+            Assign Protocol Lead
+          </NavLink>
+        </div>
+      )}
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -13,32 +60,24 @@ const TaskManager: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            <img 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-CQEOfCg78FmG8tnrDBiR02s2dF98y1-Z7PhmmMYPH_K_NYgfcE-fhiNfKLXaXsiuxEXoDR2u9yuiQCVjZo4-2BLKNaRVFwnzH2u4TXPnS1hOsxCBQE8utcAiKKtho-ieNeSuR_xKEfCR2c5uPNJAvueVNit7rIFxfhpH8-m88HfcFFNlGZrZKLjzf418J8kXdzbmwvzOAAHp4B9tBJBR0BHYuncp2NlHwMXjMap0_E5fogA-t6GCNbKrcVuQMi-sXwzJh2wqni8" 
-              alt="Agent 1" 
-              className="h-8 w-8 rounded-full border-2 border-surface bg-surface-container-high" 
-            />
-            <img 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJCR6ENLO64agkwt0HJ8WHILDIrXZLGsaCDo2PkT5YntojuH_Rw_rCCnurKRm_F5l2_NhFIodzf1yy97Y056dMDjD6ZE6iOXdiMBMQ1XAryHYmxTomOPTne2JqbSeOLr_acjG1vrJ-NuXNGN7fObkh8Sb9XhkiMEa_2YZK7lHKtn3mGD5NoztdcNgFYB_gIoUFBqcBN-6Oqduvxu2yeJWVns2Vmefc9Ii94szog1W9-sdzRJW8rbQT8au2xDl4GlCucRfEvFKEwF8"
-              alt="Agent 2" 
-              className="h-8 w-8 rounded-full border-2 border-surface bg-surface-container-high" 
-            />
-            <img 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOAqOJaG5FC1DTq_2Gak3eYdpgr7Td3PfbCIv2PJ1bKqysIHsduSBRBE7RWN4FJMfToKEkfqVHE7eesFVMU-x8AmjFcJb-5EkbV_u3gKMBd3RMzp_5LYfEaLWgHwv-Un89Ar5bgcu4aqX63WBHGgSpbjj8reW0NUYLLiwGNXRp7WmpaTvWRHa-MdnV-N7IVa-o2x9RVh2zzhu7j5s9ZSWAnF5cTpNCqqZLHb8l_FtwtpOgPzXkm8r1gJavxvdB8PDS6MqAw4Pe4WQ"
-              alt="Agent 3" 
-              className="h-8 w-8 rounded-full border-2 border-surface bg-surface-container-high" 
-            />
-            <div className="h-8 w-8 rounded-full border-2 border-surface bg-surface-container-highest flex items-center justify-center text-[10px] font-bold text-primary">
-              +9
-            </div>
-          </div>
-          <button className="bg-primary hover:bg-primary/90 text-on-primary px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold text-sm transition-all shadow-lg shadow-primary/10">
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-on-primary px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold text-sm transition-all shadow-lg shadow-primary/10"
+          >
             <ListPlus size={18} />
             New Task
           </button>
         </div>
       </div>
+
+      <CreateTaskModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onCreated={() => {
+          // This will be used to refresh the board once we move away from mock data
+          console.log('Task created!');
+        }}
+      />
 
       {/* Kanban Board */}
       <TaskBoard />

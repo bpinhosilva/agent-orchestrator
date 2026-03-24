@@ -18,7 +18,9 @@ export class ProjectsService {
       title: createProjectDto.title,
       description: createProjectDto.description,
       status: createProjectDto.status ?? ProjectStatus.PLANNING,
-      defaultAgent: { id: createProjectDto.defaultAgentId } as AgentEntity,
+      ownerAgent: createProjectDto.ownerAgentId
+        ? ({ id: createProjectDto.ownerAgentId } as AgentEntity)
+        : null,
     });
     return this.projectsRepository.save(project);
   }
@@ -47,10 +49,11 @@ export class ProjectsService {
       project.description = updateProjectDto.description;
     if (updateProjectDto.status !== undefined)
       project.status = updateProjectDto.status;
-    if (updateProjectDto.defaultAgentId !== undefined)
-      project.defaultAgent = {
-        id: updateProjectDto.defaultAgentId,
-      } as AgentEntity;
+    if (updateProjectDto.ownerAgentId !== undefined) {
+      project.ownerAgent = updateProjectDto.ownerAgentId
+        ? ({ id: updateProjectDto.ownerAgentId } as AgentEntity)
+        : null;
+    }
 
     return this.projectsRepository.save(project);
   }

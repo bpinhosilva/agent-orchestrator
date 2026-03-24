@@ -7,7 +7,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Model } from '../../models/entities/model.entity';
-import { Project } from '../../projects/entities/project.entity';
 
 @Entity('agents')
 export class AgentEntity {
@@ -38,12 +37,6 @@ export class AgentEntity {
     onDelete: 'SET NULL',
   })
   model: Model | null;
-
-  @ManyToOne(() => Project, (project) => project.agents, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  project: Project | null;
 
   @CreateDateColumn()
   createdAt: Date;

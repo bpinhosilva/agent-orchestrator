@@ -45,9 +45,12 @@ describe('TasksController', () => {
         status: TaskStatus.BACKLOG,
       });
 
-      const result = await controller.create(createDto);
+      const result = await controller.create('uuid-123', createDto);
       expect(result.id).toEqual('1');
-      expect(mockTasksService.create).toHaveBeenCalledWith(createDto);
+      expect(mockTasksService.create).toHaveBeenCalledWith({
+        ...createDto,
+        projectId: 'uuid-123',
+      });
     });
   });
 
@@ -56,18 +59,18 @@ describe('TasksController', () => {
       mockTasksService.findAll.mockResolvedValue([
         { id: '1', title: 'Task 1' },
       ]);
-      const result = await controller.findAll();
+      const result = await controller.findAll('uuid-123');
       expect(result).toHaveLength(1);
-      expect(mockTasksService.findAll).toHaveBeenCalled();
+      expect(mockTasksService.findAll).toHaveBeenCalledWith('uuid-123');
     });
   });
 
   describe('findOne', () => {
     it('should return a single task', async () => {
       mockTasksService.findOne.mockResolvedValue({ id: '1', title: 'Task 1' });
-      const result = await controller.findOne('1');
+      const result = await controller.findOne('uuid-123', '1');
       expect(result.id).toEqual('1');
-      expect(mockTasksService.findOne).toHaveBeenCalledWith('1');
+      expect(mockTasksService.findOne).toHaveBeenCalledWith('1', 'uuid-123');
     });
   });
 
@@ -78,17 +81,21 @@ describe('TasksController', () => {
         id: '1',
         title: 'New Title',
       });
-      const result = await controller.update('1', updateDto);
+      const result = await controller.update('uuid-123', '1', updateDto);
       expect(result.title).toEqual('New Title');
-      expect(mockTasksService.update).toHaveBeenCalledWith('1', updateDto);
+      expect(mockTasksService.update).toHaveBeenCalledWith(
+        '1',
+        updateDto,
+        'uuid-123',
+      );
     });
   });
 
   describe('remove', () => {
     it('should remove a task', async () => {
       mockTasksService.remove.mockResolvedValue(undefined);
-      await controller.remove('1');
-      expect(mockTasksService.remove).toHaveBeenCalledWith('1');
+      await controller.remove('uuid-123', '1');
+      expect(mockTasksService.remove).toHaveBeenCalledWith('1', 'uuid-123');
     });
   });
 });

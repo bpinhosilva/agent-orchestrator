@@ -4,7 +4,6 @@ import {
   Entity,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
@@ -35,15 +34,12 @@ export class Project {
   })
   status: ProjectStatus;
 
-  @OneToMany(() => AgentEntity, (agent) => agent.project)
-  agents: AgentEntity[];
-
   @ManyToOne(() => AgentEntity, {
-    nullable: false,
+    nullable: true,
     eager: true,
-    onDelete: 'RESTRICT',
+    onDelete: 'SET NULL',
   })
-  defaultAgent: AgentEntity;
+  ownerAgent: AgentEntity | null;
 
   @CreateDateColumn()
   createdAt: Date;
