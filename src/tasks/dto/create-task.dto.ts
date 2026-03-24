@@ -1,9 +1,11 @@
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 import { TaskStatus, TaskPriority } from '../entities/task.entity';
 
@@ -22,15 +24,17 @@ export class CreateTaskDto {
 
   @IsEnum(TaskPriority)
   @IsOptional()
+  @Type(() => Number)
   priority?: TaskPriority;
 
   @IsString()
   @IsOptional()
   output?: string;
 
-  @IsUUID()
   @IsOptional()
-  assigneeId?: string;
+  @ValidateIf((_, value) => value !== null)
+  @IsUUID()
+  assigneeId?: string | null;
 
   @IsUUID()
   @IsNotEmpty()

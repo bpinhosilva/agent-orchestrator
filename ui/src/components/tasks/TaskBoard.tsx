@@ -20,11 +20,22 @@ import {
 import TaskColumn from './TaskColumn';
 import TaskCard from './TaskCard';
 import type { Task, TaskStatus } from './types';
-import { initialTasks } from './mockData';
 
-const TaskBoard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+interface TaskBoardProps {
+  projectId: string;
+  tasks: Task[];
+  onTasksChange: (tasks: Task[]) => void;
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => Promise<void>;
+}
+
+const TaskBoard: React.FC<TaskBoardProps> = ({ 
+    projectId: _, // Ignored as tasks are passed in
+    tasks, 
+    onTasksChange, 
+    onStatusChange 
+}) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [initialStatus, setInitialStatus] = useState<TaskStatus | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -39,7 +50,10 @@ const TaskBoard: React.FC = () => {
   ];
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const id = event.active.id as string;
+    setActiveId(id);
+    const task = tasks.find(t => t.id === id);
+    if (task) setInitialStatus(task.status);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -51,61 +65,70 @@ const TaskBoard: React.FC = () => {
 
     if (activeId === overId) return;
 
-    setTasks((tasks) => {
-      const activeIndex = tasks.findIndex(t => t.id === activeId);
-      const overIndex = tasks.findIndex(t => t.id === overId);
-      
-      if (activeIndex === -1) return tasks;
+    const activeIndex = tasks.findIndex(t => t.id === activeId);
+    const overIndex = tasks.findIndex(t => t.id === overId);
+    
+    if (activeIndex === -1) return;
 
-      const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
+    const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
 
-      if (!isOverColumn && overIndex >= 0) {
-        // Dropping into another task
-        if (tasks[activeIndex].status !== tasks[overIndex].status) {
-          const newItems = [...tasks];
-          const newStatus = tasks[overIndex].status;
-          newItems[activeIndex] = { ...newItems[activeIndex], status: newStatus };
-          return arrayMove(newItems, activeIndex, overIndex);
-        }
-      } else if (isOverColumn) {
-        // Dropping into an empty column
-        if (tasks[activeIndex].status !== overId) {
-          const newItems = [...tasks];
-          newItems[activeIndex] = { ...newItems[activeIndex], status: overId as TaskStatus };
-          return arrayMove(newItems, activeIndex, newItems.length - 1);
-        }
+    if (!isOverColumn && overIndex >= 0) {
+      if (tasks[activeIndex].status !== tasks[overIndex].status) {
+        const newItems = [...tasks];
+        const newStatus = tasks[overIndex].status;
+        newItems[activeIndex] = { 
+          ...newItems[activeIndex], 
+          status: newStatus,
+          isActive: newStatus === 'in-progress'
+        };
+        onTasksChange(arrayMove(newItems, activeIndex, overIndex));
       }
-
-      return tasks;
-    });
+    } else if (isOverColumn) {
+      if (tasks[activeIndex].status !== overId) {
+        const newItems = [...tasks];
+        const newStatus = overId as TaskStatus;
+        newItems[activeIndex] = { 
+          ...newItems[activeIndex], 
+          status: newStatus,
+          isActive: newStatus === 'in-progress'
+        };
+        onTasksChange(arrayMove(newItems, activeIndex, tasks.length - 1));
+      }
+    }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null);
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
+    
     if (!over) return;
 
-    const activeId = active.id;
-    const overId = over.id;
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
+    const activeTask = tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
+
+    const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
+    const newStatus = isOverColumn ? (overId as TaskStatus) : tasks.find(t => t.id === overId)?.status;
+
+    if (newStatus && initialStatus !== newStatus) {
+       await onStatusChange(activeId, newStatus);
+    }
+
+    setInitialStatus(null);
     if (activeId === overId) return;
 
-    setTasks((tasks) => {
-      const activeIndex = tasks.findIndex(t => t.id === activeId);
-      const overIndex = tasks.findIndex(t => t.id === overId);
-      
-      if (activeIndex === -1) return tasks;
+    const activeIndex = tasks.findIndex(t => t.id === activeId);
+    const overIndex = tasks.findIndex(t => t.id === overId);
+    
+    if (activeIndex === -1) return;
 
-      const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
-
-      if (!isOverColumn && overIndex >= 0) {
-        if (tasks[activeIndex].status === tasks[overIndex].status) {
-           return arrayMove(tasks, activeIndex, overIndex);
-        }
+    if (!isOverColumn && overIndex >= 0) {
+      if (tasks[activeIndex].status === tasks[overIndex].status) {
+         onTasksChange(arrayMove(tasks, activeIndex, overIndex));
       }
-
-      return tasks;
-    });
+    }
   };
 
   const activeTask = tasks.find(t => t.id === activeId);

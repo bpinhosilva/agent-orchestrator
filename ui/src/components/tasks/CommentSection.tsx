@@ -17,15 +17,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
   const [isSending, setIsSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const fetchComments = useCallback(async () => {
+  const fetchComments = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const data = await commentsApi.findAllByTask(taskId);
       setComments(data);
     } catch (error) {
       console.error('Failed to fetch comments:', error);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [taskId]);
 
@@ -33,32 +33,35 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
     try {
       const users = await usersApi.findAll();
       if (users.length > 0) {
-        setCurrentUser(users[0]); // Just pick the first user for demo purposes
+        // We'll use the user with "bruno" in it if available, as that's the current user's workspace
+        const bruno = users.find(u => u.username.toLowerCase().includes('bruno'));
+        setCurrentUser(bruno || users[0]);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }
   }, []);
 
+
   useEffect(() => {
     fetchComments();
     fetchUser();
+
+    // Small polling to "fill the section" with agent updates if they happen
+    const interval = setInterval(() => fetchComments(true), 10000);
+    return () => clearInterval(interval);
   }, [fetchComments, fetchUser]);
 
   const handleSendComment = async (content: string) => {
-    if (!taskId) return;
+    if (!taskId || !currentUser) return;
 
     try {
       setIsSending(true);
-      // For demo purposes, we alternate between user and agent
-      const isAgent = Math.random() > 0.7; 
       
       const newComment = await commentsApi.create(taskId, {
         content,
-        authorType: isAgent ? CommentAuthorType.AGENT : CommentAuthorType.USER,
-        authorUserId: !isAgent && currentUser ? currentUser.id : undefined,
-        // In a real app, agent context would come from the task management system
-        authorAgentId: isAgent ? 'agent-id-placeholder' : undefined, 
+        authorType: CommentAuthorType.USER, // Default to user for manual comments
+        authorUserId: currentUser.id,
       });
 
       setComments((prev) => [newComment, ...prev]);
@@ -70,7 +73,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
   };
 
   return (
-    <div className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-2xl shadow-primary/5 overflow-hidden flex flex-col">
+    <div className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-2xl shadow-primary/5 overflow-hidden flex flex-col h-full">
       {/* Header */}
       <div className="p-6 border-b border-outline-variant/5 flex items-center justify-between bg-surface-container-low/50 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-3">
@@ -87,7 +90,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
       </div>
 
       {/* Comment List Area */}
-      <div className="p-6 overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col">
         <CommentList comments={comments} isLoading={isLoading} />
       </div>
 

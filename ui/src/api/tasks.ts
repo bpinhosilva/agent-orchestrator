@@ -11,9 +11,10 @@ export const TaskStatus = {
 export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
 
 export const TaskPriority = {
-  LOW: 'LOW',
-  MEDIUM: 'MED',
-  HIGH: 'HIGH',
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
 } as const;
 
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
@@ -38,9 +39,12 @@ export interface CreateTaskDto {
   priority?: TaskPriority;
   output?: string;
   assigneeId?: string;
+  projectId: string;
 }
 
-export type UpdateTaskDto = Partial<CreateTaskDto>;
+export type UpdateTaskDto = Partial<Omit<CreateTaskDto, 'assigneeId'>> & {
+  assigneeId?: string | null;
+};
 
 export const tasksApi = {
   create: (projectId: string, data: CreateTaskDto) =>

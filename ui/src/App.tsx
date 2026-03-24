@@ -26,7 +26,7 @@ function App() {
             }>
               <Routes>
                 <Route path="/" element={<TaskManager />} />
-                <Route path="/tasks/:taskId" element={<TaskDetail />} />
+                <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
                 <Route path="/projects/:projectId" element={<ProjectDetail />} />
                 <Route path="/agents" element={<AgentFleet />} />
                 <Route path="/providers" element={<Providers />} />

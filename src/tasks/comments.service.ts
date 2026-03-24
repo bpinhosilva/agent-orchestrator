@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
@@ -16,6 +20,10 @@ export class CommentsService {
     private readonly commentsRepository: Repository<TaskComment>,
     @InjectRepository(Task)
     private readonly tasksRepository: Repository<Task>,
+    @InjectRepository(AgentEntity)
+    private readonly agentsRepository: Repository<AgentEntity>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   async create(taskId: string, createCommentDto: CreateCommentDto) {
@@ -24,20 +32,53 @@ export class CommentsService {
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
+    if (!createCommentDto.authorUserId && !createCommentDto.authorAgentId) {
+      throw new BadRequestException(
+        'Either authorUserId or authorAgentId must be provided',
+      );
+    }
+
+    const authorType =
+      createCommentDto.authorType ||
+      (createCommentDto.authorUserId
+        ? CommentAuthorType.USER
+        : CommentAuthorType.AGENT);
+
+    let authorUser: User | null = null;
+    let authorAgent: AgentEntity | null = null;
+
+    if (
+      authorType === CommentAuthorType.USER &&
+      createCommentDto.authorUserId
+    ) {
+      authorUser = await this.usersRepository.findOne({
+        where: { id: createCommentDto.authorUserId },
+      });
+      if (!authorUser) {
+        throw new NotFoundException(
+          `User with ID ${createCommentDto.authorUserId} not found`,
+        );
+      }
+    } else if (
+      authorType === CommentAuthorType.AGENT &&
+      createCommentDto.authorAgentId
+    ) {
+      authorAgent = await this.agentsRepository.findOne({
+        where: { id: createCommentDto.authorAgentId },
+      });
+      if (!authorAgent) {
+        throw new NotFoundException(
+          `Agent with ID ${createCommentDto.authorAgentId} not found`,
+        );
+      }
+    }
+
     const comment = this.commentsRepository.create({
       content: createCommentDto.content,
       task,
-      authorType: createCommentDto.authorType,
-      authorUser:
-        createCommentDto.authorType === CommentAuthorType.USER &&
-        createCommentDto.authorUserId
-          ? ({ id: createCommentDto.authorUserId } as User)
-          : null,
-      authorAgent:
-        createCommentDto.authorType === CommentAuthorType.AGENT &&
-        createCommentDto.authorAgentId
-          ? ({ id: createCommentDto.authorAgentId } as AgentEntity)
-          : null,
+      authorType,
+      authorUser,
+      authorAgent,
       artifacts:
         createCommentDto.artifacts?.map((artifact) => ({
           id: artifact.id || crypto.randomUUID(),
@@ -45,12 +86,14 @@ export class CommentsService {
         })) || null,
     });
 
-    return this.commentsRepository.save(comment);
+    const savedComment = await this.commentsRepository.save(comment);
+    return this.findOne(savedComment.id);
   }
 
   async findAllByTask(taskId: string) {
     return this.commentsRepository.find({
       where: { task: { id: taskId } },
+      relations: ['authorUser', 'authorAgent'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -60,7 +103,10 @@ export class CommentsService {
     if (taskId) {
       where.task = { id: taskId };
     }
-    const comment = await this.commentsRepository.findOne({ where });
+    const comment = await this.commentsRepository.findOne({
+      where,
+      relations: ['authorUser', 'authorAgent'],
+    });
     if (!comment) {
       throw new NotFoundException(`Comment with ID ${id} not found`);
     }

@@ -13,8 +13,8 @@ export class CreateCommentDto {
   content: string;
 
   @IsEnum(CommentAuthorType)
-  @IsNotEmpty()
-  authorType: CommentAuthorType;
+  @IsOptional()
+  authorType?: CommentAuthorType;
 
   @IsUUID()
   @IsOptional()

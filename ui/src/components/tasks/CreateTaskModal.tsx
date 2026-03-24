@@ -82,6 +82,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
         status,
         priority,
         assigneeId: assigneeId || undefined,
+        projectId,
       });
 
       onCreated?.();
@@ -189,17 +190,18 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
                     <Flag size={12} className="text-secondary" />
                     Priority Level
                   </label>
-                  <div className="grid grid-cols-3 gap-2 p-1 bg-surface-container-highest/30 rounded-xl ring-1 ring-outline-variant/10">
+                  <div className="grid grid-cols-4 gap-2 p-1 bg-surface-container-highest/30 rounded-xl ring-1 ring-outline-variant/10">
                     {[
                       { id: TaskPriority.LOW, label: 'LOW' },
                       { id: TaskPriority.MEDIUM, label: 'MED' },
-                      { id: TaskPriority.HIGH, label: 'HIGH' }
+                      { id: TaskPriority.HIGH, label: 'HIGH' },
+                      { id: TaskPriority.CRITICAL, label: 'CRIT' }
                     ].map((p) => (
                       <button
                         key={p.id}
                         onClick={() => setPriority(p.id as TaskPriority)}
                         className={`py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${priority === p.id 
-                          ? p.id === TaskPriority.HIGH 
+                          ? p.id === TaskPriority.CRITICAL || p.id === TaskPriority.HIGH 
                             ? 'bg-error text-on-error shadow-lg shadow-error/30' 
                             : 'bg-primary text-on-primary shadow-lg shadow-primary/30'
                           : 'hover:bg-surface-container-highest text-on-surface-variant'
