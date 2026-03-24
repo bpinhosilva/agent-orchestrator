@@ -13,4 +13,5 @@ export interface Agent {
   getModel?(): string;
   updateConfig?(config: Record<string, any>): void;
   processText(input: string): Promise<AgentResponse>;
+  performTask?(task: any, project: any): Promise<AgentResponse>;
 }

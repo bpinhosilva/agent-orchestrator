@@ -53,6 +53,12 @@ export class Task {
   @Column('text', { nullable: true })
   output?: string;
 
+  @Column('float', { default: 0 })
+  cost_estimate: number;
+
+  @Column('int', { default: 0 })
+  llm_latency: number;
+
   @ManyToOne(() => AgentEntity, {
     nullable: true,
     eager: true,

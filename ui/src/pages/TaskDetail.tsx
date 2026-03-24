@@ -230,6 +230,7 @@ const TaskDetail: React.FC = () => {
                 placeholder="Describe the desired output and constraints for this node..."
                 height="h-56"
                 helperText="Supports GitHub Flavored Markdown for logic structure"
+                initialMode="preview"
               />
             </div>
           </div>
@@ -323,14 +324,14 @@ const TaskDetail: React.FC = () => {
                         <Zap size={14} className="text-secondary" />
                         <span className="text-[9px] font-black uppercase tracking-widest">Latency</span>
                     </div>
-                    <div className="text-lg font-mono font-bold text-white">420ms</div>
+                    <div className="text-lg font-mono font-bold text-white">{task.llm_latency || 0}ms</div>
                   </div>
                   <div className="p-4 bg-surface-container-highest/20 rounded-xl border border-outline-variant/5">
                     <div className="flex items-center gap-2 mb-1 text-on-surface-variant/60">
                         <Wallet size={14} className="text-tertiary" />
                         <span className="text-[9px] font-black uppercase tracking-widest">Node Cost</span>
                     </div>
-                    <div className="text-lg font-mono font-bold text-white">$0.34</div>
+                    <div className="text-lg font-mono font-bold text-white">${(task.cost_estimate || 0).toFixed(6)}</div>
                   </div>
               </div>
             </div>

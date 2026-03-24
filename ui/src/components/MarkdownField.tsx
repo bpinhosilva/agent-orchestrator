@@ -4,13 +4,15 @@ import remarkGfm from 'remark-gfm';
 import { Eye, Code as CodeIcon, Sparkles } from 'lucide-react';
 
 interface MarkdownFieldProps {
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   height?: string;
   helperText?: string;
   maxLength?: number;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
+  initialMode?: 'write' | 'preview';
 }
 
 const MarkdownField: React.FC<MarkdownFieldProps> = ({ 
@@ -20,16 +22,20 @@ const MarkdownField: React.FC<MarkdownFieldProps> = ({
   placeholder, 
   height = 'h-40',
   helperText,
-  maxLength
+  maxLength,
+  onKeyDown,
+  initialMode = 'write'
 }) => {
-  const [mode, setMode] = useState<'write' | 'preview'>('write');
+  const [mode, setMode] = useState<'write' | 'preview'>(initialMode);
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">
-          {label}
-        </label>
+        {label && (
+          <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">
+            {label}
+          </label>
+        )}
         <div className="flex items-center gap-1 bg-surface-container-high/50 p-1 rounded-lg ring-1 ring-outline-variant/10">
           <button
             onClick={() => setMode('write')}
@@ -61,6 +67,7 @@ const MarkdownField: React.FC<MarkdownFieldProps> = ({
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onKeyDown}
             placeholder={placeholder}
             maxLength={maxLength}
             className="w-full h-full bg-transparent border-none text-xs text-on-surface p-4 focus:outline-none placeholder:text-on-surface-variant/30 resize-none leading-relaxed font-mono"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Bold, Italic, Link as LinkIcon, Paperclip, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
+import MarkdownField from '../MarkdownField';
 
 interface CommentEditorProps {
   onSend: (content: string) => void;
@@ -23,30 +24,18 @@ const CommentEditor: React.FC<CommentEditorProps> = ({ onSend, isSending }) => {
   };
 
   return (
-    <div className="bg-surface-container-low border border-outline-variant/10 rounded-2xl p-4 shadow-2xl shadow-primary/5 focus-within:border-primary/30 transition-all">
-      <textarea
-        className="w-full bg-transparent border-none text-sm text-on-surface p-2 focus:outline-none placeholder:text-on-surface-variant/30 resize-none leading-relaxed min-h-[100px]"
-        placeholder="Write a comment..."
+    <div className="bg-surface-container-low border border-outline-variant/10 rounded-2xl p-4 shadow-2xl shadow-primary/5 focus-within:border-primary/30 transition-all space-y-4">
+      <MarkdownField
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={setContent}
         onKeyDown={handleKeyDown}
+        placeholder="Write a comment..."
+        height="min-h-[120px]"
       />
       
       <div className="flex items-center justify-between pt-4 border-t border-outline-variant/5">
         <div className="flex items-center gap-1">
-          <button className="p-2 hover:bg-surface-container-highest rounded-lg text-on-surface-variant hover:text-on-surface transition-colors active:scale-90">
-            <Bold size={18} />
-          </button>
-          <button className="p-2 hover:bg-surface-container-highest rounded-lg text-on-surface-variant hover:text-on-surface transition-colors active:scale-90">
-            <Italic size={18} />
-          </button>
-          <button className="p-2 hover:bg-surface-container-highest rounded-lg text-on-surface-variant hover:text-on-surface transition-colors active:scale-90">
-            <LinkIcon size={18} />
-          </button>
-          <div className="w-px h-6 bg-outline-variant/10 mx-1"></div>
-          <button className="p-2 hover:bg-surface-container-highest rounded-lg text-on-surface-variant hover:text-on-surface transition-colors active:scale-90">
-            <Paperclip size={18} />
-          </button>
+          {/* Toolbar buttons removed as MarkdownField handles preview/write */}
         </div>
 
         <button

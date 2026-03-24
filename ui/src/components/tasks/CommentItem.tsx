@@ -5,6 +5,8 @@ import AttachmentItem from './AttachmentItem';
 import { Bot, User } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 dayjs.extend(relativeTime);
 
@@ -51,9 +53,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
         </div>
 
         <div className="bg-surface-container-high/40 border border-outline-variant/5 p-4 rounded-xl shadow-sm group-hover:bg-surface-container-high/60 transition-colors">
-          <p className="text-sm text-on-surface leading-relaxed">
-            {comment.content}
-          </p>
+          <div className="prose prose-invert prose-xs max-w-none text-on-surface leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {comment.content}
+            </ReactMarkdown>
+          </div>
           
           {comment.artifacts && comment.artifacts.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-outline-variant/10">

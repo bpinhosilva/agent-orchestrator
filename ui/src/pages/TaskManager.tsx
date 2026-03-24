@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import TaskBoard from '../components/tasks/TaskBoard';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { useProject } from '../hooks/useProject';
-import { tasksApi, type Task as ApiTask, type TaskStatus } from '../api/tasks';
+import { tasksApi } from '../api/tasks';
 import type { Task as ComponentTask } from '../components/tasks/types';
 
 const TaskManager: React.FC = () => {

@@ -6,7 +6,9 @@ import {
   User,
   Flag,
   ChevronDown,
-  X
+  X,
+  Trash2,
+  FileText
 } from 'lucide-react';
 import MarkdownField from '../MarkdownField';
 import { tasksApi, TaskStatus, TaskPriority } from '../../api/tasks';
@@ -29,9 +31,11 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
   const [agents, setAgents] = useState<Agent[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
 
+  const TASK_TEMPLATE = `# Background\n\n# To Do\n\n# Definition of Done`;
+
   // Form State
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(TASK_TEMPLATE);
   const [status, setStatus] = useState<TaskStatus>(TaskStatus.BACKLOG);
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
   const [assigneeId, setAssigneeId] = useState<string>('');
@@ -57,7 +61,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
       ]);
       setAgents(agentsRes.data);
       setProjects(projectsRes.data);
-      
+
       if (projectsRes.data.length > 0) {
         setProjectId(projectsRes.data[0].id);
       }
@@ -89,7 +93,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
       onClose();
       // Reset form
       setTitle('');
-      setDescription('');
+      setDescription(TASK_TEMPLATE);
       setStatus(TaskStatus.BACKLOG);
       setPriority(TaskPriority.MEDIUM);
       setAssigneeId('');
@@ -163,13 +167,36 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Objective / Description</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDescription(TASK_TEMPLATE)}
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-surface-container-highest text-[9px] font-black text-on-surface-variant/60 uppercase tracking-widest transition-colors"
+                        title="Reset to template"
+                      >
+                        <FileText size={10} />
+                        Template
+                      </button>
+                      <div className="w-px h-3 bg-outline-variant/10" />
+                      <button
+                        type="button"
+                        onClick={() => setDescription('')}
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-error/10 text-[9px] font-black text-error/60 hover:text-error uppercase tracking-widest transition-colors"
+                        title="Clear field"
+                      >
+                        <Trash2 size={10} />
+                        Clear
+                      </button>
+                    </div>
+                  </div>
                   <MarkdownField
-                    label="Objective / Description"
                     value={description}
                     onChange={setDescription}
                     placeholder="Describe the desired output and constraints for this node..."
-                    height="h-40"
+                    height="h-52"
                     maxLength={2000}
                   />
                 </div>
@@ -200,12 +227,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
                       <button
                         key={p.id}
                         onClick={() => setPriority(p.id as TaskPriority)}
-                        className={`py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${priority === p.id 
-                          ? p.id === TaskPriority.CRITICAL || p.id === TaskPriority.HIGH 
-                            ? 'bg-error text-on-error shadow-lg shadow-error/30' 
+                        className={`py-2 rounded-lg text-[10px] font-black tracking-widest transition-all ${priority === p.id
+                          ? p.id === TaskPriority.CRITICAL || p.id === TaskPriority.HIGH
+                            ? 'bg-error text-on-error shadow-lg shadow-error/30'
                             : 'bg-primary text-on-primary shadow-lg shadow-primary/30'
                           : 'hover:bg-surface-container-highest text-on-surface-variant'
-                        }`}
+                          }`}
                       >
                         {p.label}
                       </button>
@@ -246,7 +273,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
                         className={`p-3 rounded-xl border flex items-center gap-3 transition-all text-left ${assigneeId === agent.id
                           ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(173,198,255,0.1)]'
                           : 'bg-surface-container-highest/20 border-outline-variant/5 hover:border-outline-variant/30 hover:bg-surface-container-highest/30'
-                        }`}
+                          }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${assigneeId === agent.id ? 'bg-primary text-surface' : 'bg-surface-container-high text-on-surface-variant'}`}>
                           {agent.name.substring(0, 2).toUpperCase()}
@@ -259,7 +286,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
                     ))}
                     {agents.length === 0 && (
                       <div className="col-span-full py-4 text-center border-2 border-dashed border-outline-variant/10 rounded-xl">
-                         <span className="text-[10px] font-bold text-on-surface-variant/30 uppercase tracking-[0.2em]">No active intelligence found</span>
+                        <span className="text-[10px] font-bold text-on-surface-variant/30 uppercase tracking-[0.2em]">No active intelligence found</span>
                       </div>
                     )}
                   </div>
@@ -267,7 +294,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
 
                 {/* Project Selection */}
                 {projects.length > 1 ? (
-                   <div className="space-y-3 col-span-full">
+                  <div className="space-y-3 col-span-full">
                     <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Target Project</label>
                     <div className="bg-surface-container-highest/30 rounded-xl p-0.5 ring-1 ring-outline-variant/10 focus-within:ring-primary/40 transition-all relative">
                       <select
