@@ -1,3 +1,13 @@
+# [1.0.0-alpha.12](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.11...v1.0.0-alpha.12) (2026-03-24)
+
+
+### Features
+
+* add .npmrc to enable legacy peer dependencies ([2f41a07](https://github.com/bpinhosilva/agent-orchestrator/commit/2f41a0747e3cc862241f90c24405c6ad0976557b))
+* implement comprehensive project management, task comments with attachments ([10eb382](https://github.com/bpinhosilva/agent-orchestrator/commit/10eb38268d50ff9418a3e7af1788d55c759522a9))
+* implement task detail view with comment polling, numeric priorities, and enhanced task card ([7a38155](https://github.com/bpinhosilva/agent-orchestrator/commit/7a38155ac796dbe528d48a340a0e6be7fa0150a3))
+* introduce a task scheduler service for automated agent task assignment and execution ([d756f10](https://github.com/bpinhosilva/agent-orchestrator/commit/d756f10c441aadb3b31335a55926700b5518ec9e))
+
 # [1.0.0-alpha.11](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.10...v1.0.0-alpha.11) (2026-03-24)
 
 
