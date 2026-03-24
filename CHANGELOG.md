@@ -1,3 +1,15 @@
+# [1.0.0-alpha.11](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.10...v1.0.0-alpha.11) (2026-03-24)
+
+
+### Bug Fixes
+
+* downgrade class-validator from ^0.15.1 to ^0.14.1 ([6d9bb29](https://github.com/bpinhosilva/agent-orchestrator/commit/6d9bb291145cdfad7d8c5f4fc8a7ac6ee48ee776))
+
+
+### Features
+
+* introduce task management UI with draggable cards and refactor provider ([1002dd1](https://github.com/bpinhosilva/agent-orchestrator/commit/1002dd1ac373fe4f6c3acb2eb6e9345b3ec35aba))
+
 # [1.0.0-alpha.10](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2026-03-22)
 
 
