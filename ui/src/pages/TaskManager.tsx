@@ -4,11 +4,13 @@ import { NavLink } from 'react-router-dom';
 import TaskBoard from '../components/tasks/TaskBoard';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { useProject } from '../hooks/useProject';
+import { useNotification } from '../hooks/useNotification';
 import { tasksApi } from '../api/tasks';
 import type { Task as ComponentTask } from '../components/tasks/types';
 
 const TaskManager: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
+  const { notifyApiError } = useNotification();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [tasks, setTasks] = useState<ComponentTask[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -39,6 +41,7 @@ const TaskManager: React.FC = () => {
       setTasks(mappedTasks);
     } catch (error) {
       console.error('Failed to fetch tasks in TaskManager:', error);
+      notifyApiError(error, 'Fetch Error');
     } finally {
       setLoadingTasks(false);
     }
@@ -65,6 +68,7 @@ const TaskManager: React.FC = () => {
         } : t));
      } catch (error) {
        console.error('Failed to update task status:', error);
+       notifyApiError(error, 'Status Update Failed');
        fetchTasks(); // Reload on error
      }
   };

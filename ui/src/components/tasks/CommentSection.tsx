@@ -6,6 +6,8 @@ import { usersApi } from '../../api/users';
 import type { User } from '../../api/users';
 import CommentList from './CommentList';
 import CommentEditor from './CommentEditor';
+import ConfirmDialog from '../ConfirmDialog';
+import { useNotification } from '../../hooks/useNotification';
 
 interface CommentSectionProps {
   taskId: string;
@@ -16,12 +18,15 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { notifySuccess, notifyApiError } = useNotification();
 
   const fetchComments = useCallback(async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
       const data = await commentsApi.findAllByTask(taskId);
-      setComments(data);
+      setComments([...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch (error) {
       console.error('Failed to fetch comments:', error);
     } finally {
@@ -72,6 +77,30 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
     }
   };
 
+  const handleDeleteComment = (commentId: string) => {
+    setDeleteConfirmId(commentId);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskId || !deleteConfirmId) return;
+    
+    try {
+      setIsDeleting(true);
+      await commentsApi.remove(taskId, deleteConfirmId);
+      
+      // Update local state
+      setComments((prev) => prev.filter((c) => c.id !== deleteConfirmId));
+      
+      setDeleteConfirmId(null);
+      notifySuccess('Protocol Cleared', 'The comment data has been purged from the orchestration logs.');
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      notifyApiError(error, 'Purge Failed');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-2xl shadow-primary/5 overflow-hidden flex flex-col h-full">
       {/* Header */}
@@ -91,13 +120,28 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
 
       {/* Comment List Area */}
       <div className="flex-1 min-h-0 flex flex-col">
-        <CommentList comments={comments} isLoading={isLoading} />
+        <CommentList 
+          comments={comments} 
+          isLoading={isLoading} 
+          onDelete={handleDeleteComment} 
+        />
       </div>
 
       {/* Editor Area */}
       <div className="p-6 bg-surface-container-low/50 border-t border-outline-variant/5 backdrop-blur-md">
         <CommentEditor onSend={handleSendComment} isSending={isSending} />
       </div>
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onClose={() => !isDeleting && setDeleteConfirmId(null)}
+        onConfirm={confirmDelete}
+        title="Purge Communication Protocol?"
+        message="This action will permanently erase the selected entry and all its associated artifacts from the neural stream. This operation is irreversible."
+        confirmText="Execute Purge"
+        variant="danger"
+        loading={isDeleting}
+      />
     </div>
   );
 };

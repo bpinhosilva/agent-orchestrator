@@ -5,9 +5,10 @@ import CommentItem from './CommentItem';
 interface CommentListProps {
   comments: TaskComment[];
   isLoading: boolean;
+  onDelete?: (id: string) => void;
 }
 
-const CommentList: React.FC<CommentListProps> = ({ comments, isLoading }) => {
+const CommentList: React.FC<CommentListProps> = ({ comments, isLoading, onDelete }) => {
   const content = (() => {
     if (isLoading) {
       return (
@@ -44,7 +45,7 @@ const CommentList: React.FC<CommentListProps> = ({ comments, isLoading }) => {
     return (
       <div className="space-y-8">
         {comments.map((comment) => (
-          <CommentItem key={comment.id} comment={comment} />
+          <CommentItem key={comment.id} comment={comment} onDelete={onDelete} />
         ))}
       </div>
     );

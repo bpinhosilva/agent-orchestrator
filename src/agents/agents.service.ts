@@ -1,17 +1,21 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { AgentEntity } from './entities/agent.entity';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
 import { Agent, AgentResponse } from './interfaces/agent.interface';
 import { getAgentImplementation } from './registry/agent.registry';
 import { Model } from '../models/entities/model.entity';
+import { Provider } from '../providers/entities/provider.entity';
+
+const AGENT_RELATIONS = ['model', 'provider'];
 
 @Injectable()
 export class AgentsService implements OnModuleInit {
@@ -25,7 +29,9 @@ export class AgentsService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Initializing Agent instances from database...');
-    const agents = await this.agentRepository.find({ relations: ['model'] });
+    const agents = await this.agentRepository.find({
+      relations: AGENT_RELATIONS,
+    });
     for (const agentEntity of agents) {
       if (agentEntity.status !== 'inactive') {
         try {
@@ -48,18 +54,18 @@ export class AgentsService implements OnModuleInit {
       return;
     }
 
-    const provider = agentEntity.provider;
-    if (!provider) {
+    const providerName = agentEntity.provider?.name?.toLowerCase();
+    if (!providerName) {
       this.logger.warn(
         `No provider found for agent #${agentEntity.id}. Skipping instance creation.`,
       );
       return;
     }
 
-    const AgentClass = getAgentImplementation(provider);
+    const AgentClass = getAgentImplementation(providerName);
     if (!AgentClass) {
       this.logger.warn(
-        `No implementation found for provider: ${provider}. Skipping instance creation.`,
+        `No implementation found for provider: ${providerName}. Skipping instance creation.`,
       );
       return;
     }
@@ -71,7 +77,7 @@ export class AgentsService implements OnModuleInit {
         description: agentEntity.description,
         systemInstructions: agentEntity.systemInstructions,
         role: agentEntity.role,
-        provider: agentEntity.provider,
+        provider: providerName,
       });
       this.agentInstances.set(agentEntity.id, instance);
       this.logger.debug(`Synchronized agent instance #${agentEntity.id}`);
@@ -81,29 +87,54 @@ export class AgentsService implements OnModuleInit {
       this.logger.error(
         `Error synchronizing agent #${agentEntity.id}: ${errorMessage}`,
       );
-      throw error;
+      throw new BadRequestException(
+        `Failed to initialize agent instance: ${errorMessage}`,
+      );
     }
   }
 
   async create(createAgentDto: CreateAgentDto): Promise<AgentEntity> {
-    const agent = this.agentRepository.create(createAgentDto);
-    const savedAgent = await this.agentRepository.save(agent);
+    const { modelId, providerId, ...rest } = createAgentDto;
+    const agentData: DeepPartial<AgentEntity> = { ...rest };
 
-    // Reload with relations for proper synchronization
-    const fullyLoadedAgent = await this.findOne(savedAgent.id);
-    this.syncAgentInstance(fullyLoadedAgent);
+    if (modelId) {
+      agentData.model = { id: modelId } as Model;
+    }
+    if (providerId) {
+      agentData.provider = { id: providerId } as Provider;
+    }
 
-    return fullyLoadedAgent;
+    return await this.agentRepository.manager.transaction(async (manager) => {
+      const agent = manager.create(AgentEntity, agentData);
+      const savedAgent = await manager.save(agent);
+
+      // Reload with full relations for proper synchronization
+      const fullyLoadedAgent = await manager.findOne(AgentEntity, {
+        where: { id: savedAgent.id },
+        relations: AGENT_RELATIONS,
+      });
+
+      if (!fullyLoadedAgent) {
+        throw new Error(
+          `Agent #${savedAgent.id} not found immediately after save`,
+        );
+      }
+
+      // This will throw BadRequestException if instantiation fails, rolling back the transaction
+      this.syncAgentInstance(fullyLoadedAgent);
+
+      return fullyLoadedAgent;
+    });
   }
 
   async findAll(): Promise<AgentEntity[]> {
-    return this.agentRepository.find({ relations: ['model'] });
+    return this.agentRepository.find({ relations: AGENT_RELATIONS });
   }
 
   async findOne(id: string): Promise<AgentEntity> {
     const agent = await this.agentRepository.findOne({
       where: { id },
-      relations: ['model'],
+      relations: AGENT_RELATIONS,
     });
     if (!agent) {
       throw new NotFoundException(`Agent #${id} not found`);
@@ -115,25 +146,32 @@ export class AgentsService implements OnModuleInit {
     id: string,
     updateAgentDto: UpdateAgentDto,
   ): Promise<AgentEntity> {
-    const { modelId, ...rest } = updateAgentDto;
-    const updateData: import('typeorm').DeepPartial<AgentEntity> = { ...rest };
+    const { modelId, providerId, ...rest } = updateAgentDto;
+    const updateData: DeepPartial<AgentEntity> = { ...rest };
 
     if (modelId) {
       updateData.model = { id: modelId } as Model;
     }
-
-    await this.agentRepository.update(id, updateData);
-    const updatedAgent = await this.agentRepository.findOne({
-      where: { id },
-      relations: ['model'],
-    });
-
-    if (!updatedAgent) {
-      throw new NotFoundException(`Agent #${id} not found`);
+    if (providerId) {
+      updateData.provider = { id: providerId } as Provider;
     }
 
-    this.syncAgentInstance(updatedAgent);
-    return updatedAgent;
+    return await this.agentRepository.manager.transaction(async (manager) => {
+      await manager.update(AgentEntity, id, updateData);
+      const updatedAgent = await manager.findOne(AgentEntity, {
+        where: { id },
+        relations: AGENT_RELATIONS,
+      });
+
+      if (!updatedAgent) {
+        throw new NotFoundException(`Agent #${id} not found`);
+      }
+
+      // This will throw BadRequestException if instantiation fails, rolling back the transaction
+      this.syncAgentInstance(updatedAgent);
+
+      return updatedAgent;
+    });
   }
 
   async remove(id: string): Promise<void> {
@@ -173,7 +211,7 @@ export class AgentsService implements OnModuleInit {
       );
       const agentEntity = await this.agentRepository.findOne({
         where: { id: agentId },
-        relations: ['model'],
+        relations: AGENT_RELATIONS,
       });
 
       if (!agentEntity) {

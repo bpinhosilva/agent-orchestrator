@@ -2,11 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Model } from '../../models/entities/model.entity';
+import { Provider } from '../../providers/entities/provider.entity';
 
 @Entity('agents')
 export class AgentEntity {
@@ -28,8 +30,13 @@ export class AgentEntity {
   @Column({ type: 'text', nullable: true })
   status: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  provider: string | null;
+  @ManyToOne(() => Provider, {
+    nullable: true,
+    eager: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'providerId' })
+  provider: Provider | null;
 
   @ManyToOne(() => Model, (model) => model.agents, {
     nullable: true,

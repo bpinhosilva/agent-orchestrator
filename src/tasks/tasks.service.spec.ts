@@ -47,13 +47,11 @@ describe('TasksService', () => {
       const createDto = {
         title: 'T',
         description: 'D',
-        output: 'O',
         projectId: 'uuid-123',
       };
       const taskObj = {
         title: 'T',
         description: 'D',
-        output: 'O',
         status: TaskStatus.BACKLOG,
       };
       mockTaskRepository.create.mockReturnValue(taskObj);
@@ -61,7 +59,6 @@ describe('TasksService', () => {
 
       const result = await service.create(createDto);
       expect(result.id).toEqual('1');
-      expect(result.output).toEqual('O');
       expect(mockTaskRepository.create).toHaveBeenCalled();
     });
   });

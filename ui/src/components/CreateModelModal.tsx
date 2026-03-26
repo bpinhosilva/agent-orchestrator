@@ -19,7 +19,7 @@ interface CreateModelModalProps {
 }
 
 const CreateModelModal: React.FC<CreateModelModalProps> = ({ isOpen, onClose, onCreated, providerId, providerName }) => {
-  const { notifyError } = useNotification();
+  const { notifyApiError } = useNotification();
   const [loading, setLoading] = useState(false);
   const [models, setModels] = useState<string[]>(['']);
 
@@ -64,7 +64,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({ isOpen, onClose, on
       setModels(['']);
     } catch (error) {
       console.error('Failed to register models:', error);
-      notifyError('Registration Incomplete', 'Failed to register some or all model variants. The system will attempt to synchronize remaining nodes.');
+      notifyApiError(error, 'Registration Failed');
     } finally {
       setLoading(false);
     }

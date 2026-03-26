@@ -19,7 +19,7 @@ export class Provider {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @OneToMany(() => Model, (model) => model.provider)
+  @OneToMany(() => Model, (model) => model.provider, { cascade: true })
   models: Model[];
 
   @CreateDateColumn()

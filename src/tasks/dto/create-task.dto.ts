@@ -27,11 +27,7 @@ export class CreateTaskDto {
   @Type(() => Number)
   priority?: TaskPriority;
 
-  @IsString()
-  @IsOptional()
-  output?: string;
-
-  @IsOptional()
+  @IsUUID()
   @ValidateIf((_, value) => value !== null)
   @IsUUID()
   assigneeId?: string | null;

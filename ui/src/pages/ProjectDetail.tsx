@@ -20,7 +20,7 @@ import MarkdownField from '../components/MarkdownField';
 const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { notifySuccess, notifyError } = useNotification();
+  const { notifySuccess, notifyApiError, notifyError } = useNotification();
   const { refreshProjects } = useProject();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -53,7 +53,7 @@ const ProjectDetail: React.FC = () => {
       setOwnerAgentId(p.ownerAgent?.id || '');
     } catch (error) {
       console.error('Failed to load project details:', error);
-      notifyError('Fetch Error', 'Failed to retrieve high-level sector data');
+      notifyApiError(error, 'Fetch Error');
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ const ProjectDetail: React.FC = () => {
       notifySuccess('Protocol Synchronized', 'Sector configurations have been updated');
     } catch (error) {
       console.error('Failed to update project:', error);
-      notifyError('Sync Error', 'Failed to update protocol parameters');
+      notifyApiError(error, 'Sync Error');
     } finally {
       setSaving(false);
     }

@@ -12,6 +12,7 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 import { Task } from './entities/task.entity';
 import { AgentEntity } from '../agents/entities/agent.entity';
 import { User } from '../users/entities/user.entity';
+import { StorageService } from '../common/storage.service';
 
 @Injectable()
 export class CommentsService {
@@ -24,6 +25,7 @@ export class CommentsService {
     private readonly agentsRepository: Repository<AgentEntity>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly storageService: StorageService,
   ) {}
 
   async create(taskId: string, createCommentDto: CreateCommentDto) {
@@ -94,7 +96,7 @@ export class CommentsService {
     return this.commentsRepository.find({
       where: { task: { id: taskId } },
       relations: ['authorUser', 'authorAgent'],
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -115,6 +117,21 @@ export class CommentsService {
 
   async remove(id: string, taskId?: string) {
     const comment = await this.findOne(id, taskId);
+
+    // Delete associated artifacts from disk
+    if (comment.artifacts && comment.artifacts.length > 0) {
+      for (const artifact of comment.artifacts) {
+        try {
+          await this.storageService.delete(artifact.filePath);
+        } catch (error) {
+          console.error(
+            `Failed to delete artifact file ${artifact.filePath}:`,
+            error,
+          );
+        }
+      }
+    }
+
     await this.commentsRepository.remove(comment);
   }
 

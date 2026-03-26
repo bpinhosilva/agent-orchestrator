@@ -7,7 +7,7 @@ import { Project } from '../../projects/entities/project.entity';
 import { RegisterAgent } from '../registry/agent.registry';
 
 @Injectable()
-@RegisterAgent('Google')
+@RegisterAgent('google')
 export class GeminiAgent implements Agent {
   private readonly logger = new Logger(GeminiAgent.name);
   private genAI: GoogleGenAI;
@@ -15,7 +15,7 @@ export class GeminiAgent implements Agent {
   private description?: string;
   private systemInstructions?: string;
   private role?: string;
-  private provider: string = 'Google';
+  private provider: string = 'google';
   private model: string;
   private enableGrounding: boolean = true;
 

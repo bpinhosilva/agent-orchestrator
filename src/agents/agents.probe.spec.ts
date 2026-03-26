@@ -25,7 +25,7 @@ describe('AgentsService (Probe)', () => {
   const mockAgentEntity = {
     id: 'agent-123',
     name: 'Test Agent',
-    provider: 'test-provider',
+    provider: { id: 'provider-123', name: 'test-provider' },
     model: { name: 'test-model' },
   } as unknown as AgentEntity;
 
@@ -105,7 +105,7 @@ describe('AgentsService (Probe)', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(jest.mocked(repository.findOne)).toHaveBeenCalledWith({
         where: { id: agentId },
-        relations: ['model'],
+        relations: ['model', 'provider'],
       });
       expect(result).toEqual({ content: 'hi from db' });
       expect(

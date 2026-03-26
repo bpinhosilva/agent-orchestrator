@@ -9,7 +9,7 @@ import { agentsApi, type Agent } from '../api/agents';
 import { useNotification } from '../hooks/useNotification';
 
 const AgentFleet = () => {
-  const { notifySuccess, notifyError } = useNotification();
+  const { notifySuccess, notifyApiError } = useNotification();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -58,8 +58,10 @@ const AgentFleet = () => {
       notifySuccess('Agent Inactivated', 'Neural node has been marked as inactive.');
       setIsConfirmOpen(false);
       fetchAgents();
-    } catch {
-      notifyError('Operation Failed', 'Could not decommission the agent.');
+      setIsConfirmOpen(false);
+      fetchAgents();
+    } catch (error) {
+      notifyApiError(error, 'Operation Failed');
     }
   };
 
@@ -68,8 +70,10 @@ const AgentFleet = () => {
       await agentsApi.update(id, { status: 'active' });
       notifySuccess('Neural Link Restored', 'The agent has been reactivated and synchronized.');
       fetchAgents();
-    } catch {
-      notifyError('Activation Failed', 'Could not restore the neural link.');
+      notifySuccess('Neural Link Restored', 'The agent has been reactivated and synchronized.');
+      fetchAgents();
+    } catch (error) {
+      notifyApiError(error, 'Activation Failed');
     }
   };
 
@@ -110,10 +114,10 @@ const AgentFleet = () => {
                 id={agent.id}
                 name={agent.name}
                 expertise={agent.role || 'General Assistant'}
-                model={agent.model?.name || agent.modelId}
+                model={agent.model?.name || 'Unknown'}
                 status={agent.status || 'active'}
                 metricLabel="Provider"
-                metricValue={agent.provider}
+                metricValue={agent.provider?.name || 'Unknown'}
                 onConfigure={() => handleConfigure(agent)}
                 onProbe={() => handleProbe(agent)}
                 onDelete={() => handleDeleteRequest(agent)}

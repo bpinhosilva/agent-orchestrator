@@ -50,9 +50,6 @@ export class Task {
   })
   priority: TaskPriority;
 
-  @Column('text', { nullable: true })
-  output?: string;
-
   @Column('float', { default: 0 })
   cost_estimate: number;
 

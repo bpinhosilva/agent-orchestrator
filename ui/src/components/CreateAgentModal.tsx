@@ -21,7 +21,7 @@ interface CreateAgentModalProps {
 }
 
 const CreateAgentModal: React.FC<CreateAgentModalProps> = ({ isOpen, onClose, onCreated }) => {
-  const { notifyError } = useNotification();
+  const { notifyApiError, notifyError } = useNotification();
   const [activeStep, setActiveStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -106,8 +106,6 @@ Return all results in Markdown tables with clear citations.`);
       return;
     }
 
-    const provider = providers.find(p => p.id === selectedProviderId);
-
     try {
       setLoading(true);
       await agentsApi.create({
@@ -115,7 +113,7 @@ Return all results in Markdown tables with clear citations.`);
         role,
         description,
         systemInstructions: instructions,
-        provider: provider?.name,
+        providerId: selectedProviderId,
         modelId: selectedModelId,
         status: 'active',
       });
@@ -132,7 +130,7 @@ Return all results in Markdown tables with clear citations.`);
       setSelectedModelId('');
     } catch (error) {
       console.error('Failed to deploy agent:', error);
-      // handled by global interceptor
+      notifyApiError(error, 'Deployment Failed');
     } finally {
       setLoading(false);
     }

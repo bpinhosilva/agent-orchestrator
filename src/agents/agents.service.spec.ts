@@ -47,6 +47,13 @@ describe('AgentsService', () => {
             preload: jest.fn(),
             remove: jest.fn(),
             update: jest.fn(),
+            manager: {
+              transaction: jest.fn(),
+              create: jest.fn(),
+              save: jest.fn(),
+              update: jest.fn(),
+              findOne: jest.fn(),
+            },
           },
         },
       ],
@@ -91,22 +98,63 @@ describe('AgentsService', () => {
       systemInstructions: 'Test Instructions',
       role: 'Test Role',
       model: { id: 'model-123', name: 'gpt-4' },
+      provider: { id: 'provider-123', name: 'google' },
       createdAt: new Date(),
       updatedAt: new Date(),
     } as unknown as AgentEntity;
 
-    it('should create an agent', async () => {
-      jest.spyOn(repository, 'create').mockReturnValue(mockAgent);
-      jest.spyOn(repository, 'save').mockResolvedValue(mockAgent);
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mockAgent);
+    const mockManager = {
+      create: jest.fn().mockReturnValue(mockAgent),
+      save: jest.fn().mockResolvedValue(mockAgent),
+      findOne: jest.fn().mockResolvedValue(mockAgent),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+
+    beforeEach(() => {
+      jest
+        .spyOn(repository.manager, 'transaction' as any)
+        .mockImplementation((cb: (manager: any) => any) => {
+          return cb(mockManager) as unknown;
+        });
+    });
+
+    it('should create an agent and sync instance', async () => {
+      mockManager.create.mockReturnValue(mockAgent);
+      mockManager.save.mockResolvedValue(mockAgent);
+      mockManager.findOne.mockResolvedValue(mockAgent);
+
       const createDto = {
         name: mockAgent.name,
         description: mockAgent.description,
         systemInstructions: 'Test Instructions',
         role: 'Test Role',
         modelId: 'model-123',
+        providerId: 'provider-123',
       };
-      expect(await service.create(createDto)).toEqual(mockAgent);
+
+      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation();
+
+      const result = await service.create(createDto);
+      expect(result).toEqual(mockAgent);
+      expect(repository.manager['transaction']).toHaveBeenCalled();
+      expect(mockManager.save).toHaveBeenCalled();
+    });
+
+    it('should rollback transaction if syncAgentInstance fails on creation', async () => {
+      mockManager.create.mockReturnValue(mockAgent);
+      mockManager.save.mockResolvedValue(mockAgent);
+      mockManager.findOne.mockResolvedValue(mockAgent);
+
+      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation(() => {
+        throw new Error('Instantiation Failed');
+      });
+
+      const createDto = { name: 'FailBot', modelId: 'm1', providerId: 'p1' };
+
+      await expect(service.create(createDto)).rejects.toThrow(
+        'Instantiation Failed',
+      );
+      expect(repository.manager['transaction']).toHaveBeenCalled();
     });
 
     it('should find all agents', async () => {
@@ -126,19 +174,33 @@ describe('AgentsService', () => {
       );
     });
 
-    it('should update an agent', async () => {
-      const updateResult = { affected: 1, raw: [], generatedMaps: [] };
-      jest.spyOn(repository, 'update').mockResolvedValue(updateResult);
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mockAgent);
-      expect(await service.update('uuid-123', { name: 'Updated' })).toEqual(
-        mockAgent,
-      );
+    it('should update an agent atomically', async () => {
+      mockManager.update.mockResolvedValue({ affected: 1 });
+      mockManager.findOne.mockResolvedValue(mockAgent);
+      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation();
+
+      const result = await service.update('uuid-123', { name: 'Updated' });
+      expect(result).toEqual(mockAgent);
+      expect(repository.manager['transaction']).toHaveBeenCalled();
+    });
+
+    it('should rollback transaction if syncAgentInstance fails on update', async () => {
+      mockManager.update.mockResolvedValue({ affected: 1 });
+      mockManager.findOne.mockResolvedValue(mockAgent);
+      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation(() => {
+        throw new Error('Update Instantiation Failed');
+      });
+
+      await expect(
+        service.update('uuid-123', { name: 'FailUpdate' }),
+      ).rejects.toThrow('Update Instantiation Failed');
+      expect(repository.manager['transaction']).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException on update if not found', async () => {
-      const updateResult = { affected: 0, raw: [], generatedMaps: [] };
-      jest.spyOn(repository, 'update').mockResolvedValue(updateResult);
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      mockManager.update.mockResolvedValue({ affected: 0 });
+      mockManager.findOne.mockResolvedValue(null);
+
       await expect(
         service.update('uuid-123', { name: 'Updated' }),
       ).rejects.toThrow(NotFoundException);

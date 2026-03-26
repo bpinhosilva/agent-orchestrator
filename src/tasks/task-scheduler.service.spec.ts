@@ -6,6 +6,7 @@ import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { AgentEntity } from '../agents/entities/agent.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskComment } from './entities/comment.entity';
+import { StorageService } from '../common/storage.service';
 
 describe('TaskSchedulerService', () => {
   let service: TaskSchedulerService;
@@ -31,6 +32,11 @@ describe('TaskSchedulerService', () => {
     save: jest.fn(),
   };
 
+  const mockStorageService = {
+    saveBase64: jest.fn().mockResolvedValue('test-artifact.png'),
+    delete: jest.fn().mockResolvedValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -45,6 +51,7 @@ describe('TaskSchedulerService', () => {
           useValue: mockCommentRepository,
         },
         { provide: AgentsService, useValue: mockAgentsService },
+        { provide: StorageService, useValue: mockStorageService },
       ],
     }).compile();
 
@@ -113,6 +120,51 @@ describe('TaskSchedulerService', () => {
 
       // 5. Comment should be saved
       expect(mockCommentRepository.save).toHaveBeenCalled();
+    });
+
+    it('should correctly extract agentId from a conversational LLM response', async () => {
+      const ownerAgent = { id: 'agent-1', name: 'Owner' } as AgentEntity;
+      const activeProject = {
+        id: 'project-1',
+        title: 'P1',
+        status: ProjectStatus.ACTIVE,
+        ownerAgent,
+      } as Project;
+      const task = {
+        id: 'task-1',
+        title: 'T1',
+        status: TaskStatus.BACKLOG,
+        priority: TaskPriority.HIGH,
+        project: activeProject,
+        assignee: null,
+      } as Task;
+
+      const conversationalResponse = `
+I need to assign this task.
+The Creative Designer is the best fit.
+\`\`\`json
+{"agentId": "agent-2"}
+\`\`\`
+I hope this helps!
+      `;
+
+      mockProjectRepository.find.mockResolvedValue([activeProject]);
+      mockTaskRepository.find
+        .mockResolvedValueOnce([task])
+        .mockResolvedValueOnce([]);
+
+      mockAgentsService.findAll.mockResolvedValue([
+        ownerAgent,
+        { id: 'agent-2', name: 'Creative Designer' } as AgentEntity,
+      ]);
+      mockAgentsService.processRequest.mockResolvedValue({
+        content: conversationalResponse,
+      });
+
+      await service.handleTaskScheduling();
+
+      // Verify that the task was assigned to agent-2 despite the conversational text
+      expect(task.assignee?.id).toBe('agent-2');
     });
   });
 });

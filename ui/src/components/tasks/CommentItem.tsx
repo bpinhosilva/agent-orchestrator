@@ -2,7 +2,7 @@ import React from 'react';
 import { CommentAuthorType } from '../../api/comments';
 import type { TaskComment } from '../../api/comments';
 import AttachmentItem from './AttachmentItem';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import ReactMarkdown from 'react-markdown';
@@ -12,9 +12,10 @@ dayjs.extend(relativeTime);
 
 interface CommentItemProps {
   comment: TaskComment;
+  onDelete?: (id: string) => void;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onDelete }) => {
   const isAgent = comment.authorType === CommentAuthorType.AGENT;
   const authorName = isAgent ? comment.authorAgent?.name : comment.authorUser?.username;
   const avatarUrl = isAgent ? comment.authorAgent?.avatarUrl : comment.authorUser?.avatarUrl;
@@ -47,9 +48,20 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
               </span>
             )}
           </div>
-          <span className="text-[10px] font-mono text-on-surface-variant/40 lowercase">
-            {dayjs(comment.createdAt).format('HH:mm:ss')}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono text-on-surface-variant/40 lowercase">
+              {dayjs(comment.createdAt).format('MMM DD, YYYY HH:mm:ss')}
+            </span>
+            {onDelete && (
+              <button 
+                onClick={() => onDelete(comment.id)}
+                className="opacity-0 group-hover:opacity-100 p-2 hover:bg-error/10 text-on-surface-variant/40 hover:text-error rounded-lg transition-all"
+                title="Delete comment"
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-surface-container-high/40 border border-outline-variant/5 p-4 rounded-xl shadow-sm group-hover:bg-surface-container-high/60 transition-colors">
@@ -66,6 +78,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
                   key={artifact.id}
                   name={artifact.originalName}
                   type={artifact.mimeType.split('/')[1] || 'file'}
+                  filePath={artifact.filePath}
                   size="2.4 MB" // Placeholder size logic
                 />
               ))}

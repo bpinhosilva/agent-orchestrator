@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { 
   X, 
   Plus, 
@@ -20,7 +19,7 @@ interface RegisterProviderModalProps {
 }
 
 const RegisterProviderModal: React.FC<RegisterProviderModalProps> = ({ isOpen, onClose, onCreated }) => {
-  const { notifyError } = useNotification();
+  const { notifyApiError, notifyError } = useNotification();
   const [loading, setLoading] = useState(false);
   const [providerName, setProviderName] = useState('');
   const [models, setModels] = useState<string[]>(['']);
@@ -67,11 +66,7 @@ const RegisterProviderModal: React.FC<RegisterProviderModalProps> = ({ isOpen, o
       setModels(['']);
     } catch (error) {
       console.error('Failed to register provider:', error);
-      // notifyError is already handled by the global interceptor, 
-      // but we can add specific context if it's not a standard Axios error
-      if (!axios.isAxiosError(error)) {
-        notifyError('Registration Failed', 'An unexpected error occurred during registration.');
-      }
+      notifyApiError(error, 'Registration Failed');
     } finally {
       setLoading(false);
     }

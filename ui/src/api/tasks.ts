@@ -25,7 +25,6 @@ export interface Task {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  output?: string;
   assignee?: Agent;
   projectId: string;
   createdAt: string;
@@ -37,7 +36,6 @@ export interface CreateTaskDto {
   description: string;
   status?: TaskStatus;
   priority?: TaskPriority;
-  output?: string;
   assigneeId?: string;
   projectId: string;
 }

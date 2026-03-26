@@ -20,6 +20,13 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setState({ isOpen: true, type: 'error', title, message });
   }, []);
 
+  const notifyApiError = useCallback((error: any, customTitle?: string) => {
+    const errorData = error.response?.data;
+    const message = errorData?.message || error.message || 'An unexpected error occurred';
+    const title = customTitle || error.response?.statusText || 'Backend Error';
+    setState({ isOpen: true, type: 'error', title, message });
+  }, []);
+
   const notifyInfo = useCallback((title: string, message: string) => {
     setState({ isOpen: true, type: 'info', title, message });
   }, []);
@@ -29,7 +36,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifySuccess, notifyError, notifyInfo, closeNotification, state }}>
+    <NotificationContext.Provider value={{ notifySuccess, notifyError, notifyApiError, notifyInfo, closeNotification, state }}>
       {children}
     </NotificationContext.Provider>
   );

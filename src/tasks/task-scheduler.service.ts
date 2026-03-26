@@ -7,6 +7,7 @@ import { Task, TaskStatus } from './entities/task.entity';
 import { AgentsService } from '../agents/agents.service';
 import { TaskComment, CommentAuthorType } from './entities/comment.entity';
 import { AgentEntity } from '../agents/entities/agent.entity';
+import { StorageService } from '../common/storage.service';
 
 @Injectable()
 export class TaskSchedulerService implements OnApplicationBootstrap {
@@ -20,6 +21,7 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
     @InjectRepository(TaskComment)
     private readonly commentRepository: Repository<TaskComment>,
     private readonly agentsService: AgentsService,
+    private readonly storageService: StorageService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -134,7 +136,8 @@ A new task "${task.title}" (Description: ${task.description}) needs to be assign
 Available agents are:
 ${agentsList}
 
-Please return a JSON in this exact shape: {"agentId": "id-of-the-selected-agent"}
+IMPORTANT: You must return ONLY a JSON object in this exact shape: {"agentId": "id-of-the-selected-agent"}
+Do not include any other text, explanation, or conversational filler in your response.
 If no agent is suitable, return your own ID: "${ownerAgent.id}".
 `;
 
@@ -146,17 +149,34 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
       let selectedAgentId = ownerAgent.id;
 
       try {
-        const cleanedContent = response.content
-          .replace(/```json/g, '')
-          .replace(/```/g, '')
-          .trim();
-        const jsonResponse = JSON.parse(cleanedContent) as { agentId?: string };
-        if (jsonResponse.agentId) {
-          selectedAgentId = jsonResponse.agentId;
+        // Robust JSON extraction
+        const content = response.content;
+        let jsonStr = '';
+
+        // 1. Try to find content inside markdown code blocks
+        const codeBlockMatch = /```(?:json)?\s*([\s\S]*?)\s*```/.exec(content);
+        if (codeBlockMatch && codeBlockMatch[1]) {
+          jsonStr = codeBlockMatch[1].trim();
+        } else {
+          // 2. Fallback to finding the first { and last }
+          const start = content.indexOf('{');
+          const end = content.lastIndexOf('}');
+          if (start !== -1 && end !== -1 && end > start) {
+            jsonStr = content.substring(start, end + 1);
+          }
         }
-      } catch {
+
+        if (jsonStr) {
+          const jsonResponse = JSON.parse(jsonStr) as { agentId?: string };
+          if (jsonResponse.agentId) {
+            selectedAgentId = jsonResponse.agentId;
+          }
+        } else {
+          throw new Error('No JSON object found in response');
+        }
+      } catch (error) {
         this.logger.warn(
-          `Owner agent for project ${project.id} returned invalid JSON: ${response.content}. Falling back to owner.`,
+          `Owner agent for project ${project.id} returned response that could not be parsed as JSON: ${response.content}. Falling back to owner. Error: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
 
@@ -215,17 +235,45 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
       }
 
       task.status = TaskStatus.REVIEW;
-      task.output = response.content;
       task.llm_latency = latency;
       task.cost_estimate = (task.cost_estimate || 0) + iterationCost;
 
       await this.taskRepository.save(task);
+
+      // Handle artifacts if present in response
+      const artifacts: any[] = [];
+      if (response.image) {
+        try {
+          // Detect if it's base64 (very common for images from LLMs)
+          const isBase64 =
+            typeof response.image === 'string' &&
+            (response.image.startsWith('data:') || response.image.length > 100);
+
+          if (isBase64) {
+            const base64Data = response.image.includes('base64,')
+              ? response.image.split('base64,')[1]
+              : response.image;
+
+            const artifact = await this.storageService.saveBase64(
+              base64Data,
+              'image/png', // Default to png for now
+              'generated-image.png',
+            );
+            artifacts.push(artifact);
+          }
+        } catch (error) {
+          this.logger.error(
+            `Failed to save artifact for task ${task.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
 
       const comment = this.commentRepository.create({
         content: response.content,
         task: task,
         authorAgent: task.assignee,
         authorType: CommentAuthorType.AGENT,
+        artifacts: artifacts.length > 0 ? artifacts : null,
       });
       await this.commentRepository.save(comment);
 
