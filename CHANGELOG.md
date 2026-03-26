@@ -1,3 +1,10 @@
+# [1.0.0-alpha.13](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.12...v1.0.0-alpha.13) (2026-03-26)
+
+
+### Features
+
+* add Claude agent implementation with Anthropic SDK and refactor agent-provider ([1400a0d](https://github.com/bpinhosilva/agent-orchestrator/commit/1400a0dec6beb8393ddc4c5a23b9b860532079e8))
+
 # [1.0.0-alpha.12](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.11...v1.0.0-alpha.12) (2026-03-24)
 
 
