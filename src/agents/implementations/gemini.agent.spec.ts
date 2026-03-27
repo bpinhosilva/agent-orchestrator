@@ -1,4 +1,5 @@
 import { GeminiAgent } from './gemini.agent';
+import { ConfigService } from '@nestjs/config';
 
 jest.mock('@google/genai', () => {
   return {
@@ -14,21 +15,20 @@ jest.mock('@google/genai', () => {
 
 describe('GeminiAgent', () => {
   let agent: GeminiAgent;
-  const originalEnv = process.env;
+  let mockConfigService: jest.Mocked<ConfigService>;
 
   beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...originalEnv, GEMINI_API_KEY: 'test_key' };
-    agent = new GeminiAgent();
+    mockConfigService = {
+      get: jest.fn().mockReturnValue('test_key'),
+    } as unknown as jest.Mocked<ConfigService>;
+    agent = new GeminiAgent(mockConfigService);
   });
 
-  afterAll(() => {
-    process.env = originalEnv;
-  });
-
-  it('should throw an error if API key is not set', () => {
-    delete process.env.GEMINI_API_KEY;
-    expect(() => new GeminiAgent()).toThrow('GEMINI_API_KEY is required');
+  it('should throw an error if API key is not set during processText', async () => {
+    mockConfigService.get.mockReturnValue(undefined);
+    await expect(agent.processText('test')).rejects.toThrow(
+      'GEMINI_API_KEY is required',
+    );
   });
 
   it('should generate content with gemini-2.5-flash-lite', async () => {

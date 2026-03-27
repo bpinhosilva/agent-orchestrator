@@ -13,18 +13,31 @@ import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { envValidationSchema } from './config/env.validation';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+    }),
     ScheduleModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: process.env.DATABASE_URL ? 'postgres' : 'sqlite',
-      database: process.env.DATABASE_URL
-        ? undefined
-        : join(process.cwd(), 'local.sqlite'),
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: true, // Use only in development
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        return {
+          type: databaseUrl ? 'postgres' : 'sqlite',
+          database: databaseUrl
+            ? undefined
+            : join(process.cwd(), 'local.sqlite'),
+          url: databaseUrl,
+          autoLoadEntities: true,
+          synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        };
+      },
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'ui', 'dist'),

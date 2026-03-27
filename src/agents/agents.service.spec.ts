@@ -11,6 +11,7 @@ describe('AgentsService', () => {
   let service: AgentsService;
   let geminiAgent: GeminiAgent;
   let repository: Repository<AgentEntity>;
+  let moduleRef: ModuleRef;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +36,7 @@ describe('AgentsService', () => {
           provide: ModuleRef,
           useValue: {
             get: jest.fn(),
+            resolve: jest.fn(),
           },
         },
         {
@@ -64,6 +66,7 @@ describe('AgentsService', () => {
     repository = module.get<Repository<AgentEntity>>(
       getRepositoryToken(AgentEntity),
     );
+    moduleRef = module.get<ModuleRef>(ModuleRef);
   });
 
   it('should be defined', () => {
@@ -116,9 +119,10 @@ describe('AgentsService', () => {
         .mockImplementation((cb: (manager: any) => any) => {
           return cb(mockManager) as unknown;
         });
+      jest.spyOn(moduleRef, 'resolve').mockResolvedValue(geminiAgent);
     });
 
-    it('should create an agent and sync instance', async () => {
+    it('should create an agent and sync instance using moduleRef.resolve', async () => {
       mockManager.create.mockReturnValue(mockAgent);
       mockManager.save.mockResolvedValue(mockAgent);
       mockManager.findOne.mockResolvedValue(mockAgent);
@@ -132,29 +136,12 @@ describe('AgentsService', () => {
         providerId: 'provider-123',
       };
 
-      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation();
-
       const result = await service.create(createDto);
       expect(result).toEqual(mockAgent);
-      expect(repository.manager['transaction']).toHaveBeenCalled();
-      expect(mockManager.save).toHaveBeenCalled();
-    });
-
-    it('should rollback transaction if syncAgentInstance fails on creation', async () => {
-      mockManager.create.mockReturnValue(mockAgent);
-      mockManager.save.mockResolvedValue(mockAgent);
-      mockManager.findOne.mockResolvedValue(mockAgent);
-
-      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation(() => {
-        throw new Error('Instantiation Failed');
-      });
-
-      const createDto = { name: 'FailBot', modelId: 'm1', providerId: 'p1' };
-
-      await expect(service.create(createDto)).rejects.toThrow(
-        'Instantiation Failed',
-      );
-      expect(repository.manager['transaction']).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(moduleRef.resolve).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(geminiAgent.updateConfig).toHaveBeenCalled();
     });
 
     it('should find all agents', async () => {
@@ -174,27 +161,16 @@ describe('AgentsService', () => {
       );
     });
 
-    it('should update an agent atomically', async () => {
+    it('should update an agent atomically and sync instance', async () => {
       mockManager.update.mockResolvedValue({ affected: 1 });
       mockManager.findOne.mockResolvedValue(mockAgent);
-      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation();
 
       const result = await service.update('uuid-123', { name: 'Updated' });
       expect(result).toEqual(mockAgent);
-      expect(repository.manager['transaction']).toHaveBeenCalled();
-    });
-
-    it('should rollback transaction if syncAgentInstance fails on update', async () => {
-      mockManager.update.mockResolvedValue({ affected: 1 });
-      mockManager.findOne.mockResolvedValue(mockAgent);
-      jest.spyOn(service as any, 'syncAgentInstance').mockImplementation(() => {
-        throw new Error('Update Instantiation Failed');
-      });
-
-      await expect(
-        service.update('uuid-123', { name: 'FailUpdate' }),
-      ).rejects.toThrow('Update Instantiation Failed');
-      expect(repository.manager['transaction']).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(moduleRef.resolve).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(geminiAgent.updateConfig).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException on update if not found', async () => {

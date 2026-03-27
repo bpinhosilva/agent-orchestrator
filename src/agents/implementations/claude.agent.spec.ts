@@ -1,4 +1,5 @@
 import { ClaudeAgent } from './claude.agent';
+import { ConfigService } from '@nestjs/config';
 
 jest.mock('@anthropic-ai/claude-agent-sdk', () => {
   const mockAsyncIterable = function* () {
@@ -24,25 +25,24 @@ jest.mock('@anthropic-ai/claude-agent-sdk', () => {
 
 describe('ClaudeAgent', () => {
   let agent: ClaudeAgent;
-  const originalEnv = process.env;
+  let mockConfigService: jest.Mocked<ConfigService>;
 
   beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'test_key' };
-    agent = new ClaudeAgent();
+    mockConfigService = {
+      get: jest.fn().mockReturnValue('test_key'),
+    } as unknown as jest.Mocked<ConfigService>;
+    agent = new ClaudeAgent(mockConfigService);
   });
 
-  afterAll(() => {
-    process.env = originalEnv;
-  });
-
-  it('should throw an error if API key is not set', () => {
-    delete process.env.ANTHROPIC_API_KEY;
-    expect(() => new ClaudeAgent()).toThrow('ANTHROPIC_API_KEY is required');
+  it('should throw an error if API key is not set during processText', async () => {
+    mockConfigService.get.mockReturnValue(undefined);
+    await expect(agent.processText('test')).rejects.toThrow(
+      'ANTHROPIC_API_KEY is required',
+    );
   });
 
   it('should generate content with claude-sonnet-4-5', async () => {
-    agent = new ClaudeAgent('claude-sonnet-4-5');
+    agent = new ClaudeAgent(mockConfigService, 'claude-sonnet-4-5');
     const response = await agent.processText('test query');
     expect(response.content).toBe('mocked claude response');
     expect(response.metadata?.model).toBe('claude-sonnet-4-5');

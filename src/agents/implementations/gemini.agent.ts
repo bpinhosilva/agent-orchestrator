@@ -1,16 +1,17 @@
 import { GoogleGenAI } from '@google/genai';
 import { Agent, AgentResponse } from '../interfaces/agent.interface';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional, Scope } from '@nestjs/common';
 import { Task } from '../../tasks/entities/task.entity';
 import { Project } from '../../projects/entities/project.entity';
+import { ConfigService } from '@nestjs/config';
 
 import { RegisterAgent } from '../registry/agent.registry';
 
-@Injectable()
+@Injectable({ scope: Scope.TRANSIENT })
 @RegisterAgent('google')
 export class GeminiAgent implements Agent {
   private readonly logger = new Logger(GeminiAgent.name);
-  private genAI: GoogleGenAI;
+  private genAI: GoogleGenAI | null = null;
   private name: string = 'GeminiAgent';
   private description?: string;
   private systemInstructions?: string;
@@ -19,14 +20,23 @@ export class GeminiAgent implements Agent {
   private model: string;
   private enableGrounding: boolean = true;
 
-  constructor(@Optional() model: string = 'gemini-2.5-flash-lite') {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() model: string = 'gemini-2.5-flash-lite',
+  ) {
     this.model = model;
-    const apiKey = process.env.GEMINI_API_KEY;
+  }
+
+  private getGenAI(): GoogleGenAI {
+    if (this.genAI) return this.genAI;
+
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
       this.logger.error('GEMINI_API_KEY environment variable is not set');
       throw new Error('GEMINI_API_KEY is required to initialize GeminiAgent');
     }
     this.genAI = new GoogleGenAI({ apiKey });
+    return this.genAI;
   }
 
   getName(): string {
@@ -77,7 +87,8 @@ export class GeminiAgent implements Agent {
       if (tools.length > 0) {
         this.logger.debug(`Adding tools to request: ${JSON.stringify(tools)}`);
       }
-      const response = await this.genAI.models.generateContent({
+      const genAI = this.getGenAI();
+      const response = await genAI.models.generateContent({
         model: this.model,
         contents,
         config: {

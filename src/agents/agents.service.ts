@@ -14,6 +14,7 @@ import { Agent, AgentResponse } from './interfaces/agent.interface';
 import { getAgentImplementation } from './registry/agent.registry';
 import { Model } from '../models/entities/model.entity';
 import { Provider } from '../providers/entities/provider.entity';
+import { ModuleRef } from '@nestjs/core';
 
 const AGENT_RELATIONS = ['model', 'provider'];
 
@@ -25,6 +26,7 @@ export class AgentsService implements OnModuleInit {
   constructor(
     @InjectRepository(AgentEntity)
     private readonly agentRepository: Repository<AgentEntity>,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async onModuleInit() {
@@ -35,7 +37,7 @@ export class AgentsService implements OnModuleInit {
     for (const agentEntity of agents) {
       if (agentEntity.status !== 'inactive') {
         try {
-          this.syncAgentInstance(agentEntity);
+          await this.syncAgentInstance(agentEntity);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
@@ -48,7 +50,7 @@ export class AgentsService implements OnModuleInit {
     this.logger.log(`Initialized ${this.agentInstances.size} agent instances.`);
   }
 
-  private syncAgentInstance(agentEntity: AgentEntity) {
+  private async syncAgentInstance(agentEntity: AgentEntity) {
     if (agentEntity.status === 'inactive') {
       this.agentInstances.delete(agentEntity.id);
       return;
@@ -71,14 +73,19 @@ export class AgentsService implements OnModuleInit {
     }
 
     try {
-      const instance = new AgentClass(agentEntity.model?.name);
+      // Use resolve for TRANSIENT scoped providers. This ensures we get a fresh instance
+      // which we then configure and store in our Map (making it a singleton for this ID).
+      const instance = await this.moduleRef.resolve<Agent>(AgentClass);
+
       instance.updateConfig?.({
         name: agentEntity.name,
         description: agentEntity.description,
         systemInstructions: agentEntity.systemInstructions,
         role: agentEntity.role,
         provider: providerName,
+        model: agentEntity.model?.name,
       });
+
       this.agentInstances.set(agentEntity.id, instance);
       this.logger.debug(`Synchronized agent instance #${agentEntity.id}`);
     } catch (error) {
@@ -121,7 +128,7 @@ export class AgentsService implements OnModuleInit {
       }
 
       // This will throw BadRequestException if instantiation fails, rolling back the transaction
-      this.syncAgentInstance(fullyLoadedAgent);
+      await this.syncAgentInstance(fullyLoadedAgent);
 
       return fullyLoadedAgent;
     });
@@ -168,7 +175,7 @@ export class AgentsService implements OnModuleInit {
       }
 
       // This will throw BadRequestException if instantiation fails, rolling back the transaction
-      this.syncAgentInstance(updatedAgent);
+      await this.syncAgentInstance(updatedAgent);
 
       return updatedAgent;
     });
@@ -224,7 +231,7 @@ export class AgentsService implements OnModuleInit {
         );
       }
 
-      this.syncAgentInstance(agentEntity);
+      await this.syncAgentInstance(agentEntity);
       agent = this.agentInstances.get(agentId);
 
       if (!agent) {

@@ -4,7 +4,7 @@ import { ModuleRef } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AgentEntity } from './entities/agent.entity';
 import { Repository } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Agent, AgentResponse } from './interfaces/agent.interface';
 
 jest.mock('./registry/agent.registry', () => ({
@@ -16,10 +16,12 @@ import { getAgentImplementation } from './registry/agent.registry';
 describe('AgentsService (Probe)', () => {
   let service: AgentsService;
   let repository: Repository<AgentEntity>;
+  let moduleRef: ModuleRef;
 
   const mockAgentInstance: jest.Mocked<Agent> = {
     getName: jest.fn().mockReturnValue('Mock Agent'),
     processText: jest.fn(),
+    updateConfig: jest.fn(),
   };
 
   const mockAgentEntity = {
@@ -37,6 +39,7 @@ describe('AgentsService (Probe)', () => {
           provide: ModuleRef,
           useValue: {
             create: jest.fn().mockResolvedValue(mockAgentInstance),
+            resolve: jest.fn().mockResolvedValue(mockAgentInstance),
           },
         },
         {
@@ -52,6 +55,7 @@ describe('AgentsService (Probe)', () => {
     repository = module.get<Repository<AgentEntity>>(
       getRepositoryToken(AgentEntity),
     );
+    moduleRef = module.get<ModuleRef>(ModuleRef);
   });
 
   describe('probe', () => {
@@ -113,6 +117,8 @@ describe('AgentsService (Probe)', () => {
           service as unknown as { agentInstances: Map<string, Agent> }
         ).agentInstances.has(agentId),
       ).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(moduleRef.resolve).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if not in memory and not in DB', async () => {
@@ -132,13 +138,14 @@ describe('AgentsService (Probe)', () => {
         .mockResolvedValue(testAgentEntity as AgentEntity);
 
       // Mock syncAgentInstance to NOT add to map (simulating failure)
-      const syncSpy = jest.fn();
-      (
-        service as unknown as { syncAgentInstance: jest.Mock }
-      ).syncAgentInstance = syncSpy;
+      // Actually, syncAgentInstance is private, so we can't easily mock it without casting.
+      // In the new implementation, syncAgentInstance throws if initialization fails.
+      jest
+        .spyOn(moduleRef, 'resolve')
+        .mockRejectedValue(new Error('Init failed'));
 
       await expect(service.probe(agentId, 'input')).rejects.toThrow(
-        `Failed to initialize agent #${agentId} after database fetch`,
+        BadRequestException,
       );
     });
   });

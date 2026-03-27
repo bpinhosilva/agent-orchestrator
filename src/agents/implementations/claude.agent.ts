@@ -1,12 +1,13 @@
 import { query, SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { Agent, AgentResponse } from '../interfaces/agent.interface';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional, Scope } from '@nestjs/common';
 import { Task } from '../../tasks/entities/task.entity';
 import { Project } from '../../projects/entities/project.entity';
+import { ConfigService } from '@nestjs/config';
 
 import { RegisterAgent } from '../registry/agent.registry';
 
-@Injectable()
+@Injectable({ scope: Scope.TRANSIENT })
 @RegisterAgent('anthropic')
 export class ClaudeAgent implements Agent {
   private readonly logger = new Logger(ClaudeAgent.name);
@@ -17,15 +18,22 @@ export class ClaudeAgent implements Agent {
   private provider: string = 'anthropic';
   private model: string;
 
-  constructor(@Optional() model: string = 'claude-opus-4-6') {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() model: string = 'claude-opus-4-6',
+  ) {
     this.model = model;
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+  }
+
+  private validateApiKey() {
+    const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
     if (!apiKey) {
       this.logger.error('ANTHROPIC_API_KEY environment variable is not set');
       throw new Error(
         'ANTHROPIC_API_KEY is required to initialize ClaudeAgent',
       );
     }
+    return apiKey;
   }
 
   getName(): string {
@@ -77,6 +85,7 @@ export class ClaudeAgent implements Agent {
   }
 
   async processText(input: string): Promise<AgentResponse> {
+    this.validateApiKey();
     this.logger.debug(
       `Processing input with ClaudeAgent. Model: ${this.model}`,
     );
