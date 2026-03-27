@@ -1,6 +1,6 @@
 {
   "name": "@bpinhosilva/agent-orchestrator",
-  "version": "1.0.0-alpha.13",
+  "version": "1.0.0-alpha.14",
   "description": "An open-source AI agent orchestrator platform built with NestJS.",
   "author": "bpinhosilva",
   "license": "MIT",

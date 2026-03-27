@@ -1,3 +1,11 @@
+# [1.0.0-alpha.14](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2026-03-27)
+
+
+### Features
+
+* add CreateTaskDto ([1604945](https://github.com/bpinhosilva/agent-orchestrator/commit/1604945737b5df5480c6c0814c369902f7cc9142))
+* implement transient agent instances with dynamic configurationn ([5d57b08](https://github.com/bpinhosilva/agent-orchestrator/commit/5d57b0886edf4b14d93ab76f245f4311b6657f7d))
+
 # [1.0.0-alpha.13](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.12...v1.0.0-alpha.13) (2026-03-26)
 
 
