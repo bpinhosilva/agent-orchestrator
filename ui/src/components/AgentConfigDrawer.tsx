@@ -88,7 +88,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
       }
     };
     void load();
-  }, [selectedProviderId]);
+  }, [selectedProviderId, selectedModelId]);
 
   const handleCopyId = () => {
     if (!agent?.id) return;

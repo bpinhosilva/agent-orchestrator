@@ -29,7 +29,6 @@ interface TaskBoardProps {
 }
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ 
-    projectId: _, // Ignored as tasks are passed in
     tasks, 
     onTasksChange, 
     onStatusChange 

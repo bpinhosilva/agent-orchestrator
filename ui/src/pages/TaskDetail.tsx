@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { tasksApi, TaskPriority, TaskStatus, type Task } from '../api/tasks';
+import { agentsApi, type Agent } from '../api/agents';
+import { useNotification } from '../hooks/useNotification';
 import { 
   ChevronRight, 
   ArrowLeftRight, 
@@ -13,16 +16,19 @@ import {
 } from 'lucide-react';
 import CommentSection from '../components/tasks/CommentSection';
 import MarkdownField from '../components/MarkdownField';
-import { tasksApi, TaskPriority, TaskStatus } from '../api/tasks';
-import { agentsApi, type Agent } from '../api/agents';
-import { useNotification } from '../hooks/useNotification';
+
+interface ExtendedTask extends Omit<Task, 'id'> {
+  id: string;
+  llm_latency?: number;
+  cost_estimate?: number;
+}
 
 const TaskDetail: React.FC = () => {
   const { projectId, taskId } = useParams<{ projectId: string, taskId: string }>();
   const navigate = useNavigate();
   const { notifySuccess, notifyError } = useNotification();
   
-  const [task, setTask] = useState<any>(null);
+  const [task, setTask] = useState<ExtendedTask | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -48,7 +54,7 @@ const TaskDetail: React.FC = () => {
     try {
       setLoading(true);
       const res = await tasksApi.findOne(projectId, taskId);
-      const data = res.data;
+      const data = res.data as ExtendedTask;
       setTask(data);
       setTitle(data.title);
       setDescription(data.description);

@@ -17,13 +17,20 @@ vi.mock('../../hooks/useNotification', () => ({
 
 describe('Sidebar Component', () => {
   it('renders the brand title', () => {
-    (useProject as any).mockReturnValue({
+    vi.mocked(useProject).mockReturnValue({
       activeProject: null,
       loading: false,
       refreshProjects: vi.fn(),
+      projects: [],
+      setActiveProjectById: vi.fn(),
     });
-    (useNotification as any).mockReturnValue({
-        showNotification: vi.fn(),
+    vi.mocked(useNotification).mockReturnValue({
+        notifySuccess: vi.fn(),
+        notifyError: vi.fn(),
+        notifyApiError: vi.fn(),
+        notifyInfo: vi.fn(),
+        closeNotification: vi.fn(),
+        state: { isOpen: false, type: 'info', title: '', message: '' },
     });
 
     render(
@@ -35,13 +42,20 @@ describe('Sidebar Component', () => {
   });
 
   it('renders navigation items', () => {
-    (useProject as any).mockReturnValue({
+    vi.mocked(useProject).mockReturnValue({
       activeProject: null,
       loading: false,
       refreshProjects: vi.fn(),
+      projects: [],
+      setActiveProjectById: vi.fn(),
     });
-    (useNotification as any).mockReturnValue({
-        showNotification: vi.fn(),
+    vi.mocked(useNotification).mockReturnValue({
+        notifySuccess: vi.fn(),
+        notifyError: vi.fn(),
+        notifyApiError: vi.fn(),
+        notifyInfo: vi.fn(),
+        closeNotification: vi.fn(),
+        state: { isOpen: false, type: 'info', title: '', message: '' },
     });
 
     render(

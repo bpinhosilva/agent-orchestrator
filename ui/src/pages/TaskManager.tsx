@@ -5,12 +5,12 @@ import TaskBoard from '../components/tasks/TaskBoard';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { useProject } from '../hooks/useProject';
 import { useNotification } from '../hooks/useNotification';
-import { tasksApi } from '../api/tasks';
+import { tasksApi, TaskStatus } from '../api/tasks';
 import type { Task as ComponentTask } from '../components/tasks/types';
 
 const TaskManager: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
-  const { notifyApiError } = useNotification();
+  const { notifyApiError, notifyError } = useNotification();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [tasks, setTasks] = useState<ComponentTask[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -22,12 +22,12 @@ const TaskManager: React.FC = () => {
       setLoadingTasks(true);
       const res = await tasksApi.findAll(activeProject.id);
       
-      const mappedTasks: ComponentTask[] = res.data.map((t: any) => ({
+      const mappedTasks: ComponentTask[] = res.data.map((t) => ({
         id: t.id,
         status: t.status as ComponentTask['status'],
         code: `#TASK-${t.id.substring(0, 4).toUpperCase()}`,
         title: t.title,
-        priority: t.priority,
+        priority: t.priority as ComponentTask['priority'],
         agent: {
           name: t.assignee?.name || 'Unassigned',
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.assignee?.name || 'U')}&background=random&color=fff`,
@@ -45,7 +45,7 @@ const TaskManager: React.FC = () => {
     } finally {
       setLoadingTasks(false);
     }
-  }, [activeProject]);
+  }, [activeProject, notifyApiError]);
 
   useEffect(() => {
     fetchTasks();
@@ -58,19 +58,19 @@ const TaskManager: React.FC = () => {
   const handleStatusChange = async (taskId: string, newStatus: string) => {
      if (!activeProject) return;
      try {
-       await tasksApi.update(activeProject.id, taskId, { status: newStatus as any });
+       await tasksApi.update(activeProject.id, taskId, { status: newStatus as TaskStatus });
        // No need to fetch here, TaskBoard already updated optimistically in most cases, 
        // but we could refresh to be sure or just update local state if needed.
        setTasks(prev => prev.map(t => t.id === taskId ? { 
           ...t, 
-          status: newStatus as any,
+          status: newStatus as ComponentTask['status'],
           isActive: newStatus === 'in-progress'
         } : t));
      } catch (error) {
        console.error('Failed to update task status:', error);
-       notifyApiError(error, 'Status Update Failed');
-       fetchTasks(); // Reload on error
-     }
+      notifyError('Status Update Failed', 'Failed to update task status in the neural mesh.');
+      fetchTasks(); // Reload on error
+    }
   };
 
   if (projectLoading) {

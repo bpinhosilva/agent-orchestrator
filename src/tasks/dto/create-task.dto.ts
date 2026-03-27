@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  ValidateIf,
 } from 'class-validator';
 import { TaskStatus, TaskPriority } from '../entities/task.entity';
 
@@ -27,8 +26,7 @@ export class CreateTaskDto {
   @Type(() => Number)
   priority?: TaskPriority;
 
-  @IsUUID()
-  @ValidateIf((_, value) => value !== null)
+  @IsOptional()
   @IsUUID()
   assigneeId?: string | null;
 

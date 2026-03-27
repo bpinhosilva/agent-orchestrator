@@ -20,7 +20,7 @@ import MarkdownField from '../components/MarkdownField';
 const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { notifySuccess, notifyApiError, notifyError } = useNotification();
+  const { notifySuccess, notifyApiError } = useNotification();
   const { refreshProjects } = useProject();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -57,7 +57,7 @@ const ProjectDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [projectId, notifyError]);
+  }, [projectId, notifyApiError]);
 
   useEffect(() => {
     if (projectId) {
