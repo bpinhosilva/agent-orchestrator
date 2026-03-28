@@ -1,3 +1,10 @@
+# [1.0.0-alpha.16](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.15...v1.0.0-alpha.16) (2026-03-28)
+
+
+### Features
+
+* implement scheduler page, add database indexes for performance, and update release workflow ([b4e067a](https://github.com/bpinhosilva/agent-orchestrator/commit/b4e067a1b20e4275214309c1241c163b456260da))
+
 # [1.0.0-alpha.15](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2026-03-28)
 
 
