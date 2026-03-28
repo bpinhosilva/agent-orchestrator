@@ -6,6 +6,7 @@ export const TaskStatus = {
   IN_PROGRESS: 'in-progress',
   REVIEW: 'review',
   DONE: 'done',
+  ARCHIVED: 'archived',
 } as const;
 
 export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
@@ -31,6 +32,13 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface CreateTaskDto {
   title: string;
   description: string;
@@ -47,11 +55,27 @@ export type UpdateTaskDto = Partial<Omit<CreateTaskDto, 'assigneeId'>> & {
 export const tasksApi = {
   create: (projectId: string, data: CreateTaskDto) =>
     client.post<Task>(`/projects/${projectId}/tasks`, data),
-  findAll: (projectId: string) => client.get<Task[]>(`/projects/${projectId}/tasks`),
+  findAll: (projectId: string, params?: { status?: TaskStatus; page?: number; limit?: number }) =>
+    client.get<PaginatedResponse<Task>>(`/projects/${projectId}/tasks`, { params }),
   findOne: (projectId: string, id: string) =>
     client.get<Task>(`/projects/${projectId}/tasks/${id}`),
   update: (projectId: string, id: string, data: UpdateTaskDto) =>
     client.patch<Task>(`/projects/${projectId}/tasks/${id}`, data),
   delete: (projectId: string, id: string) =>
     client.delete(`/projects/${projectId}/tasks/${id}`),
+  fetchAll: async (projectId: string, params?: { status?: TaskStatus; limit?: number }) => {
+    let allItems: Task[] = [];
+    let currentPage = 1;
+    let hasMore = true;
+    const limit = params?.limit || 50;
+
+    while (hasMore) {
+      const res = await tasksApi.findAll(projectId, { ...params, page: currentPage, limit });
+      allItems = [...allItems, ...res.data.items];
+      hasMore = allItems.length < res.data.total;
+      currentPage++;
+    }
+
+    return allItems;
+  },
 };

@@ -1,4 +1,4 @@
-export type TaskStatus = 'backlog' | 'in-progress' | 'review' | 'done';
+export type TaskStatus = 'backlog' | 'in-progress' | 'review' | 'done' | 'archived';
 export type TaskPriority = 0 | 1 | 2 | 3; // CRITICAL, HIGH, MEDIUM, LOW
 
 export interface Agent {
@@ -21,4 +21,5 @@ export interface Task {
   isActive?: boolean;
   awaitingReview?: boolean;
   projectId?: string;
+  updatedAt?: string;
 }

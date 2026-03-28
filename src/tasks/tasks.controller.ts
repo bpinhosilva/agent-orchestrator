@@ -6,10 +6,12 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { TaskStatus } from './entities/task.entity';
 
 @Controller('projects/:projectId/tasks')
 export class TasksController {
@@ -24,8 +26,13 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Param('projectId') projectId: string) {
-    return this.tasksService.findAll(projectId);
+  findAll(
+    @Param('projectId') projectId: string,
+    @Query('status') status?: TaskStatus,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 50,
+  ) {
+    return this.tasksService.findAll(projectId, { status, page, limit });
   }
 
   @Get(':id')

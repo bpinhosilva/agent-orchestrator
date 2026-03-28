@@ -14,6 +14,9 @@ interface ConfirmDialogProps {
   cancelText?: string;
   variant?: ConfirmVariant;
   loading?: boolean;
+  showCheckbox?: boolean;
+  checkboxLabel?: string;
+  onCheckboxChange?: (checked: boolean) => void;
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -26,6 +29,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   cancelText = 'Cancel',
   variant = 'primary',
   loading = false,
+  showCheckbox = false,
+  checkboxLabel = "Don't show this again",
+  onCheckboxChange,
 }) => {
   const variantConfig = {
     danger: {
@@ -105,6 +111,24 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               <X size={20} />
             </button>
           </div>
+          
+          {showCheckbox && (
+            <div className="flex items-center gap-3 px-1 mt-[-12px]">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input 
+                    type="checkbox" 
+                    onChange={(e) => onCheckboxChange?.(e.target.checked)}
+                    className="peer appearance-none w-5 h-5 rounded border border-outline-variant/30 bg-surface-container-highest checked:bg-primary checked:border-primary transition-all cursor-pointer"
+                  />
+                  <CheckCircle2 size={14} className="absolute inset-0 m-auto text-on-primary opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                </div>
+                <span className="text-xs font-bold text-on-surface-variant group-hover:text-white transition-colors uppercase tracking-wider">
+                  {checkboxLabel}
+                </span>
+              </label>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 mt-2">
             <button

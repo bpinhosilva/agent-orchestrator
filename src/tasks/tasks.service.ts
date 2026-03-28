@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { Project } from '../projects/entities/project.entity';
@@ -17,6 +21,14 @@ export class TasksService {
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    if (
+      createTaskDto.status === TaskStatus.DONE ||
+      createTaskDto.status === TaskStatus.ARCHIVED
+    ) {
+      throw new BadRequestException(
+        'Protocols cannot be initialized in DONE or ARCHIVED state.',
+      );
+    }
     const { projectId, assigneeId, ...rest } = createTaskDto;
     const task = this.tasksRepository.create({
       ...rest,
@@ -28,10 +40,30 @@ export class TasksService {
     return this.tasksRepository.save(task);
   }
 
-  async findAll(projectId: string): Promise<Task[]> {
-    return this.tasksRepository.find({
-      where: { project: { id: projectId } },
+  async findAll(
+    projectId: string,
+    options: { status?: TaskStatus; page?: number; limit?: number } = {},
+  ): Promise<{ items: Task[]; total: number; page: number; limit: number }> {
+    const { status, page = 1, limit = 50 } = options;
+    const where: FindOptionsWhere<Task> = { project: { id: projectId } };
+
+    if (status) {
+      where.status = status;
+    }
+
+    const [items, total] = await this.tasksRepository.findAndCount({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { updatedAt: 'DESC' }, // Default order
     });
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
   }
 
   async findOne(id: string, projectId?: string): Promise<Task> {

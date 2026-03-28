@@ -13,10 +13,12 @@ import {
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useProject } from '../hooks/useProject';
+import { useAuth } from '../contexts/AuthContextInstance';
 import CreateProjectModal from './CreateProjectModal';
 
 const Sidebar = () => {
   const { activeProject, loading, refreshProjects } = useProject();
+  const { logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navItems = [
@@ -105,10 +107,13 @@ const Sidebar = () => {
             <HelpCircle size={20} />
             <span className="font-body text-sm">Help</span>
           </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-all">
+          <button 
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-all"
+          >
             <LogOut size={20} />
             <span className="font-body text-sm">Logout</span>
-          </a>
+          </button>
         </div>
       </div>
     </aside>

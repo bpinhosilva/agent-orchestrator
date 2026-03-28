@@ -14,6 +14,12 @@ export class User {
   @Column()
   name: string;
 
+  @Column({ unique: true })
+  email: string;
+
+  @Column({ select: false, nullable: true })
+  password?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

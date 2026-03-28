@@ -6,6 +6,25 @@ import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { useProject } from '../hooks/useProject';
 import { useNotification } from '../hooks/useNotification';
 import { tasksApi, TaskStatus } from '../api/tasks';
+import TaskCard from '../components/tasks/TaskCard';
+import ArchiveZone from '../components/tasks/ArchiveZone';
+import ConfirmDialog from '../components/ConfirmDialog';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import type { Task as ComponentTask } from '../components/tasks/types';
 
 const TaskManager: React.FC = () => {
@@ -16,13 +35,33 @@ const TaskManager: React.FC = () => {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // DnD State
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [initialStatus, setInitialStatus] = useState<ComponentTask['status'] | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
+  const [skipConfirm, setSkipConfirm] = useState(() => {
+    return localStorage.getItem('skipArchiveConfirm') === 'true';
+  });
+  const [checkValue, setCheckValue] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const fetchTasks = useCallback(async () => {
     if (!activeProject) return;
     try {
       setLoadingTasks(true);
-      const res = await tasksApi.findAll(activeProject.id);
+      // Fetch all tasks for the project (excluding archived in the backend might be better, 
+      // but let's just fetch everything and handle it here so the archive column/logic works if needed).
+      // Actually, requirement 1: "Don't fetch tasks that are archived"
+      const allTasksData = await tasksApi.fetchAll(activeProject.id);
       
-      const mappedTasks: ComponentTask[] = res.data.map((t) => ({
+      const filteredTasks = allTasksData.filter(t => t.status !== 'archived');
+
+      const mappedTasks: ComponentTask[] = filteredTasks.map((t) => ({
         id: t.id,
         status: t.status as ComponentTask['status'],
         code: `#TASK-${t.id.substring(0, 4).toUpperCase()}`,
@@ -35,10 +74,24 @@ const TaskManager: React.FC = () => {
         },
         isActive: t.status === 'in-progress',
         progress: t.status === 'done' ? 100 : t.status === 'in-progress' ? 50 : 0,
-        projectId: activeProject.id
+        projectId: activeProject.id,
+        updatedAt: t.updatedAt
       }));
 
-      setTasks(mappedTasks);
+      // Sort tasks based on requirements:
+      // 2. tasks in backlog by priority (lower number = higher priority)
+      // 3. tasks in other columns by latest updatedAt (most recent first)
+      const sortedTasks = [...mappedTasks].sort((a, b) => {
+        if (a.status === 'backlog' && b.status === 'backlog') {
+          return (a.priority || 0) - (b.priority || 0);
+        }
+        if (a.status !== 'backlog' && b.status !== 'backlog') {
+          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+        }
+        return 0; // Default if in different categories (though they are filtered by column anyway)
+      });
+
+      setTasks(sortedTasks);
     } catch (error) {
       console.error('Failed to fetch tasks in TaskManager:', error);
       notifyApiError(error, 'Fetch Error');
@@ -61,17 +114,129 @@ const TaskManager: React.FC = () => {
        await tasksApi.update(activeProject.id, taskId, { status: newStatus as TaskStatus });
        // No need to fetch here, TaskBoard already updated optimistically in most cases, 
        // but we could refresh to be sure or just update local state if needed.
-       setTasks(prev => prev.map(t => t.id === taskId ? { 
-          ...t, 
-          status: newStatus as ComponentTask['status'],
-          isActive: newStatus === 'in-progress'
-        } : t));
+       if (newStatus === 'archived') {
+         setTasks(prev => prev.filter(t => t.id !== taskId));
+       } else {
+         setTasks(prev => prev.map(t => t.id === taskId ? { 
+            ...t, 
+            status: newStatus as ComponentTask['status'],
+            isActive: newStatus === 'in-progress'
+          } : t));
+       }
      } catch (error) {
        console.error('Failed to update task status:', error);
       notifyError('Status Update Failed', 'Failed to update task status in the neural mesh.');
       fetchTasks(); // Reload on error
     }
   };
+
+  // DnD Handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const id = event.active.id as string;
+    setActiveId(id);
+    const task = tasks.find(t => t.id === id);
+    if (task) setInitialStatus(task.status);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    if (activeId === overId) return;
+
+    const activeIndex = tasks.findIndex(t => t.id === activeId);
+    const overIndex = tasks.findIndex(t => t.id === overId);
+    
+    if (activeIndex === -1) return;
+
+    const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
+
+    if (!isOverColumn && overIndex >= 0) {
+      if (tasks[activeIndex].status !== tasks[overIndex].status) {
+        const newItems = [...tasks];
+        const newStatus = tasks[overIndex].status;
+        newItems[activeIndex] = { 
+          ...newItems[activeIndex], 
+          status: newStatus,
+          isActive: newStatus === 'in-progress'
+        };
+        setTasks(arrayMove(newItems, activeIndex, overIndex));
+      }
+    } else if (isOverColumn) {
+      if (tasks[activeIndex].status !== overId) {
+        const newItems = [...tasks];
+        const newStatus = overId as ComponentTask['status'];
+        newItems[activeIndex] = { 
+          ...newItems[activeIndex], 
+          status: newStatus,
+          isActive: newStatus === 'in-progress'
+        };
+        setTasks(arrayMove(newItems, activeIndex, tasks.length - 1));
+      }
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const activeTask = tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
+
+    if (overId === 'archive') {
+      if (skipConfirm) {
+        await handleStatusChange(activeId, 'archived');
+      } else {
+        setPendingArchiveId(activeId);
+        setIsConfirmOpen(true);
+      }
+      return;
+    }
+
+    const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
+    const newStatus = isOverColumn ? (overId as ComponentTask['status']) : tasks.find(t => t.id === overId)?.status;
+
+    if (newStatus && initialStatus !== newStatus) {
+       await handleStatusChange(activeId, newStatus);
+    }
+
+    setInitialStatus(null);
+    if (activeId === overId) return;
+
+    const activeIndex = tasks.findIndex(t => t.id === activeId);
+    const overIndex = tasks.findIndex(t => t.id === overId);
+    
+    if (activeIndex === -1) return;
+
+    const isOverColumnCheck = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
+    if (!isOverColumnCheck && overIndex >= 0) {
+      if (tasks[activeIndex].status === tasks[overIndex].status) {
+         setTasks(arrayMove(tasks, activeIndex, overIndex));
+      }
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (pendingArchiveId) {
+      if (checkValue) {
+        localStorage.setItem('skipArchiveConfirm', 'true');
+        setSkipConfirm(true);
+      }
+      await handleStatusChange(pendingArchiveId, 'archived');
+    }
+    setIsConfirmOpen(false);
+    setPendingArchiveId(null);
+  };
+
+  const activeTask = tasks.find(t => t.id === activeId);
 
   if (projectLoading) {
     return (
@@ -109,7 +274,7 @@ const TaskManager: React.FC = () => {
 
   const missingLead = !activeProject.ownerAgent;
 
-  return (
+  const content = (
     <div className="space-y-10 animate-in fade-in duration-700">
       {/* Missing Lead Warning */}
       {missingLead && (
@@ -149,10 +314,11 @@ const TaskManager: React.FC = () => {
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center justify-end gap-6 max-w-4xl">
+          <ArchiveZone isDragging={!!activeId} />
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-on-primary px-6 py-3 rounded-xl flex items-center gap-2 font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+            className="bg-primary hover:bg-primary/90 text-on-primary px-8 py-3.5 rounded-2xl flex items-center gap-2 font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
           >
             <ListPlus size={18} />
             Commission Task
@@ -173,10 +339,7 @@ const TaskManager: React.FC = () => {
         </div>
       ) : (
         <TaskBoard 
-            projectId={activeProject.id} 
             tasks={tasks} 
-            onTasksChange={setTasks}
-            onStatusChange={handleStatusChange}
         />
       )}
 
@@ -235,6 +398,34 @@ const TaskManager: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <DndContext 
+      sensors={sensors} 
+      collisionDetection={closestCenter} 
+      onDragStart={handleDragStart} 
+      onDragOver={handleDragOver} 
+      onDragEnd={handleDragEnd}
+    >
+      {content}
+      
+      <DragOverlay>
+        {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
+      </DragOverlay>
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmArchive}
+        title="Archive Protocol Task"
+        message="Are you sure you want to transfer this task to the archival sector? This operation will remove the task node from the active grid."
+        confirmText="Archive Task"
+        variant="warning"
+        showCheckbox
+        onCheckboxChange={setCheckValue}
+      />
+    </DndContext>
   );
 };
 

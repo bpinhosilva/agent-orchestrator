@@ -16,6 +16,7 @@ export enum TaskStatus {
   IN_PROGRESS = 'in-progress',
   REVIEW = 'review',
   DONE = 'done',
+  ARCHIVED = 'archived',
 }
 
 export enum TaskPriority {

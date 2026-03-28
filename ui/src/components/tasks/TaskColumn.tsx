@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { MoreHorizontal, Archive } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import TaskCard from './TaskCard';
 import type { Task, TaskStatus } from './types';
 
@@ -51,12 +51,6 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
             <TaskCard key={task.id} task={task} />
           ))}
         </SortableContext>
-
-        {id === 'done' && tasks.length > 0 && (
-          <div className="border-2 border-dashed border-outline-variant/20 rounded-xl h-24 flex items-center justify-center text-outline-variant hover:border-outline-variant/40 transition-colors cursor-pointer">
-            <Archive size={20} />
-          </div>
-        )}
       </div>
     </div>
   );

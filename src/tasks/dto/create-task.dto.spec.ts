@@ -56,4 +56,16 @@ describe('CreateTaskDto', () => {
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
   });
+
+  it('should be invalid if title is too long', async () => {
+    dto.title = 'a'.repeat(256);
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('should be invalid if description is too long', async () => {
+    dto.description = 'a'.repeat(5001);
+    const errors = await validate(dto);
+    expect(errors.length).toBeGreaterThan(0);
+  });
 });

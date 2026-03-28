@@ -61,7 +61,11 @@ describe('TasksController', () => {
       ]);
       const result = await controller.findAll('uuid-123');
       expect(result).toHaveLength(1);
-      expect(mockTasksService.findAll).toHaveBeenCalledWith('uuid-123');
+      expect(mockTasksService.findAll).toHaveBeenCalledWith('uuid-123', {
+        status: undefined,
+        page: 1,
+        limit: 50,
+      });
     });
   });
 

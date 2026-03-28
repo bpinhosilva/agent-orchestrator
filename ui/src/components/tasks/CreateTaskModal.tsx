@@ -31,7 +31,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
   const [agents, setAgents] = useState<Agent[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
 
-  const TASK_TEMPLATE = `# Background\n\n# To Do\n\n# Definition of Done`;
+  const TASK_TEMPLATE = `# Background\n\n# To Do\n\n# Validation`;
 
   // Form State
   const [title, setTitle] = useState('');
@@ -249,9 +249,11 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ isOpen, onClose, onCr
                       onChange={(e) => setStatus(e.target.value as TaskStatus)}
                       className="w-full bg-transparent border-none text-xs font-bold text-on-surface h-10 px-4 focus:outline-none appearance-none cursor-pointer uppercase tracking-widest"
                     >
-                      {Object.values(TaskStatus).map(s => (
-                        <option key={s} value={s} className="bg-surface-container-low text-on-surface uppercase">{s}</option>
-                      ))}
+                      {Object.values(TaskStatus)
+                        .filter(s => s !== TaskStatus.DONE && s !== TaskStatus.ARCHIVED)
+                        .map(s => (
+                          <option key={s} value={s} className="bg-surface-container-low text-on-surface uppercase">{s}</option>
+                        ))}
                     </select>
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/60">
                       <ChevronDown size={16} />

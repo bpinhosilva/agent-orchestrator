@@ -12,6 +12,7 @@ describe('TasksService', () => {
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
+    findAndCount: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
   };
@@ -64,12 +65,23 @@ describe('TasksService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of tasks', async () => {
-      mockTaskRepository.find.mockResolvedValue([{ id: '1' }]);
-      const result = await service.findAll('uuid-123');
-      expect(result).toHaveLength(1);
-      expect(mockTaskRepository.find).toHaveBeenCalledWith({
-        where: { project: { id: 'uuid-123' } },
+    it('should return a paginated object of tasks', async () => {
+      mockTaskRepository.findAndCount.mockResolvedValue([[{ id: '1' }], 1]);
+      const result = await service.findAll('uuid-123', {
+        status: TaskStatus.BACKLOG,
+        page: 1,
+        limit: 10,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toEqual(1);
+      expect(result.page).toEqual(1);
+      expect(result.limit).toEqual(10);
+      expect(mockTaskRepository.findAndCount).toHaveBeenCalledWith({
+        where: { project: { id: 'uuid-123' }, status: TaskStatus.BACKLOG },
+        skip: 0,
+        take: 10,
+        order: { updatedAt: 'DESC' },
       });
     });
   });
