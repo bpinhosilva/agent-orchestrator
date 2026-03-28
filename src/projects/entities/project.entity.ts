@@ -5,6 +5,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 
@@ -34,6 +35,7 @@ export class Project {
   })
   status: ProjectStatus;
 
+  @Index()
   @ManyToOne(() => AgentEntity, {
     nullable: true,
     eager: true,

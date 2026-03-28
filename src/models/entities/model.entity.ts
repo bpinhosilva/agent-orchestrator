@@ -7,6 +7,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Provider } from '../../providers/entities/provider.entity';
 import { AgentEntity } from '../../agents/entities/agent.entity';
@@ -19,6 +20,7 @@ export class Model {
   @Column()
   name: string;
 
+  @Index()
   @ManyToOne(() => Provider, (provider) => provider.models, {
     onDelete: 'CASCADE',
     eager: true,

@@ -6,6 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Model } from '../../models/entities/model.entity';
 import { Provider } from '../../providers/entities/provider.entity';
@@ -30,6 +31,7 @@ export class AgentEntity {
   @Column({ type: 'text', nullable: true })
   status: string | null;
 
+  @Index()
   @ManyToOne(() => Provider, {
     nullable: true,
     eager: true,
@@ -38,6 +40,7 @@ export class AgentEntity {
   @JoinColumn({ name: 'providerId' })
   provider: Provider | null;
 
+  @Index()
   @ManyToOne(() => Model, (model) => model.agents, {
     nullable: true,
     eager: true,

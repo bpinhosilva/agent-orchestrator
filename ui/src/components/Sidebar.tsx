@@ -97,11 +97,6 @@ const Sidebar = () => {
       </nav>
 
       <div className="px-3 space-y-2 pt-6">
-        <button className="w-full bg-primary text-on-primary py-2.5 rounded-md font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/10">
-          <Plus size={18} />
-          New Agent
-        </button>
-
         <div className="pt-4 border-t border-outline-variant/20">
           <a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-all">
             <HelpCircle size={20} />

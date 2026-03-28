@@ -6,6 +6,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 import { Project } from '../../projects/entities/project.entity';
@@ -27,6 +28,8 @@ export enum TaskPriority {
 }
 
 @Entity('tasks')
+@Index(['project', 'status', 'updatedAt'])
+@Index(['project', 'updatedAt'])
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -57,6 +60,7 @@ export class Task {
   @Column('int', { default: 0 })
   llm_latency: number;
 
+  @Index()
   @ManyToOne(() => AgentEntity, {
     nullable: true,
     eager: true,

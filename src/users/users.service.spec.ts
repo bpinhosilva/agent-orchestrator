@@ -39,7 +39,7 @@ describe('UsersService', () => {
 
   describe('create', () => {
     it('should insert a new user', async () => {
-      const dto = { name: 'Test' };
+      const dto = { name: 'Test', email: 'test@test.com' };
       mockUserRepository.findOne.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue(dto);
       mockUserRepository.save.mockResolvedValue({ id: '1', ...dto });

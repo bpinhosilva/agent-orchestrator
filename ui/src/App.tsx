@@ -7,6 +7,7 @@ const Providers = lazy(() => import('./pages/Providers'));
 const TaskManager = lazy(() => import('./pages/TaskManager'));
 const TaskDetail = lazy(() => import('./pages/TaskDetail'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
+const Scheduler = lazy(() => import('./pages/Scheduler'));
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -62,7 +63,7 @@ function App() {
                         <Route path="/agents" element={<AgentFleet />} />
                         <Route path="/providers" element={<Providers />} />
                         <Route path="/flow" element={<div className="text-on-surface-variant font-mono">FLOW_BUILDER_CANVAS</div>} />
-                        <Route path="/scheduler" element={<div className="text-on-surface-variant font-mono">SCHEDULER_CORE</div>} />
+                        <Route path="/scheduler" element={<Scheduler />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                       </Routes>
                     </Suspense>

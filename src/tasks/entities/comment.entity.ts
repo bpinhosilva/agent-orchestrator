@@ -5,6 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Task } from './task.entity';
 import { AgentEntity } from '../../agents/entities/agent.entity';
@@ -16,6 +17,7 @@ export enum CommentAuthorType {
 }
 
 @Entity('task_comments')
+@Index(['task', 'createdAt'])
 export class TaskComment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -35,6 +37,7 @@ export class TaskComment {
   })
   authorType: CommentAuthorType;
 
+  @Index()
   @ManyToOne(() => User, {
     nullable: true,
     eager: true,
@@ -42,6 +45,7 @@ export class TaskComment {
   })
   authorUser: User | null;
 
+  @Index()
   @ManyToOne(() => AgentEntity, {
     nullable: true,
     eager: true,
