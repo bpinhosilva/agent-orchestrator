@@ -1,3 +1,10 @@
+# [1.0.0-alpha.15](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2026-03-28)
+
+
+### Features
+
+* implement user authentication system with JWT, registration, and login functionality ([63582fa](https://github.com/bpinhosilva/agent-orchestrator/commit/63582fa8f318c8a6bc174795364a4d3cbd221d45))
+
 # [1.0.0-alpha.14](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2026-03-27)
 
 
