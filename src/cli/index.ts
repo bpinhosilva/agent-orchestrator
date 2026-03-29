@@ -1,21 +1,42 @@
 #!/usr/bin/env node
+import * as os from 'os';
+import * as path from 'path';
+
+process.env.NODE_ENV = 'production';
+process.env.DOTENV_CONFIG_QUIET = 'true';
+process.env.AGENT_ORCHESTRATOR_HOME =
+  process.env.AGENT_ORCHESTRATOR_HOME ||
+  path.join(os.homedir(), '.agent-orchestrator');
+
 import { Command } from 'commander';
 import * as enquirer from 'enquirer';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as crypto from 'crypto';
 import { spawn } from 'child_process';
-import * as os from 'os';
+import * as bcrypt from 'bcrypt';
+import { createDataSource } from '../config/typeorm';
+import { User } from '../users/entities/user.entity';
 
 const program = new Command();
 
-const PID_DIR = path.join(os.homedir(), '.agent-orchestrator');
+const PID_DIR = process.env.AGENT_ORCHESTRATOR_HOME;
 const PID_FILE = path.join(PID_DIR, 'pid');
 const LOG_FILE = path.join(PID_DIR, 'server.log');
+const ENV_PATH = path.join(PID_DIR, '.env');
+
+// Determine the package root directory (where package.json is)
+// When running from dist/cli/index.js, it's two levels up.
+const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
+
+// Ensure PID_DIR exists
+if (!fs.existsSync(PID_DIR)) {
+  fs.mkdirSync(PID_DIR, { recursive: true });
+}
 
 interface BasicConfig {
   port: string;
   dbType: 'postgres' | 'sqlite';
+  dbLogging: boolean;
 }
 
 interface DatabaseConfig {
@@ -44,6 +65,137 @@ function checkIfRunning(): number | null {
   return null;
 }
 
+async function checkPendingMigrations(): Promise<{
+  hasPending: boolean;
+  isEmpty: boolean;
+}> {
+  const dataSource = createDataSource();
+  try {
+    await dataSource.initialize();
+    const hasPending = await dataSource.showMigrations();
+
+    // Check if any tables exist (other than the migrations table itself)
+    const tables: any[] = await dataSource.query(
+      dataSource.options.type === 'sqlite'
+        ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
+        : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
+    );
+
+    const isEmpty = tables.length === 0;
+
+    await dataSource.destroy();
+    return { hasPending, isEmpty };
+  } catch {
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
+    // If it fails, assume it's new/empty and needs migrations
+    return { hasPending: true, isEmpty: true };
+  }
+}
+
+async function runMigrations(force = false): Promise<void> {
+  const dataSource = createDataSource();
+  try {
+    await dataSource.initialize();
+
+    if (force) {
+      console.log('Dropping database schema...');
+      await dataSource.dropDatabase();
+      console.log('Schema dropped successfully.');
+    }
+
+    console.log('Running database migrations...');
+    const result = await dataSource.runMigrations();
+
+    if (result.length > 0) {
+      console.log(`Successfully executed ${result.length} migrations.`);
+    } else {
+      console.log('No pending migrations found.');
+    }
+
+    await dataSource.destroy();
+  } catch (err: unknown) {
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    throw new Error(`Migration execution failed: ${errorMessage}`);
+  }
+}
+
+async function setupAdminUser(): Promise<void> {
+  console.log('\n--- Admin User Setup ---');
+
+  const response = await enquirer.prompt<{
+    name: string;
+    email: string;
+    password: string;
+    confirm: string;
+  }>([
+    {
+      type: 'input',
+      name: 'name',
+      message: 'Admin name:',
+      initial: 'admin',
+    },
+    {
+      type: 'input',
+      name: 'email',
+      message: 'Admin email:',
+      initial: 'admin@agent-orchestrator.local',
+    },
+    {
+      type: 'password',
+      name: 'password',
+      message: 'Admin password (min 8 characters):',
+      validate: (value: string) =>
+        value.length >= 8 || 'Password must be at least 8 characters long',
+    },
+    {
+      type: 'password',
+      name: 'confirm',
+      message: 'Confirm admin password:',
+      validate: (value: string, state?: { answers: { password?: string } }) =>
+        value === state?.answers?.password || 'Passwords do not match',
+    },
+  ]);
+
+  console.log('Creating admin user...');
+  const dataSource = createDataSource();
+  try {
+    await dataSource.initialize();
+
+    const userRepository = dataSource.getRepository(User);
+
+    const existing = await userRepository.findOne({
+      where: { email: response.email },
+    });
+    if (existing) {
+      console.log(
+        `User with email ${response.email} already exists. Skipping creation.`,
+      );
+    } else {
+      const hashedPassword = await bcrypt.hash(response.password, 10);
+      const user = userRepository.create({
+        name: response.name,
+        email: response.email,
+        password: hashedPassword,
+      });
+      await userRepository.save(user);
+      console.log('Admin user created successfully!');
+    }
+
+    await dataSource.destroy();
+  } catch (err: unknown) {
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`Failed to create admin user: ${errorMessage}`);
+  }
+}
+
 program
   .name('agent-orchestrator')
   .description('An open-source AI agent orchestrator platform')
@@ -67,6 +219,12 @@ program
           name: 'dbType',
           message: 'Which database type do you want to use?',
           choices: ['postgres', 'sqlite'],
+        },
+        {
+          type: 'confirm',
+          name: 'dbLogging',
+          message: 'Enable database query logging?',
+          initial: false,
         },
       ]);
 
@@ -122,10 +280,9 @@ program
       }
 
       let jwtSecret = '';
-      const envPath = path.join(process.cwd(), '.env');
 
-      if (fs.existsSync(envPath)) {
-        const existingEnv = fs.readFileSync(envPath, 'utf8');
+      if (fs.existsSync(ENV_PATH)) {
+        const existingEnv = fs.readFileSync(ENV_PATH, 'utf8');
         const jwtMatch = existingEnv.match(/^JWT_SECRET=(.*)$/m);
 
         if (jwtMatch) {
@@ -152,7 +309,7 @@ program
       }
 
       console.log('Generating configuration...');
-      let envContent = `PORT=${basicResponse.port}\nDB_TYPE=${basicResponse.dbType}\n`;
+      let envContent = `NODE_ENV=production\nPORT=${basicResponse.port}\nDB_TYPE=${basicResponse.dbType}\nDB_LOGGING=${basicResponse.dbLogging}\n`;
       if (databaseUrl) {
         envContent += `DATABASE_URL=${databaseUrl}\n`;
       }
@@ -166,8 +323,74 @@ program
         envContent += `JWT_SECRET=${jwtSecret}\n`;
       }
 
-      fs.writeFileSync(envPath, envContent);
+      fs.writeFileSync(ENV_PATH, envContent);
       console.log('Configuration saved to .env file successfully!');
+
+      const { hasPending, isEmpty } = await checkPendingMigrations();
+      if (isEmpty) {
+        console.log('Database is empty. Initializing...');
+        try {
+          await runMigrations();
+          await setupAdminUser();
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          console.error(`Initialization failed: ${errorMessage}`);
+        }
+      } else if (hasPending) {
+        const { confirmMigration } = await enquirer.prompt<{
+          confirmMigration: boolean;
+        }>({
+          type: 'confirm',
+          name: 'confirmMigration',
+          message:
+            'Pending migrations detected on an existing database. Do you want to run them?',
+          initial: false,
+        });
+
+        if (confirmMigration) {
+          try {
+            await runMigrations();
+            await setupAdminUser();
+          } catch (err: unknown) {
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            console.error(`Migration failed: ${errorMessage}`);
+          }
+        } else {
+          console.log('Database migration skipped.');
+        }
+      } else {
+        console.log('Database is already up to date.');
+        const { forceMigration } = await enquirer.prompt<{
+          forceMigration: boolean;
+        }>({
+          type: 'confirm',
+          name: 'forceMigration',
+          message:
+            'Do you want to force migration anyway? (This will DROP ALL DATA and re-initialize the database)',
+          initial: false,
+        });
+
+        if (forceMigration) {
+          try {
+            await enquirer.prompt({
+              type: 'input',
+              name: 'continue',
+              message:
+                'Press Enter to confirm and start the destructive initialization...',
+            });
+            await runMigrations(true);
+            await setupAdminUser();
+          } catch (err: unknown) {
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            console.error(`Migration failed: ${errorMessage}`);
+          }
+        } else {
+          // Check if we should still offer admin setup if not forcing migration
+          await setupAdminUser();
+        }
+      }
     } catch {
       console.error('Setup cancelled or failed.');
     }
@@ -195,7 +418,7 @@ program
     const child = spawn('node', [path.join(__dirname, '../main.js')], {
       detached: true,
       stdio: ['ignore', logStream, logStream],
-      cwd: process.cwd(),
+      cwd: PACKAGE_ROOT,
       env: process.env,
     });
 
@@ -226,6 +449,69 @@ program
 
     if (fs.existsSync(PID_FILE)) {
       fs.unlinkSync(PID_FILE);
+    }
+  });
+
+program
+  .command('migrate')
+  .description('Run pending database migrations')
+  .option('-f, --force', 'Force re-initialization (DROP ALL DATA)')
+  .action(async (options: { force?: boolean }) => {
+    try {
+      if (options.force) {
+        const { confirmForce } = await enquirer.prompt<{
+          confirmForce: boolean;
+        }>({
+          type: 'confirm',
+          name: 'confirmForce',
+          message:
+            'Are you absolutely sure you want to DROP ALL DATA and re-initialize?',
+          initial: false,
+        });
+        if (confirmForce) {
+          await enquirer.prompt({
+            type: 'input',
+            name: 'continue',
+            message:
+              'Press Enter to confirm and start the destructive initialization...',
+          });
+          await runMigrations(true);
+        } else {
+          console.log('Force migration cancelled.');
+        }
+        return;
+      }
+
+      const { hasPending, isEmpty } = await checkPendingMigrations();
+
+      if (isEmpty) {
+        console.log('Database is empty. Initializing...');
+        await runMigrations();
+        return;
+      }
+
+      if (!hasPending) {
+        console.log('Database is already up to date.');
+        return;
+      }
+
+      const { confirmMigration } = await enquirer.prompt<{
+        confirmMigration: boolean;
+      }>({
+        type: 'confirm',
+        name: 'confirmMigration',
+        message: 'Pending migrations detected. Do you want to run them?',
+        initial: false,
+      });
+
+      if (confirmMigration) {
+        await runMigrations();
+      } else {
+        console.log('Migration cancelled.');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`Migration failed: ${errorMessage}`);
     }
   });
 

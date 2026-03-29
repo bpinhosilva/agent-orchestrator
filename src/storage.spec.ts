@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StorageService } from './common/storage.service';
-import * as os from 'os';
 import * as path from 'path';
 
 describe('StorageService', () => {
@@ -16,8 +15,8 @@ describe('StorageService', () => {
 
   it('should return correct base path', () => {
     const expected = path.join(
-      os.homedir(),
-      '.agent-orchestrator',
+      process.env.AGENT_ORCHESTRATOR_HOME ||
+        path.join(process.cwd(), '.agent-orchestrator'),
       'artifacts',
     );
     expect(service.getArtifactsPath()).toBe(expected);

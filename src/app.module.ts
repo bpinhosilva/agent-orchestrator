@@ -19,12 +19,17 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { getTypeOrmConfig } from './config/typeorm';
+
+const APP_HOME = process.env.AGENT_ORCHESTRATOR_HOME;
+const ENV_PATH = APP_HOME ? join(APP_HOME, '.env') : '.env';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: envValidationSchema,
+      envFilePath: ENV_PATH,
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -41,15 +46,13 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const databaseUrl = configService.get<string>('DATABASE_URL');
+        const baseConfig = getTypeOrmConfig(configService);
         return {
-          type: databaseUrl ? 'postgres' : 'sqlite',
-          database: databaseUrl
-            ? undefined
-            : join(process.cwd(), 'local.sqlite'),
-          url: databaseUrl,
+          ...baseConfig,
+          entities: [], // Important: Use empty array here so autoLoadEntities can work without duplication
           autoLoadEntities: true,
-          synchronize: configService.get<string>('NODE_ENV') !== 'production',
+          synchronize: false,
+          migrationsRun: false,
         };
       },
     }),

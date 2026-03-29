@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
@@ -10,7 +9,9 @@ export class StorageService {
   private readonly baseDir: string;
 
   constructor() {
-    this.baseDir = path.join(os.homedir(), '.agent-orchestrator');
+    this.baseDir =
+      process.env.AGENT_ORCHESTRATOR_HOME ||
+      path.join(process.cwd(), '.agent-orchestrator');
     this.ensureDir(this.baseDir);
     this.ensureDir(path.join(this.baseDir, 'artifacts'));
   }
