@@ -1,3 +1,10 @@
+# [1.0.0-alpha.17](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.16...v1.0.0-alpha.17) (2026-03-29)
+
+
+### Features
+
+* implement recurrent task scheduling system with backend services and UI management modal ([b3c699a](https://github.com/bpinhosilva/agent-orchestrator/commit/b3c699a5b7eb261458d97a7a0d40e5071e33fb1e))
+
 # [1.0.0-alpha.16](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.15...v1.0.0-alpha.16) (2026-03-28)
 
 
