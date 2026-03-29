@@ -27,8 +27,9 @@ const Register: React.FC = () => {
     try {
       await register(username, email, password);
       navigate('/');
-    } catch (err: any) {
-      let message = err.response?.data?.message || 'Protocol registration failed. Please try again.';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string | string[] } } };
+      let message = error.response?.data?.message || 'Protocol registration failed. Please try again.';
       if (Array.isArray(message)) {
         message = message.join('. ');
       }

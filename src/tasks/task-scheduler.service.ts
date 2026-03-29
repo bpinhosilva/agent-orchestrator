@@ -8,6 +8,7 @@ import { AgentsService } from '../agents/agents.service';
 import { TaskComment, CommentAuthorType } from './entities/comment.entity';
 import { AgentEntity } from '../agents/entities/agent.entity';
 import { StorageService } from '../common/storage.service';
+import { TasksService } from './tasks.service';
 
 @Injectable()
 export class TaskSchedulerService implements OnApplicationBootstrap {
@@ -22,6 +23,7 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
     private readonly commentRepository: Repository<TaskComment>,
     private readonly agentsService: AgentsService,
     private readonly storageService: StorageService,
+    private readonly tasksService: TasksService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -188,6 +190,7 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
       // This is exactly what we want.
 
       await this.taskRepository.save(task);
+      this.tasksService.emitTaskEvent({ ...task, project } as Task, 'updated');
       this.logger.debug(
         `Task ${task.id} assigned to agent: ${assignedAgent.name}`,
       );
@@ -200,6 +203,11 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
 
   private async performTask(task: Task, project: Project) {
     if (!task.assignee) return;
+
+    // Set to in-progress when starting the task
+    task.status = TaskStatus.IN_PROGRESS;
+    await this.taskRepository.save(task);
+    this.tasksService.emitTaskEvent({ ...task, project } as Task, 'updated');
 
     this.logger.debug(
       `Agent ${task.assignee.name} performing task ${task.title}`,
@@ -239,6 +247,7 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
       task.cost_estimate = (task.cost_estimate || 0) + iterationCost;
 
       await this.taskRepository.save(task);
+      this.tasksService.emitTaskEvent({ ...task, project } as Task, 'updated');
 
       // Handle artifacts if present in response
       const artifacts: any[] = [];

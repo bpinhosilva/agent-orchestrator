@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AgentsService } from './agents.service';
 import { ModuleRef } from '@nestjs/core';
@@ -65,19 +66,16 @@ describe('AgentsService (Probe)', () => {
       const expectedResponse: AgentResponse = { content: 'hi there' };
 
       // Inject into private map
-      (
-        service as unknown as {
-          agentInstances: Map<string, typeof mockAgentInstance>;
-        }
-      ).agentInstances.set(agentId, mockAgentInstance);
+      const privateService = service as unknown as {
+        agentInstances: Map<string, Agent>;
+      };
+      privateService.agentInstances.set(agentId, mockAgentInstance);
       mockAgentInstance.processText.mockResolvedValue(expectedResponse);
 
       const result = await service.probe(agentId, input);
 
       expect(result).toEqual({ content: 'hi there' });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockAgentInstance.processText).toHaveBeenCalledWith(input);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(repository.findOne).toHaveBeenCalledTimes(0);
     });
 
@@ -106,8 +104,7 @@ describe('AgentsService (Probe)', () => {
 
       const result = await service.probe(agentId, input);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(jest.mocked(repository.findOne)).toHaveBeenCalledWith({
+      expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: agentId },
         relations: ['model', 'provider'],
       });
@@ -117,7 +114,6 @@ describe('AgentsService (Probe)', () => {
           service as unknown as { agentInstances: Map<string, Agent> }
         ).agentInstances.has(agentId),
       ).toBe(true);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(moduleRef.resolve).toHaveBeenCalled();
     });
 

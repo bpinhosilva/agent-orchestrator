@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   Index,
+  RelationId,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 import { Project } from '../../projects/entities/project.entity';
@@ -74,6 +75,9 @@ export class Task {
     onDelete: 'CASCADE',
   })
   project: Project;
+
+  @RelationId((task: Task) => task.project)
+  projectId: string;
 
   @OneToMany(() => TaskComment, (comment) => comment.task)
   comments: TaskComment[];

@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
+import { Subject, Observable } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { Project } from '../projects/entities/project.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -13,12 +15,35 @@ import { AgentEntity } from '../agents/entities/agent.entity';
 
 @Injectable()
 export class TasksService {
+  private readonly taskEvents$ = new Subject<{
+    event: string;
+    task: Task;
+    projectId: string;
+  }>();
+
   constructor(
     @InjectRepository(Task)
     private readonly tasksRepository: Repository<Task>,
     @InjectRepository(AgentEntity)
     private readonly agentsRepository: Repository<AgentEntity>,
   ) {}
+
+  subscribeToProjectTasks(
+    projectId: string,
+  ): Observable<{ data: { event: string; task: Task } }> {
+    return this.taskEvents$.asObservable().pipe(
+      filter((e) => e.projectId === projectId),
+      map((e) => ({ data: { event: e.event, task: e.task } })),
+    );
+  }
+
+  private formatTaskForSse(task: Task, projectId?: string): Task {
+    const resolvedProjectId = projectId || task.projectId || task.project?.id;
+    return {
+      ...task,
+      projectId: resolvedProjectId,
+    } as Task;
+  }
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
     if (
@@ -37,7 +62,13 @@ export class TasksService {
       project: { id: projectId } as Project,
       assignee: assigneeId ? ({ id: assigneeId } as AgentEntity) : null,
     });
-    return this.tasksRepository.save(task);
+    const savedTask = await this.tasksRepository.save(task);
+    this.taskEvents$.next({
+      event: 'created',
+      task: this.formatTaskForSse(savedTask, projectId),
+      projectId,
+    });
+    return savedTask;
   }
 
   async findAll(
@@ -98,11 +129,35 @@ export class TasksService {
     if (updateTaskDto.priority !== undefined)
       task.priority = updateTaskDto.priority;
 
-    return this.tasksRepository.save(task);
+    const savedTask = await this.tasksRepository.save(task);
+    const resolvedProjectId = projectId || task.project?.id || task.projectId;
+    this.taskEvents$.next({
+      event: 'updated',
+      task: this.formatTaskForSse(savedTask, resolvedProjectId),
+      projectId: resolvedProjectId,
+    });
+    return savedTask;
   }
 
   async remove(id: string, projectId?: string): Promise<void> {
     const task = await this.findOne(id, projectId);
     await this.tasksRepository.remove(task);
+    const resolvedProjectId = projectId || task.project?.id || task.projectId;
+    this.taskEvents$.next({
+      event: 'deleted',
+      task: this.formatTaskForSse(task, resolvedProjectId),
+      projectId: resolvedProjectId,
+    });
+  }
+
+  emitTaskEvent(task: Task, event: string) {
+    const projectId = task.projectId || task.project?.id;
+    if (projectId) {
+      this.taskEvents$.next({
+        event,
+        task: this.formatTaskForSse(task, projectId),
+        projectId,
+      });
+    }
   }
 }

@@ -47,10 +47,10 @@ describe('AuthContext', () => {
 
   it('should login successfully and store token', async () => {
     const mockUser = { id: '1', username: 'testuser', email: 'test@example.com' };
-    (authApi.login as any).mockResolvedValue({
+    vi.mocked(authApi.login).mockResolvedValue({
       access_token: 'fake-token',
     });
-    (authApi.me as any).mockResolvedValue(mockUser);
+    vi.mocked(authApi.me).mockResolvedValue(mockUser as any);
 
     render(
       <AuthProvider>
@@ -72,7 +72,7 @@ describe('AuthContext', () => {
   it('should logout and clear token', async () => {
     localStorage.setItem('auth_token', 'fake-token');
     const mockUser = { id: '1', username: 'testuser', email: 'test@example.com' };
-    (authApi.me as any).mockResolvedValue(mockUser);
+    vi.mocked(authApi.me).mockResolvedValue(mockUser as any);
 
     render(
       <AuthProvider>
@@ -95,7 +95,7 @@ describe('AuthContext', () => {
   it('should restore user from token on mount', async () => {
     localStorage.setItem('auth_token', 'fake-token');
     const mockUser = { id: '1', username: 'restored-user', email: 'test@example.com' };
-    (authApi.me as any).mockResolvedValue(mockUser);
+    vi.mocked(authApi.me).mockResolvedValue(mockUser as any);
 
     render(
       <AuthProvider>

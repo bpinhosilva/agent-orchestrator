@@ -54,7 +54,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
       },
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'ui', 'dist'),
+      rootPath:
+        process.env.NODE_ENV === 'production'
+          ? join(__dirname, 'ui')
+          : join(__dirname, '..', 'ui', 'dist'),
     }),
     CommonModule,
     UploadsModule,

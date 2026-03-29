@@ -10,6 +10,8 @@ interface AttachmentItemProps {
 
 const AttachmentItem: React.FC<AttachmentItemProps> = ({ name, size, type, filePath }) => {
   const isImage = ['png', 'jpg', 'jpeg', 'svg', 'gif'].includes(type.toLowerCase());
+  // The backend uses api/v1 global prefix and uploads/artifacts as the controller path.
+  // We use a relative path starting with /api/v1 to hit the Vite proxy correctly.
   const artifactUrl = filePath.startsWith('http') ? filePath : `/api/v1/${filePath}`;
 
   return (

@@ -7,6 +7,7 @@ import { AgentEntity } from '../agents/entities/agent.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskComment } from './entities/comment.entity';
 import { StorageService } from '../common/storage.service';
+import { TasksService } from './tasks.service';
 
 describe('TaskSchedulerService', () => {
   let service: TaskSchedulerService;
@@ -52,6 +53,7 @@ describe('TaskSchedulerService', () => {
         },
         { provide: AgentsService, useValue: mockAgentsService },
         { provide: StorageService, useValue: mockStorageService },
+        { provide: TasksService, useValue: { emitTaskEvent: jest.fn() } },
       ],
     }).compile();
 
@@ -116,7 +118,7 @@ describe('TaskSchedulerService', () => {
       );
 
       // 4. Task status should be updated to REVIEW (via save)
-      expect(mockTaskRepository.save).toHaveBeenCalledTimes(2); // One for assignment, one for completion
+      expect(mockTaskRepository.save).toHaveBeenCalledTimes(3); // One for assignment, two for performance (IN_PROGRESS then REVIEW)
 
       // 5. Comment should be saved
       expect(mockCommentRepository.save).toHaveBeenCalled();

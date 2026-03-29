@@ -5,7 +5,8 @@ import TaskBoard from '../components/tasks/TaskBoard';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import { useProject } from '../hooks/useProject';
 import { useNotification } from '../hooks/useNotification';
-import { tasksApi, TaskStatus } from '../api/tasks';
+import { useTaskSSE } from '../hooks/useTaskSSE';
+import { tasksApi, TaskStatus, type Task as ApiTask } from '../api/tasks';
 import TaskCard from '../components/tasks/TaskCard';
 import ArchiveZone from '../components/tasks/ArchiveZone';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -104,7 +105,61 @@ const TaskManager: React.FC = () => {
     fetchTasks();
   }, [fetchTasks, refreshKey]);
 
+  const handleSseUpdate = useCallback((event: string, updatedTaskData: ApiTask) => {
+    if (!activeProject || updatedTaskData.projectId !== activeProject.id) return;
+
+    const mappedTask: ComponentTask = {
+      id: updatedTaskData.id,
+      status: updatedTaskData.status as ComponentTask['status'],
+      code: `#TASK-${updatedTaskData.id.substring(0, 4).toUpperCase()}`,
+      title: updatedTaskData.title,
+      priority: updatedTaskData.priority as ComponentTask['priority'],
+      agent: {
+        name: updatedTaskData.assignee?.name || 'Unassigned',
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(updatedTaskData.assignee?.name || 'U')}&background=random&color=fff`,
+        colorClass: 'bg-surface-container-highest border-outline-variant/30'
+      },
+      isActive: updatedTaskData.status === 'in-progress',
+      progress: updatedTaskData.status === 'done' ? 100 : updatedTaskData.status === 'in-progress' ? 50 : 0,
+      projectId: updatedTaskData.projectId,
+      updatedAt: updatedTaskData.updatedAt
+    };
+
+    setTasks(prevTasks => {
+      if (event === 'deleted' || updatedTaskData.status === 'archived') {
+        return prevTasks.filter(t => t.id !== updatedTaskData.id);
+      }
+      
+      const exists = prevTasks.some(t => t.id === updatedTaskData.id);
+      if (exists) {
+        return prevTasks.map(t => t.id === updatedTaskData.id ? mappedTask : t).sort((a, b) => {
+          if (a.status === 'backlog' && b.status === 'backlog') {
+            return (a.priority || 0) - (b.priority || 0);
+          }
+          if (a.status !== 'backlog' && b.status !== 'backlog') {
+            return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+          }
+          return 0;
+        });
+      } else {
+        const newTasks = [mappedTask, ...prevTasks];
+        return newTasks.sort((a, b) => {
+          if (a.status === 'backlog' && b.status === 'backlog') {
+            return (a.priority || 0) - (b.priority || 0);
+          }
+          if (a.status !== 'backlog' && b.status !== 'backlog') {
+            return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+          }
+          return 0;
+        });
+      }
+    });
+  }, [activeProject]);
+
+  useTaskSSE(activeProject?.id, handleSseUpdate);
+
   const handleTaskCreated = () => {
+    // Rely on SSE or keep the fallback
     setRefreshKey(prev => prev + 1);
   };
 

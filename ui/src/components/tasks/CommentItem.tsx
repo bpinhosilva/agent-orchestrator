@@ -79,7 +79,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onDelete }) => {
                   name={artifact.originalName}
                   type={artifact.mimeType.split('/')[1] || 'file'}
                   filePath={artifact.filePath}
-                  size="2.4 MB" // Placeholder size logic
+                  size="Artifact" 
                 />
               ))}
             </div>

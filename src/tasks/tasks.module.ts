@@ -12,14 +12,33 @@ import { Project } from '../projects/entities/project.entity';
 import { TaskSchedulerService } from './task-scheduler.service';
 import { AgentsModule } from '../agents/agents.module';
 import { ProjectsModule } from '../projects/projects.module';
+import { RecurrentTask } from './entities/recurrent-task.entity';
+import { RecurrentTaskExec } from './entities/recurrent-task-exec.entity';
+import { RecurrentTasksController } from './recurrent-tasks.controller';
+import { RecurrentTasksService } from './recurrent-tasks.service';
+import { RecurrentTaskSchedulerService } from './recurrent-task-scheduler.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskComment, AgentEntity, User, Project]),
+    TypeOrmModule.forFeature([
+      Task,
+      TaskComment,
+      AgentEntity,
+      User,
+      Project,
+      RecurrentTask,
+      RecurrentTaskExec,
+    ]),
     AgentsModule,
     ProjectsModule,
   ],
-  controllers: [TasksController, CommentsController],
-  providers: [TasksService, CommentsService, TaskSchedulerService],
+  controllers: [TasksController, CommentsController, RecurrentTasksController],
+  providers: [
+    TasksService,
+    CommentsService,
+    TaskSchedulerService,
+    RecurrentTasksService,
+    RecurrentTaskSchedulerService,
+  ],
 })
 export class TasksModule {}

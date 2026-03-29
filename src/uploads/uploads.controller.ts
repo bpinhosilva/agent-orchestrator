@@ -11,6 +11,9 @@ import { StorageService } from '../common/storage.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { Public } from '../auth/decorators/public.decorator';
+
+@Public()
 @Controller('uploads/artifacts')
 export class UploadsController {
   constructor(private readonly storageService: StorageService) {}

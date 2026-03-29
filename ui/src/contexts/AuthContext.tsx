@@ -42,27 +42,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [restoreSession]);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authApi.login(email, password);
-      localStorage.setItem(AUTH_TOKEN_KEY, response.access_token);
-      setToken(response.access_token);
-      
-      // Fetch user info after login
-      const currentUser = await authApi.me();
-      setUser(currentUser);
-    } catch (error) {
-      throw error;
-    }
+    const response = await authApi.login(email, password);
+    localStorage.setItem(AUTH_TOKEN_KEY, response.access_token);
+    setToken(response.access_token);
+    
+    // Fetch user info after login
+    const currentUser = await authApi.me();
+    setUser(currentUser);
   };
 
   const register = async (username: string, email: string, password: string) => {
-    try {
-      await authApi.register(username, email, password);
-      // Automatically login after registration
-      await login(email, password);
-    } catch (error) {
-      throw error;
-    }
+    await authApi.register(username, email, password);
+    // Automatically login after registration
+    await login(email, password);
   };
 
   const value: AuthContextType = {

@@ -20,8 +20,9 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate('/');
-    } catch (err: any) {
-      let message = err.response?.data?.message || 'Authentication failed. Please check your credentials.';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string | string[] } } };
+      let message = error.response?.data?.message || 'Authentication failed. Please check your credentials.';
       if (Array.isArray(message)) {
         message = message.join('. ');
       }

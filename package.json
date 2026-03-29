@@ -26,9 +26,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && chmod +x dist/cli/index.js",
     "build:ui": "npm --prefix ui run build",
-    "build:all": "npm run build && npm run build:ui",
+    "build:all": "npm run build && npm run build:ui && mkdir -p dist/ui && cp -R ui/dist/* dist/ui/",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -37,7 +37,7 @@
     "predev": "fuser -k 3000/tcp || true",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/src/main",
+    "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "lint:api": "npm run lint",
     "lint:ui": "npm --prefix ui run lint",
@@ -51,11 +51,11 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky",
-    "cli:build": "tsc src/cli.ts --outDir dist --esModuleInterop --skipLibCheck --target es2020 --moduleResolution node --module commonjs --experimentalDecorators --emitDecoratorMetadata && chmod +x dist/cli.js",
+    "cli:build": "tsc src/cli/index.ts --outDir dist --rootDir src --esModuleInterop --skipLibCheck --target es2020 --moduleResolution node --module commonjs --experimentalDecorators --emitDecoratorMetadata && chmod +x dist/cli/index.js",
     "generate:postman": "ts-node scripts/generate-postman.ts"
   },
   "bin": {
-    "agent-orchestrator": "dist/cli.js"
+    "agent-orchestrator": "dist/cli/index.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.84",
@@ -77,6 +77,7 @@
     "class-validator": "^0.14.1",
     "commander": "^14.0.3",
     "concurrently": "^9.2.1",
+    "enquirer": "^2.4.1",
     "joi": "^18.1.1",
     "openapi-to-postmanv2": "^6.0.0",
     "passport": "^0.7.0",
