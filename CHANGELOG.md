@@ -1,3 +1,10 @@
+# [1.0.0-alpha.18](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.17...v1.0.0-alpha.18) (2026-03-29)
+
+
+### Features
+
+* implement automated database migrations and interactive admin user setup in CLI ([6868b13](https://github.com/bpinhosilva/agent-orchestrator/commit/6868b137ad80c85d4ffc56b884b8016df8a3c533))
+
 # [1.0.0-alpha.17](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.16...v1.0.0-alpha.17) (2026-03-29)
 
 
