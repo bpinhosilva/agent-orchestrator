@@ -51,7 +51,7 @@ const ENV_PATH = APP_HOME ? join(APP_HOME, '.env') : '.env';
           ...baseConfig,
           entities: [], // Important: Use empty array here so autoLoadEntities can work without duplication
           autoLoadEntities: true,
-          synchronize: false,
+          synchronize: baseConfig.synchronize,
           migrationsRun: false,
         };
       },

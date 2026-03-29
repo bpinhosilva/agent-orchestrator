@@ -17,16 +17,16 @@ import * as bcrypt from 'bcrypt';
 import { createDataSource } from '../config/typeorm';
 import { User } from '../users/entities/user.entity';
 
-const program = new Command();
+let program = new Command();
 
-const PID_DIR = process.env.AGENT_ORCHESTRATOR_HOME;
-const PID_FILE = path.join(PID_DIR, 'pid');
-const LOG_FILE = path.join(PID_DIR, 'server.log');
-const ENV_PATH = path.join(PID_DIR, '.env');
+export const PID_DIR = process.env.AGENT_ORCHESTRATOR_HOME;
+export const PID_FILE = path.join(PID_DIR, 'pid');
+export const LOG_FILE = path.join(PID_DIR, 'server.log');
+export const ENV_PATH = path.join(PID_DIR, '.env');
 
 // Determine the package root directory (where package.json is)
 // When running from dist/cli/index.js, it's two levels up.
-const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
+export const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
 
 // Ensure PID_DIR exists
 if (!fs.existsSync(PID_DIR)) {
@@ -51,7 +51,7 @@ interface KeyConfig {
   key: string;
 }
 
-function checkIfRunning(): number | null {
+export function checkIfRunning(): number | null {
   if (fs.existsSync(PID_FILE)) {
     const pid = parseInt(fs.readFileSync(PID_FILE, 'utf8').trim(), 10);
     try {
@@ -65,7 +65,7 @@ function checkIfRunning(): number | null {
   return null;
 }
 
-async function checkPendingMigrations(): Promise<{
+export async function checkPendingMigrations(): Promise<{
   hasPending: boolean;
   isEmpty: boolean;
 }> {
@@ -94,7 +94,7 @@ async function checkPendingMigrations(): Promise<{
   }
 }
 
-async function runMigrations(force = false): Promise<void> {
+export async function runMigrations(force = false): Promise<void> {
   const dataSource = createDataSource();
   try {
     await dataSource.initialize();
@@ -124,7 +124,7 @@ async function runMigrations(force = false): Promise<void> {
   }
 }
 
-async function setupAdminUser(): Promise<void> {
+export async function setupAdminUser(): Promise<void> {
   console.log('\n--- Admin User Setup ---');
 
   const response = await enquirer.prompt<{
@@ -196,183 +196,283 @@ async function setupAdminUser(): Promise<void> {
   }
 }
 
-program
-  .name('agent-orchestrator')
-  .description('An open-source AI agent orchestrator platform')
-  .version('0.0.1');
+export function defineCommands() {
+  program
+    .name('agent-orchestrator')
+    .description('An open-source AI agent orchestrator platform')
+    .version('0.0.1');
 
-program
-  .command('setup')
-  .description('Run the interactive setup configuration')
-  .action(async () => {
-    console.log('Starting interactive setup...');
-    try {
-      const basicResponse = await enquirer.prompt<BasicConfig>([
-        {
-          type: 'input',
-          name: 'port',
-          message: 'What port should the orchestrator run on?',
-          initial: '15789',
-        },
-        {
-          type: 'select',
-          name: 'dbType',
-          message: 'Which database type do you want to use?',
-          choices: ['postgres', 'sqlite'],
-        },
-        {
-          type: 'confirm',
-          name: 'dbLogging',
-          message: 'Enable database query logging?',
-          initial: false,
-        },
-      ]);
-
-      let databaseUrl = '';
-      if (basicResponse.dbType === 'postgres') {
-        const dbResponse = await enquirer.prompt<DatabaseConfig>([
+  program
+    .command('setup')
+    .description('Run the interactive setup configuration')
+    .action(async () => {
+      console.log('Starting interactive setup...');
+      try {
+        const basicResponse = await enquirer.prompt<BasicConfig>([
           {
             type: 'input',
-            name: 'databaseUrl',
-            message:
-              'Enter your PostgreSQL connection string (e.g., postgres://user:password@localhost:5432/dbname):',
-            validate: (value: string) =>
-              value.startsWith('postgres://') || 'Invalid PostgreSQL URL',
+            name: 'port',
+            message: 'What port should the orchestrator run on?',
+            initial: '15789',
           },
-        ]);
-        databaseUrl = dbResponse.databaseUrl;
-      }
-
-      const providerResponse = await enquirer.prompt<ProviderConfig>([
-        {
-          type: 'multiselect',
-          name: 'providers',
-          message:
-            'Which AI providers do you want to configure? (Space to select, Enter to confirm)',
-          choices: ['gemini', 'anthropic'],
-        },
-      ]);
-
-      let geminiKey = '';
-      let anthropicKey = '';
-      const selectedProviders = providerResponse.providers;
-
-      if (selectedProviders.includes('gemini')) {
-        const keyRes = await enquirer.prompt<KeyConfig>([
           {
-            type: 'input',
-            name: 'key',
-            message: 'Enter your Google Gemini API Key:',
+            type: 'select',
+            name: 'dbType',
+            message: 'Which database type do you want to use?',
+            choices: ['postgres', 'sqlite'],
           },
-        ]);
-        geminiKey = keyRes.key;
-      }
-
-      if (selectedProviders.includes('anthropic')) {
-        const keyRes = await enquirer.prompt<KeyConfig>([
           {
-            type: 'input',
-            name: 'key',
-            message: 'Enter your Anthropic Claude API Key:',
-          },
-        ]);
-        anthropicKey = keyRes.key;
-      }
-
-      let jwtSecret = '';
-
-      if (fs.existsSync(ENV_PATH)) {
-        const existingEnv = fs.readFileSync(ENV_PATH, 'utf8');
-        const jwtMatch = existingEnv.match(/^JWT_SECRET=(.*)$/m);
-
-        if (jwtMatch) {
-          const { overwriteJwt } = await enquirer.prompt<{
-            overwriteJwt: boolean;
-          }>({
             type: 'confirm',
-            name: 'overwriteJwt',
-            message:
-              'A JWT_SECRET already exists. Do you want to generate a new one?',
+            name: 'dbLogging',
+            message: 'Enable database query logging?',
             initial: false,
-          });
+          },
+        ]);
 
-          if (overwriteJwt) {
-            jwtSecret = crypto.randomBytes(32).toString('hex');
+        let databaseUrl = '';
+        if (basicResponse.dbType === 'postgres') {
+          const dbResponse = await enquirer.prompt<DatabaseConfig>([
+            {
+              type: 'input',
+              name: 'databaseUrl',
+              message:
+                'Enter your PostgreSQL connection string (e.g., postgres://user:password@localhost:5432/dbname):',
+              validate: (value: string) =>
+                value.startsWith('postgres://') || 'Invalid PostgreSQL URL',
+            },
+          ]);
+          databaseUrl = dbResponse.databaseUrl;
+        }
+
+        const providerResponse = await enquirer.prompt<ProviderConfig>([
+          {
+            type: 'multiselect',
+            name: 'providers',
+            message:
+              'Which AI providers do you want to configure? (Space to select, Enter to confirm)',
+            choices: ['gemini', 'anthropic'],
+          },
+        ]);
+
+        let geminiKey = '';
+        let anthropicKey = '';
+        const selectedProviders = providerResponse.providers;
+
+        if (selectedProviders.includes('gemini')) {
+          const keyRes = await enquirer.prompt<KeyConfig>([
+            {
+              type: 'input',
+              name: 'key',
+              message: 'Enter your Google Gemini API Key:',
+            },
+          ]);
+          geminiKey = keyRes.key;
+        }
+
+        if (selectedProviders.includes('anthropic')) {
+          const keyRes = await enquirer.prompt<KeyConfig>([
+            {
+              type: 'input',
+              name: 'key',
+              message: 'Enter your Anthropic Claude API Key:',
+            },
+          ]);
+          anthropicKey = keyRes.key;
+        }
+
+        let jwtSecret = '';
+
+        if (fs.existsSync(ENV_PATH)) {
+          const existingEnv = fs.readFileSync(ENV_PATH, 'utf8');
+          const jwtMatch = existingEnv.match(/^JWT_SECRET=(.*)$/m);
+
+          if (jwtMatch) {
+            const { overwriteJwt } = await enquirer.prompt<{
+              overwriteJwt: boolean;
+            }>({
+              type: 'confirm',
+              name: 'overwriteJwt',
+              message:
+                'A JWT_SECRET already exists. Do you want to generate a new one?',
+              initial: false,
+            });
+
+            if (overwriteJwt) {
+              jwtSecret = crypto.randomBytes(32).toString('hex');
+            } else {
+              jwtSecret = jwtMatch[1];
+            }
           } else {
-            jwtSecret = jwtMatch[1];
+            jwtSecret = crypto.randomBytes(32).toString('hex');
           }
         } else {
           jwtSecret = crypto.randomBytes(32).toString('hex');
         }
-      } else {
-        jwtSecret = crypto.randomBytes(32).toString('hex');
-      }
 
-      console.log('Generating configuration...');
-      let envContent = `NODE_ENV=production\nPORT=${basicResponse.port}\nDB_TYPE=${basicResponse.dbType}\nDB_LOGGING=${basicResponse.dbLogging}\n`;
-      if (databaseUrl) {
-        envContent += `DATABASE_URL=${databaseUrl}\n`;
-      }
-      if (geminiKey) {
-        envContent += `GEMINI_API_KEY=${geminiKey}\n`;
-      }
-      if (anthropicKey) {
-        envContent += `ANTHROPIC_API_KEY=${anthropicKey}\n`;
-      }
-      if (jwtSecret) {
-        envContent += `JWT_SECRET=${jwtSecret}\n`;
-      }
-
-      fs.writeFileSync(ENV_PATH, envContent);
-      console.log('Configuration saved to .env file successfully!');
-
-      const { hasPending, isEmpty } = await checkPendingMigrations();
-      if (isEmpty) {
-        console.log('Database is empty. Initializing...');
-        try {
-          await runMigrations();
-          await setupAdminUser();
-        } catch (err: unknown) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          console.error(`Initialization failed: ${errorMessage}`);
+        console.log('Generating configuration...');
+        let envContent = `NODE_ENV=production\nPORT=${basicResponse.port}\nDB_TYPE=${basicResponse.dbType}\nDB_LOGGING=${basicResponse.dbLogging}\n`;
+        if (databaseUrl) {
+          envContent += `DATABASE_URL=${databaseUrl}\n`;
         }
-      } else if (hasPending) {
-        const { confirmMigration } = await enquirer.prompt<{
-          confirmMigration: boolean;
-        }>({
-          type: 'confirm',
-          name: 'confirmMigration',
-          message:
-            'Pending migrations detected on an existing database. Do you want to run them?',
-          initial: false,
-        });
+        if (geminiKey) {
+          envContent += `GEMINI_API_KEY=${geminiKey}\n`;
+        }
+        if (anthropicKey) {
+          envContent += `ANTHROPIC_API_KEY=${anthropicKey}\n`;
+        }
+        if (jwtSecret) {
+          envContent += `JWT_SECRET=${jwtSecret}\n`;
+        }
 
-        if (confirmMigration) {
+        fs.writeFileSync(ENV_PATH, envContent);
+        console.log('Configuration saved to .env file successfully!');
+
+        const { hasPending, isEmpty } = await checkPendingMigrations();
+        if (isEmpty) {
+          console.log('Database is empty. Initializing...');
           try {
             await runMigrations();
             await setupAdminUser();
           } catch (err: unknown) {
             const errorMessage =
               err instanceof Error ? err.message : String(err);
-            console.error(`Migration failed: ${errorMessage}`);
+            console.error(`Initialization failed: ${errorMessage}`);
+          }
+        } else if (hasPending) {
+          const { confirmMigration } = await enquirer.prompt<{
+            confirmMigration: boolean;
+          }>({
+            type: 'confirm',
+            name: 'confirmMigration',
+            message:
+              'Pending migrations detected on an existing database. Do you want to run them?',
+            initial: false,
+          });
+
+          if (confirmMigration) {
+            try {
+              await runMigrations();
+              await setupAdminUser();
+            } catch (err: unknown) {
+              const errorMessage =
+                err instanceof Error ? err.message : String(err);
+              console.error(`Migration failed: ${errorMessage}`);
+            }
+          } else {
+            console.log('Database migration skipped.');
           }
         } else {
-          console.log('Database migration skipped.');
-        }
-      } else {
-        console.log('Database is already up to date.');
-        const { forceMigration } = await enquirer.prompt<{
-          forceMigration: boolean;
-        }>({
-          type: 'confirm',
-          name: 'forceMigration',
-          message:
-            'Do you want to force migration anyway? (This will DROP ALL DATA and re-initialize the database)',
-          initial: false,
-        });
+          console.log('Database is already up to date.');
+          const { forceMigration } = await enquirer.prompt<{
+            forceMigration: boolean;
+          }>({
+            type: 'confirm',
+            name: 'forceMigration',
+            message:
+              'Do you want to force migration anyway? (This will DROP ALL DATA and re-initialize the database)',
+            initial: false,
+          });
 
-        if (forceMigration) {
-          try {
+          if (forceMigration) {
+            try {
+              await enquirer.prompt({
+                type: 'input',
+                name: 'continue',
+                message:
+                  'Press Enter to confirm and start the destructive initialization...',
+              });
+              await runMigrations(true);
+              await setupAdminUser();
+            } catch (err: unknown) {
+              const errorMessage =
+                err instanceof Error ? err.message : String(err);
+              console.error(`Migration failed: ${errorMessage}`);
+            }
+          } else {
+            // Check if we should still offer admin setup if not forcing migration
+            await setupAdminUser();
+          }
+        }
+      } catch {
+        console.error('Setup cancelled or failed.');
+      }
+    });
+
+  program
+    .command('run')
+    .description('Start the orchestrator server (detached)')
+    .action(() => {
+      const existingPid = checkIfRunning();
+      if (existingPid) {
+        console.log(`Orchestrator is already running with PID: ${existingPid}`);
+        return;
+      }
+
+      console.log('Starting Agent Orchestrator in background...');
+
+      if (!fs.existsSync(PID_DIR)) {
+        fs.mkdirSync(PID_DIR, { recursive: true });
+      }
+
+      const logStream = fs.openSync(LOG_FILE, 'a');
+
+      // We point to the main.js entry point in dist
+      const mainPath = path.join(PACKAGE_ROOT, 'dist/main.js');
+
+      const child = spawn('node', [mainPath], {
+        detached: true,
+        stdio: ['ignore', logStream, logStream],
+        cwd: PACKAGE_ROOT,
+        env: process.env,
+      });
+
+      fs.writeFileSync(PID_FILE, child.pid?.toString() || '');
+      child.unref();
+
+      console.log(`Orchestrator started in background with PID: ${child.pid}`);
+      console.log(`Logs are available at: ${LOG_FILE}`);
+    });
+
+  program
+    .command('stop')
+    .description('Stop the orchestrator server')
+    .action(() => {
+      const pid = checkIfRunning();
+      if (!pid) {
+        console.log('Orchestrator is not running.');
+        return;
+      }
+
+      console.log(`Stopping Orchestrator (PID: ${pid})...`);
+      try {
+        process.kill(pid, 'SIGTERM');
+        console.log('Orchestrator stopped.');
+      } catch (e) {
+        console.error(`Failed to stop process ${pid}:`, e);
+      }
+
+      if (fs.existsSync(PID_FILE)) {
+        fs.unlinkSync(PID_FILE);
+      }
+    });
+
+  program
+    .command('migrate')
+    .description('Run pending database migrations')
+    .option('-f, --force', 'Force re-initialization (DROP ALL DATA)')
+    .action(async (options: { force?: boolean }) => {
+      try {
+        if (options.force) {
+          const { confirmForce } = await enquirer.prompt<{
+            confirmForce: boolean;
+          }>({
+            type: 'confirm',
+            name: 'confirmForce',
+            message:
+              'Are you absolutely sure you want to DROP ALL DATA and re-initialize?',
+            initial: false,
+          });
+          if (confirmForce) {
             await enquirer.prompt({
               type: 'input',
               name: 'continue',
@@ -380,139 +480,56 @@ program
                 'Press Enter to confirm and start the destructive initialization...',
             });
             await runMigrations(true);
-            await setupAdminUser();
-          } catch (err: unknown) {
-            const errorMessage =
-              err instanceof Error ? err.message : String(err);
-            console.error(`Migration failed: ${errorMessage}`);
+          } else {
+            console.log('Force migration cancelled.');
           }
-        } else {
-          // Check if we should still offer admin setup if not forcing migration
-          await setupAdminUser();
+          return;
         }
-      }
-    } catch {
-      console.error('Setup cancelled or failed.');
-    }
-  });
 
-program
-  .command('run')
-  .description('Start the orchestrator server (detached)')
-  .action(() => {
-    const existingPid = checkIfRunning();
-    if (existingPid) {
-      console.log(`Orchestrator is already running with PID: ${existingPid}`);
-      return;
-    }
+        const { hasPending, isEmpty } = await checkPendingMigrations();
 
-    console.log('Starting Agent Orchestrator in background...');
+        if (isEmpty) {
+          console.log('Database is empty. Initializing...');
+          await runMigrations();
+          return;
+        }
 
-    if (!fs.existsSync(PID_DIR)) {
-      fs.mkdirSync(PID_DIR, { recursive: true });
-    }
+        if (!hasPending) {
+          console.log('Database is already up to date.');
+          return;
+        }
 
-    const logStream = fs.openSync(LOG_FILE, 'a');
-
-    // We point to the main.js entry point in dist
-    const child = spawn('node', [path.join(__dirname, '../main.js')], {
-      detached: true,
-      stdio: ['ignore', logStream, logStream],
-      cwd: PACKAGE_ROOT,
-      env: process.env,
-    });
-
-    fs.writeFileSync(PID_FILE, child.pid?.toString() || '');
-    child.unref();
-
-    console.log(`Orchestrator started in background with PID: ${child.pid}`);
-    console.log(`Logs are available at: ${LOG_FILE}`);
-  });
-
-program
-  .command('stop')
-  .description('Stop the orchestrator server')
-  .action(() => {
-    const pid = checkIfRunning();
-    if (!pid) {
-      console.log('Orchestrator is not running.');
-      return;
-    }
-
-    console.log(`Stopping Orchestrator (PID: ${pid})...`);
-    try {
-      process.kill(pid, 'SIGTERM');
-      console.log('Orchestrator stopped.');
-    } catch (e) {
-      console.error(`Failed to stop process ${pid}:`, e);
-    }
-
-    if (fs.existsSync(PID_FILE)) {
-      fs.unlinkSync(PID_FILE);
-    }
-  });
-
-program
-  .command('migrate')
-  .description('Run pending database migrations')
-  .option('-f, --force', 'Force re-initialization (DROP ALL DATA)')
-  .action(async (options: { force?: boolean }) => {
-    try {
-      if (options.force) {
-        const { confirmForce } = await enquirer.prompt<{
-          confirmForce: boolean;
+        const { confirmMigration } = await enquirer.prompt<{
+          confirmMigration: boolean;
         }>({
           type: 'confirm',
-          name: 'confirmForce',
-          message:
-            'Are you absolutely sure you want to DROP ALL DATA and re-initialize?',
+          name: 'confirmMigration',
+          message: 'Pending migrations detected. Do you want to run them?',
           initial: false,
         });
-        if (confirmForce) {
-          await enquirer.prompt({
-            type: 'input',
-            name: 'continue',
-            message:
-              'Press Enter to confirm and start the destructive initialization...',
-          });
-          await runMigrations(true);
+
+        if (confirmMigration) {
+          await runMigrations();
         } else {
-          console.log('Force migration cancelled.');
+          console.log('Migration cancelled.');
         }
-        return;
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error(`Migration failed: ${errorMessage}`);
       }
+    });
+}
 
-      const { hasPending, isEmpty } = await checkPendingMigrations();
+export async function runCli(argv = process.argv) {
+  program = new Command();
+  defineCommands();
+  await program.parseAsync(argv);
+}
 
-      if (isEmpty) {
-        console.log('Database is empty. Initializing...');
-        await runMigrations();
-        return;
-      }
-
-      if (!hasPending) {
-        console.log('Database is already up to date.');
-        return;
-      }
-
-      const { confirmMigration } = await enquirer.prompt<{
-        confirmMigration: boolean;
-      }>({
-        type: 'confirm',
-        name: 'confirmMigration',
-        message: 'Pending migrations detected. Do you want to run them?',
-        initial: false,
-      });
-
-      if (confirmMigration) {
-        await runMigrations();
-      } else {
-        console.log('Migration cancelled.');
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error(`Migration failed: ${errorMessage}`);
-    }
+if (require.main === module) {
+  runCli().catch((err) => {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`CLI execution failed: ${errorMessage}`);
+    process.exit(1);
   });
-
-program.parse(process.argv);
+}

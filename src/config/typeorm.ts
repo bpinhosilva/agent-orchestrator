@@ -15,7 +15,10 @@ export const getTypeOrmConfig = (
     (databaseUrl ? 'postgres' : 'sqlite');
 
   const packageRoot = resolve(__dirname, '..', '..');
-  const isTsNode = process.env.TS_NODE === 'true';
+  const isTsNode =
+    process.env.TS_NODE === 'true' ||
+    !!process.env.JEST_WORKER_ID ||
+    process.env.NODE_ENV === 'test';
 
   const entities = isTsNode
     ? [join(packageRoot, 'src/**/*.entity.ts')]
@@ -23,6 +26,10 @@ export const getTypeOrmConfig = (
   const migrations = isTsNode
     ? [join(packageRoot, 'src/migrations/*.ts')]
     : [join(packageRoot, 'dist/migrations/*.js')];
+
+  if (process.env.NODE_ENV === 'test') {
+    console.log('Entities:', entities, 'Migrations:', migrations);
+  }
 
   const sqlitePath = APP_HOME
     ? join(APP_HOME, 'local.sqlite')
@@ -34,9 +41,9 @@ export const getTypeOrmConfig = (
     database: databaseUrl ? undefined : sqlitePath,
     entities,
     migrations,
-    synchronize: false,
+    synchronize: configService.get<string>('NODE_ENV') === 'development',
     logging: configService.get<string>('DB_LOGGING') === 'true',
-  };
+  } as DataSourceOptions;
 };
 
 export const createDataSource = (): DataSource => {

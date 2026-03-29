@@ -97,7 +97,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
     try {
       setFetchingAgents(true);
       const res = await agentsApi.findAll();
-      setAgents(res.data);
+      setAgents(res.data || []);
     } catch (error) {
       console.error('Failed to fetch agents:', error);
     } finally {

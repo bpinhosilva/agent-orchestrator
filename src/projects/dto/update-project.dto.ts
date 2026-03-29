@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/mapped-types';
 import { CreateProjectDto } from './create-project.dto';
 import { IsOptional, IsUUID } from 'class-validator';
 

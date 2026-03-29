@@ -2,7 +2,8 @@ import { ClaudeAgent } from './claude.agent';
 import { ConfigService } from '@nestjs/config';
 
 jest.mock('@anthropic-ai/claude-agent-sdk', () => {
-  const mockAsyncIterable = function* () {
+  const mockAsyncIterable = async function* () {
+    await Promise.resolve();
     yield {
       type: 'result',
       subtype: 'success',
@@ -37,7 +38,7 @@ describe('ClaudeAgent', () => {
   it('should throw an error if API key is not set during processText', async () => {
     mockConfigService.get.mockReturnValue(undefined);
     await expect(agent.processText('test')).rejects.toThrow(
-      'ANTHROPIC_API_KEY is required',
+      'ANTHROPIC_API_KEY is required to initialize ClaudeAgent',
     );
   });
 
