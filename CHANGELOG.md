@@ -1,3 +1,10 @@
+# [1.0.0-alpha.21](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.20...v1.0.0-alpha.21) (2026-03-30)
+
+
+### Features
+
+* enhance JWT security by specifying HS256 algorithm and improve logging in services ([349c94b](https://github.com/bpinhosilva/agent-orchestrator/commit/349c94b31bfdcc2f397cd81848bb2fd3b977a438))
+
 # [1.0.0-alpha.20](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.19...v1.0.0-alpha.20) (2026-03-30)
 
 
