@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,6 +17,8 @@ import { StorageService } from '../common/storage.service';
 
 @Injectable()
 export class CommentsService {
+  private readonly logger = new Logger(CommentsService.name);
+
   constructor(
     @InjectRepository(TaskComment)
     private readonly commentsRepository: Repository<TaskComment>,
@@ -146,9 +149,9 @@ export class CommentsService {
         try {
           await this.storageService.delete(artifact.filePath);
         } catch (error) {
-          console.error(
-            `Failed to delete artifact file ${artifact.filePath}:`,
-            error,
+          this.logger.error(
+            `Failed to delete artifact file ${artifact.filePath}`,
+            error instanceof Error ? error.stack : String(error),
           );
         }
       }

@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -8,6 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+
+const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -18,8 +20,28 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Apply Helmet for security headers
-  app.use(helmet());
+  // Apply Helmet with a tuned CSP:
+  // - Swagger UI needs inline scripts/styles and data: URIs for its assets
+  // - React SPA served from the same origin is covered by 'self'
+  // - API responses are JSON; no script execution needed from API paths
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"], // required by Swagger UI
+          styleSrc: ["'self'", "'unsafe-inline'", 'https:'], // Swagger loads Google Fonts
+          imgSrc: ["'self'", 'data:', 'https:'], // Swagger uses data: URIs for images
+          fontSrc: ["'self'", 'https:', 'data:'],
+          connectSrc: ["'self'"],
+          frameSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Swagger UI loads cross-origin resources
+    }),
+  );
 
   // Parse cookies
   app.use(cookieParser());
@@ -53,9 +75,9 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Application is running on: ${await app.getUrl()}`);
 }
-bootstrap().catch((err) => {
-  console.error('Application failed to start', err);
+bootstrap().catch((err: Error) => {
+  logger.error('Application failed to start', err.stack);
   process.exit(1);
 });

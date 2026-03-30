@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,6 +19,8 @@ import { Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class RecurrentTasksService {
+  private readonly logger = new Logger(RecurrentTasksService.name);
+
   constructor(
     @InjectRepository(RecurrentTask)
     private readonly repository: Repository<RecurrentTask>,
@@ -130,7 +133,7 @@ export class RecurrentTasksService {
       } catch (error: unknown) {
         // Log but don't fail the update if it was already stopped
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`Error unregistering task ${id}:`, message);
+        this.logger.error(`Error unregistering task ${id}: ${message}`);
       }
     }
 

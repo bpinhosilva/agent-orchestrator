@@ -45,6 +45,7 @@ export class AuthService {
   private generateAccessToken(payload: Record<string, string>): string {
     return this.jwtService.sign(payload, {
       expiresIn: this.accessTokenExpiresIn,
+      algorithm: 'HS256',
     });
   }
 
@@ -66,6 +67,7 @@ export class AuthService {
     const token = this.jwtService.sign(payload, {
       expiresIn: this.refreshTokenExpiresIn,
       secret: this.configService.get<string>('JWT_SECRET'),
+      algorithm: 'HS256',
     });
 
     // Hash the token before storing (security best practice)
@@ -90,6 +92,7 @@ export class AuthService {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
+        algorithms: ['HS256'],
       });
 
       if ((payload as Record<string, unknown>).type !== 'refresh') {
@@ -220,9 +223,8 @@ export class AuthService {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
+        algorithms: ['HS256'],
       });
-
-      // Mark all user's refresh tokens as revoked (logout)
 
       if ((payload as Record<string, unknown>).sub) {
         await this.refreshTokenRepository.update(
