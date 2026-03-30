@@ -1,3 +1,10 @@
+# [1.0.0-alpha.20](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.19...v1.0.0-alpha.20) (2026-03-30)
+
+
+### Features
+
+* implement security fixes ([f570f92](https://github.com/bpinhosilva/agent-orchestrator/commit/f570f92a10cf1473c36a0145c160f6e23905bb1f))
+
 # [1.0.0-alpha.19](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.18...v1.0.0-alpha.19) (2026-03-30)
 
 
