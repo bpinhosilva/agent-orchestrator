@@ -15,7 +15,19 @@ describe('TasksService', () => {
     findAndCount: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
+    manager: {
+      transaction: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+    },
   };
+
+  mockTaskRepository.manager.transaction.mockImplementation(
+    (cb: (manager: typeof mockTaskRepository.manager) => unknown) =>
+      cb(mockTaskRepository.manager),
+  );
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -55,12 +67,16 @@ describe('TasksService', () => {
         description: 'D',
         status: TaskStatus.BACKLOG,
       };
-      mockTaskRepository.create.mockReturnValue(taskObj);
-      mockTaskRepository.save.mockResolvedValue({ id: '1', ...taskObj });
+      mockTaskRepository.manager.create.mockReturnValue(taskObj);
+      mockTaskRepository.manager.save.mockResolvedValue({
+        id: '1',
+        ...taskObj,
+      });
 
       const result = await service.create(createDto);
       expect(result.id).toEqual('1');
-      expect(mockTaskRepository.create).toHaveBeenCalled();
+      expect(mockTaskRepository.manager.create).toHaveBeenCalled();
+      expect(mockTaskRepository.manager.save).toHaveBeenCalled();
     });
   });
 
@@ -106,24 +122,27 @@ describe('TasksService', () => {
 
   describe('update', () => {
     it('should update a task', async () => {
-      const task = { id: '1', title: 'Old' };
-      mockTaskRepository.findOne.mockResolvedValue(task);
-      mockTaskRepository.save.mockResolvedValue({ ...task, title: 'New' });
+      const task = { id: '1', title: 'Old', project: { id: 'uuid-123' } };
+      mockTaskRepository.manager.findOne.mockResolvedValue(task);
+      mockTaskRepository.manager.save.mockResolvedValue({
+        ...task,
+        title: 'New',
+      });
 
       const result = await service.update('1', { title: 'New' }, 'uuid-123');
       expect(result.title).toEqual('New');
-      expect(mockTaskRepository.save).toHaveBeenCalled();
+      expect(mockTaskRepository.manager.save).toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
     it('should remove a task', async () => {
-      const task = { id: '1' };
-      mockTaskRepository.findOne.mockResolvedValue(task);
-      mockTaskRepository.remove.mockResolvedValue(task);
+      const task = { id: '1', project: { id: 'uuid-123' } };
+      mockTaskRepository.manager.findOne.mockResolvedValue(task);
+      mockTaskRepository.manager.remove.mockResolvedValue(task);
 
       await service.remove('1', 'uuid-123');
-      expect(mockTaskRepository.remove).toHaveBeenCalledWith(task);
+      expect(mockTaskRepository.manager.remove).toHaveBeenCalledWith(task);
     });
   });
 });

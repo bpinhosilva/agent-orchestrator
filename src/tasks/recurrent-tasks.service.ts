@@ -26,22 +26,24 @@ export class RecurrentTasksService {
   ) {}
 
   async create(dto: CreateRecurrentTaskDto): Promise<RecurrentTask> {
-    const activeCount = await this.repository.count({
-      where: { status: RecurrentTaskStatus.ACTIVE },
-    });
+    return this.repository.manager.transaction(async (manager) => {
+      const activeCount = await manager.count(RecurrentTask, {
+        where: { status: RecurrentTaskStatus.ACTIVE },
+      });
 
-    if (dto.status !== RecurrentTaskStatus.PAUSED && activeCount >= 5) {
-      throw new BadRequestException(
-        'Maximum amount of active recurrent tasks (5) reached.',
-      );
-    }
+      if (dto.status !== RecurrentTaskStatus.PAUSED && activeCount >= 5) {
+        throw new BadRequestException(
+          'Maximum amount of active recurrent tasks (5) reached.',
+        );
+      }
 
-    const task = this.repository.create({
-      ...dto,
-      status: dto.status ?? RecurrentTaskStatus.ACTIVE,
-      assignee: { id: dto.assigneeId } as AgentEntity,
+      const task = manager.create(RecurrentTask, {
+        ...dto,
+        status: dto.status ?? RecurrentTaskStatus.ACTIVE,
+        assignee: { id: dto.assigneeId } as AgentEntity,
+      });
+      return manager.save(task);
     });
-    return this.repository.save(task);
   }
 
   async findAll(): Promise<any[]> {
@@ -85,39 +87,41 @@ export class RecurrentTasksService {
   }
 
   async update(id: string, dto: UpdateRecurrentTaskDto): Promise<any> {
-    const task = await this.repository.findOne({
-      where: { id },
-      relations: ['assignee'],
-    });
-    if (!task) {
-      throw new NotFoundException(`Recurrent task ${id} not found`);
-    }
-
-    if (
-      dto.status === RecurrentTaskStatus.ACTIVE &&
-      task.status !== RecurrentTaskStatus.ACTIVE
-    ) {
-      const activeCount = await this.repository.count({
-        where: { status: RecurrentTaskStatus.ACTIVE },
+    await this.repository.manager.transaction(async (manager) => {
+      const task = await manager.findOne(RecurrentTask, {
+        where: { id },
+        relations: ['assignee'],
       });
-      if (activeCount >= 5) {
-        throw new BadRequestException(
-          'Maximum amount of active recurrent tasks (5) reached.',
-        );
+      if (!task) {
+        throw new NotFoundException(`Recurrent task ${id} not found`);
       }
-    }
 
-    if (dto.assigneeId) {
-      task.assignee = { id: dto.assigneeId } as AgentEntity;
-    }
-    if (dto.title !== undefined) task.title = dto.title;
-    if (dto.description !== undefined) task.description = dto.description;
-    if (dto.status !== undefined) task.status = dto.status;
-    if (dto.priority !== undefined) task.priority = dto.priority;
-    if (dto.cronExpression !== undefined)
-      task.cronExpression = dto.cronExpression;
+      if (
+        dto.status === RecurrentTaskStatus.ACTIVE &&
+        task.status !== RecurrentTaskStatus.ACTIVE
+      ) {
+        const activeCount = await manager.count(RecurrentTask, {
+          where: { status: RecurrentTaskStatus.ACTIVE },
+        });
+        if (activeCount >= 5) {
+          throw new BadRequestException(
+            'Maximum amount of active recurrent tasks (5) reached.',
+          );
+        }
+      }
 
-    await this.repository.save(task);
+      if (dto.assigneeId) {
+        task.assignee = { id: dto.assigneeId } as AgentEntity;
+      }
+      if (dto.title !== undefined) task.title = dto.title;
+      if (dto.description !== undefined) task.description = dto.description;
+      if (dto.status !== undefined) task.status = dto.status;
+      if (dto.priority !== undefined) task.priority = dto.priority;
+      if (dto.cronExpression !== undefined)
+        task.cronExpression = dto.cronExpression;
+
+      await manager.save(task);
+    });
 
     // If task was paused or deleted, immediately stop it in the scheduler
     if (dto.status === RecurrentTaskStatus.PAUSED) {
@@ -134,15 +138,21 @@ export class RecurrentTasksService {
   }
 
   async remove(id: string): Promise<void> {
-    const task = await this.repository.findOne({ where: { id } });
-    if (!task) {
-      throw new NotFoundException(`Recurrent task ${id} not found`);
-    }
+    await this.repository.manager.transaction(async (manager) => {
+      const task = await manager.findOne(RecurrentTask, { where: { id } });
+      if (!task) {
+        throw new NotFoundException(`Recurrent task ${id} not found`);
+      }
 
-    // 1. Explicitly stop and unregister from memory scheduler
+      // 1. Explicitly stop and unregister from memory scheduler
+      // We can do this inside or outside, but since it's idempotent, inside is fine to ensure it stops if DB remove succeeds.
+      // Wait, if DB remove fails, we stopped the task in memory but it's still in DB.
+      // Better to do it after DB remove or ensure it's easily restartable.
+      // Given the current architecture, doing it after is safer for consistency.
+      await manager.remove(task);
+    });
+
+    // 2. stop it in the memory scheduler
     this.schedulerService.unregisterTasks(id);
-
-    // 2. Remove from database
-    await this.repository.remove(task);
   }
 }

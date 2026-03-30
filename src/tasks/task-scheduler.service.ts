@@ -184,13 +184,20 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
 
       const assignedAgent =
         allAgents.find((a) => a.id === selectedAgentId) || ownerAgent;
-      task.assignee = assignedAgent;
-      // We don't necessarily want to change status to in-progress here because the flow says assign and proceed.
-      // But if we stayed in backlog, the next loop iteration (in the same scheduler call) would pick it up and call performTask.
-      // This is exactly what we want.
 
-      await this.taskRepository.save(task);
-      this.tasksService.emitTaskEvent({ ...task, project } as Task, 'updated');
+      const updatedTask = await this.taskRepository.manager.transaction(
+        async (manager) => {
+          const t = await manager.findOne(Task, { where: { id: task.id } });
+          if (!t) throw new Error(`Task ${task.id} not found for assignment`);
+          t.assignee = assignedAgent;
+          return manager.save(t);
+        },
+      );
+
+      this.tasksService.emitTaskEvent(
+        { ...updatedTask, project } as Task,
+        'updated',
+      );
       this.logger.debug(
         `Task ${task.id} assigned to agent: ${assignedAgent.name}`,
       );
@@ -205,9 +212,18 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
     if (!task.assignee) return;
 
     // Set to in-progress when starting the task
-    task.status = TaskStatus.IN_PROGRESS;
-    await this.taskRepository.save(task);
-    this.tasksService.emitTaskEvent({ ...task, project } as Task, 'updated');
+    const inProgressTask = await this.taskRepository.manager.transaction(
+      async (manager) => {
+        const t = await manager.findOne(Task, { where: { id: task.id } });
+        if (!t) throw new Error(`Task ${task.id} not found for execution`);
+        t.status = TaskStatus.IN_PROGRESS;
+        return manager.save(t);
+      },
+    );
+    this.tasksService.emitTaskEvent(
+      { ...inProgressTask, project } as Task,
+      'updated',
+    );
 
     this.logger.debug(
       `Agent ${task.assignee.name} performing task ${task.title}`,
@@ -242,13 +258,6 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
         iterationCost = ((response.content.length / 4) * 0.25) / 1000000;
       }
 
-      task.status = TaskStatus.REVIEW;
-      task.llm_latency = latency;
-      task.cost_estimate = (task.cost_estimate || 0) + iterationCost;
-
-      await this.taskRepository.save(task);
-      this.tasksService.emitTaskEvent({ ...task, project } as Task, 'updated');
-
       // Handle artifacts if present in response
       const artifacts: any[] = [];
       if (response.image) {
@@ -277,14 +286,37 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
         }
       }
 
-      const comment = this.commentRepository.create({
-        content: response.content,
-        task: task,
-        authorAgent: task.assignee,
-        authorType: CommentAuthorType.AGENT,
-        artifacts: artifacts.length > 0 ? artifacts : null,
-      });
-      await this.commentRepository.save(comment);
+      const finalTask = await this.taskRepository.manager.transaction(
+        async (manager) => {
+          const t = await manager.findOne(Task, {
+            where: { id: task.id },
+            relations: ['assignee'],
+          });
+          if (!t) throw new Error(`Task ${task.id} not found for final update`);
+
+          t.status = TaskStatus.REVIEW;
+          t.llm_latency = latency;
+          t.cost_estimate = (t.cost_estimate || 0) + iterationCost;
+
+          const savedTask = await manager.save(t);
+
+          const comment = manager.create(TaskComment, {
+            content: response.content,
+            task: savedTask,
+            authorAgent: savedTask.assignee,
+            authorType: CommentAuthorType.AGENT,
+            artifacts: artifacts.length > 0 ? artifacts : null,
+          });
+          await manager.save(comment);
+
+          return savedTask;
+        },
+      );
+
+      this.tasksService.emitTaskEvent(
+        { ...finalTask, project } as Task,
+        'updated',
+      );
 
       this.logger.debug(
         `Task ${task.id} completed by agent ${task.assignee.name}. Latency: ${latency}ms, Cost+: $${iterationCost.toFixed(6)}`,

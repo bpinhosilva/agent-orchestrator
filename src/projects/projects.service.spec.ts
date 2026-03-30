@@ -13,7 +13,19 @@ describe('ProjectsService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
+    manager: {
+      transaction: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+    },
   };
+
+  mockProjectRepository.manager.transaction.mockImplementation(
+    (cb: (manager: typeof mockProjectRepository.manager) => unknown) =>
+      cb(mockProjectRepository.manager),
+  );
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -49,13 +61,18 @@ describe('ProjectsService', () => {
         description: 'D',
         status: ProjectStatus.PLANNING,
       };
-      mockProjectRepository.create.mockReturnValue(projectObj);
-      mockProjectRepository.save.mockResolvedValue({ id: '1', ...projectObj });
+      mockProjectRepository.manager.create.mockReturnValue(projectObj);
+      mockProjectRepository.manager.save.mockResolvedValue({
+        id: '1',
+        ...projectObj,
+      });
 
       const result = await service.create(createDto);
       expect(result.id).toEqual('1');
-      expect(mockProjectRepository.create).toHaveBeenCalled();
-      expect(mockProjectRepository.save).toHaveBeenCalledWith(projectObj);
+      expect(mockProjectRepository.manager.create).toHaveBeenCalled();
+      expect(mockProjectRepository.manager.save).toHaveBeenCalledWith(
+        projectObj,
+      );
     });
   });
 
@@ -83,15 +100,15 @@ describe('ProjectsService', () => {
   describe('update', () => {
     it('should update a project', async () => {
       const project = { id: '1', title: 'Old' };
-      mockProjectRepository.findOne.mockResolvedValue(project);
-      mockProjectRepository.save.mockResolvedValue({
+      mockProjectRepository.manager.findOne.mockResolvedValue(project);
+      mockProjectRepository.manager.save.mockResolvedValue({
         ...project,
         title: 'New',
       });
 
       const result = await service.update('1', { title: 'New' });
       expect(result.title).toEqual('New');
-      expect(mockProjectRepository.save).toHaveBeenCalled();
+      expect(mockProjectRepository.manager.save).toHaveBeenCalled();
     });
   });
 

@@ -55,14 +55,20 @@ export class TasksService {
       );
     }
     const { projectId, assigneeId, ...rest } = createTaskDto;
-    const task = this.tasksRepository.create({
-      ...rest,
-      status: createTaskDto.status ?? TaskStatus.BACKLOG,
-      priority: createTaskDto.priority ?? TaskPriority.MEDIUM,
-      project: { id: projectId } as Project,
-      assignee: assigneeId ? ({ id: assigneeId } as AgentEntity) : null,
-    });
-    const savedTask = await this.tasksRepository.save(task);
+
+    const savedTask = await this.tasksRepository.manager.transaction(
+      async (manager) => {
+        const task = manager.create(Task, {
+          ...rest,
+          status: createTaskDto.status ?? TaskStatus.BACKLOG,
+          priority: createTaskDto.priority ?? TaskPriority.MEDIUM,
+          project: { id: projectId } as Project,
+          assignee: assigneeId ? ({ id: assigneeId } as AgentEntity) : null,
+        });
+        return manager.save(task);
+      },
+    );
+
     this.taskEvents$.next({
       event: 'created',
       task: this.formatTaskForSse(savedTask, projectId),
@@ -114,23 +120,42 @@ export class TasksService {
     updateTaskDto: UpdateTaskDto,
     projectId?: string,
   ): Promise<Task> {
-    const task = await this.findOne(id, projectId);
+    const { savedTask, resolvedProjectId } =
+      await this.tasksRepository.manager.transaction(async (manager) => {
+        const task = await manager.findOne(Task, {
+          where: { id },
+          relations: ['project'],
+        });
+        if (!task) {
+          throw new NotFoundException(`Task with ID ${id} not found`);
+        }
 
-    if (updateTaskDto.assigneeId) {
-      task.assignee = { id: updateTaskDto.assigneeId } as AgentEntity;
-    } else if (updateTaskDto.assigneeId === null) {
-      task.assignee = null;
-    }
+        if (projectId && task.project?.id !== projectId) {
+          throw new NotFoundException(
+            `Task with ID ${id} not found in project ${projectId}`,
+          );
+        }
 
-    if (updateTaskDto.title !== undefined) task.title = updateTaskDto.title;
-    if (updateTaskDto.description !== undefined)
-      task.description = updateTaskDto.description;
-    if (updateTaskDto.status !== undefined) task.status = updateTaskDto.status;
-    if (updateTaskDto.priority !== undefined)
-      task.priority = updateTaskDto.priority;
+        if (updateTaskDto.assigneeId) {
+          task.assignee = { id: updateTaskDto.assigneeId } as AgentEntity;
+        } else if (updateTaskDto.assigneeId === null) {
+          task.assignee = null;
+        }
 
-    const savedTask = await this.tasksRepository.save(task);
-    const resolvedProjectId = projectId || task.project?.id || task.projectId;
+        if (updateTaskDto.title !== undefined) task.title = updateTaskDto.title;
+        if (updateTaskDto.description !== undefined)
+          task.description = updateTaskDto.description;
+        if (updateTaskDto.status !== undefined)
+          task.status = updateTaskDto.status;
+        if (updateTaskDto.priority !== undefined)
+          task.priority = updateTaskDto.priority;
+
+        const updatedTask = await manager.save(task);
+        const resProjId =
+          projectId || updatedTask.project?.id || task.projectId;
+        return { savedTask: updatedTask, resolvedProjectId: resProjId };
+      });
+
     this.taskEvents$.next({
       event: 'updated',
       task: this.formatTaskForSse(savedTask, resolvedProjectId),
@@ -140,9 +165,28 @@ export class TasksService {
   }
 
   async remove(id: string, projectId?: string): Promise<void> {
-    const task = await this.findOne(id, projectId);
-    await this.tasksRepository.remove(task);
-    const resolvedProjectId = projectId || task.project?.id || task.projectId;
+    const { task, resolvedProjectId } =
+      await this.tasksRepository.manager.transaction(async (manager) => {
+        const taskToRemove = await manager.findOne(Task, {
+          where: { id },
+          relations: ['project'],
+        });
+        if (!taskToRemove) {
+          throw new NotFoundException(`Task with ID ${id} not found`);
+        }
+
+        if (projectId && taskToRemove.project?.id !== projectId) {
+          throw new NotFoundException(
+            `Task with ID ${id} not found in project ${projectId}`,
+          );
+        }
+
+        const resProjId =
+          projectId || taskToRemove.project?.id || taskToRemove.projectId;
+        await manager.remove(taskToRemove);
+        return { task: taskToRemove, resolvedProjectId: resProjId };
+      });
+
     this.taskEvents$.next({
       event: 'deleted',
       task: this.formatTaskForSse(task, resolvedProjectId),

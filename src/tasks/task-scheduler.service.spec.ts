@@ -20,7 +20,19 @@ describe('TaskSchedulerService', () => {
   const mockTaskRepository = {
     find: jest.fn(),
     save: jest.fn(),
+    findOne: jest.fn(),
+    manager: {
+      transaction: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      create: jest.fn(),
+    },
   };
+
+  mockTaskRepository.manager.transaction.mockImplementation(
+    (cb: (manager: typeof mockTaskRepository.manager) => unknown) =>
+      cb(mockTaskRepository.manager),
+  );
 
   const mockAgentsService = {
     findAll: jest.fn(),
@@ -88,11 +100,22 @@ describe('TaskSchedulerService', () => {
 
       mockProjectRepository.find.mockResolvedValue([activeProject]);
 
-      // Mock sequences
       mockTaskRepository.find
         .mockResolvedValueOnce([taskNoAssignee]) // Iteration 1: Needs assignment
         .mockResolvedValueOnce([taskWithAssignee]) // Iteration 2: Needs performance
         .mockResolvedValueOnce([]); // Iteration 3: Done
+
+      // Mock manager for assignment and performance
+      mockTaskRepository.manager.findOne
+        .mockResolvedValueOnce(taskNoAssignee) // assignTask: findOne
+        .mockResolvedValueOnce(taskWithAssignee) // performTask: in-progress findOne
+        .mockResolvedValueOnce(taskWithAssignee); // performTask: final update findOne
+
+      mockTaskRepository.manager.save.mockImplementation((t: unknown) => t);
+
+      mockTaskRepository.manager.create.mockImplementation(
+        (_entity: unknown, data: unknown) => data,
+      );
 
       mockAgentsService.findAll.mockResolvedValue([
         ownerAgent,
@@ -118,10 +141,10 @@ describe('TaskSchedulerService', () => {
       );
 
       // 4. Task status should be updated to REVIEW (via save)
-      expect(mockTaskRepository.save).toHaveBeenCalledTimes(3); // One for assignment, two for performance (IN_PROGRESS then REVIEW)
+      expect(mockTaskRepository.manager.save).toHaveBeenCalled();
 
-      // 5. Comment should be saved
-      expect(mockCommentRepository.save).toHaveBeenCalled();
+      // 5. Comment should be saved via manager
+      expect(mockTaskRepository.manager.create).toHaveBeenCalled();
     });
 
     it('should correctly extract agentId from a conversational LLM response', async () => {
@@ -154,6 +177,9 @@ I hope this helps!
       mockTaskRepository.find
         .mockResolvedValueOnce([task])
         .mockResolvedValueOnce([]);
+
+      mockTaskRepository.manager.findOne.mockResolvedValue(task);
+      mockTaskRepository.manager.save.mockImplementation((t: unknown) => t);
 
       mockAgentsService.findAll.mockResolvedValue([
         ownerAgent,

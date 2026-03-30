@@ -29,67 +29,74 @@ export class CommentsService {
   ) {}
 
   async create(taskId: string, createCommentDto: CreateCommentDto) {
-    const task = await this.tasksRepository.findOne({ where: { id: taskId } });
-    if (!task) {
-      throw new NotFoundException(`Task with ID ${taskId} not found`);
-    }
+    return this.commentsRepository.manager.transaction(async (manager) => {
+      const task = await manager.findOne(Task, { where: { id: taskId } });
+      if (!task) {
+        throw new NotFoundException(`Task with ID ${taskId} not found`);
+      }
 
-    if (!createCommentDto.authorUserId && !createCommentDto.authorAgentId) {
-      throw new BadRequestException(
-        'Either authorUserId or authorAgentId must be provided',
-      );
-    }
-
-    const authorType =
-      createCommentDto.authorType ||
-      (createCommentDto.authorUserId
-        ? CommentAuthorType.USER
-        : CommentAuthorType.AGENT);
-
-    let authorUser: User | null = null;
-    let authorAgent: AgentEntity | null = null;
-
-    if (
-      authorType === CommentAuthorType.USER &&
-      createCommentDto.authorUserId
-    ) {
-      authorUser = await this.usersRepository.findOne({
-        where: { id: createCommentDto.authorUserId },
-      });
-      if (!authorUser) {
-        throw new NotFoundException(
-          `User with ID ${createCommentDto.authorUserId} not found`,
+      if (!createCommentDto.authorUserId && !createCommentDto.authorAgentId) {
+        throw new BadRequestException(
+          'Either authorUserId or authorAgentId must be provided',
         );
       }
-    } else if (
-      authorType === CommentAuthorType.AGENT &&
-      createCommentDto.authorAgentId
-    ) {
-      authorAgent = await this.agentsRepository.findOne({
-        where: { id: createCommentDto.authorAgentId },
-      });
-      if (!authorAgent) {
-        throw new NotFoundException(
-          `Agent with ID ${createCommentDto.authorAgentId} not found`,
-        );
-      }
-    }
 
-    const comment = this.commentsRepository.create({
-      content: createCommentDto.content,
-      task,
-      authorType,
-      authorUser,
-      authorAgent,
-      artifacts:
-        createCommentDto.artifacts?.map((artifact) => ({
-          id: artifact.id || crypto.randomUUID(),
-          ...artifact,
-        })) || null,
+      const authorType =
+        createCommentDto.authorType ||
+        (createCommentDto.authorUserId
+          ? CommentAuthorType.USER
+          : CommentAuthorType.AGENT);
+
+      let authorUser: User | null = null;
+      let authorAgent: AgentEntity | null = null;
+
+      if (
+        authorType === CommentAuthorType.USER &&
+        createCommentDto.authorUserId
+      ) {
+        authorUser = await manager.findOne(User, {
+          where: { id: createCommentDto.authorUserId },
+        });
+        if (!authorUser) {
+          throw new NotFoundException(
+            `User with ID ${createCommentDto.authorUserId} not found`,
+          );
+        }
+      } else if (
+        authorType === CommentAuthorType.AGENT &&
+        createCommentDto.authorAgentId
+      ) {
+        authorAgent = await manager.findOne(AgentEntity, {
+          where: { id: createCommentDto.authorAgentId },
+        });
+        if (!authorAgent) {
+          throw new NotFoundException(
+            `Agent with ID ${createCommentDto.authorAgentId} not found`,
+          );
+        }
+      }
+
+      const comment = manager.create(TaskComment, {
+        content: createCommentDto.content,
+        task,
+        authorType,
+        authorUser,
+        authorAgent,
+        artifacts:
+          createCommentDto.artifacts?.map((artifact) => ({
+            id: artifact.id || crypto.randomUUID(),
+            ...artifact,
+          })) || null,
+      });
+
+      const savedComment = await manager.save(comment);
+      // Reload within transaction to get full relations if needed,
+      // though findOne below will do it outside. But let's keep it consistent.
+      return manager.findOne(TaskComment, {
+        where: { id: savedComment.id },
+        relations: ['authorUser', 'authorAgent'],
+      });
     });
-
-    const savedComment = await this.commentsRepository.save(comment);
-    return this.findOne(savedComment.id);
   }
 
   async findAllByTask(taskId: string) {
@@ -116,11 +123,26 @@ export class CommentsService {
   }
 
   async remove(id: string, taskId?: string) {
-    const comment = await this.findOne(id, taskId);
+    const artifactsToDelete = await this.commentsRepository.manager.transaction(
+      async (manager) => {
+        const where: FindOptionsWhere<TaskComment> = { id };
+        if (taskId) {
+          where.task = { id: taskId };
+        }
+        const comment = await manager.findOne(TaskComment, { where });
+        if (!comment) {
+          throw new NotFoundException(`Comment with ID ${id} not found`);
+        }
 
-    // Delete associated artifacts from disk
-    if (comment.artifacts && comment.artifacts.length > 0) {
-      for (const artifact of comment.artifacts) {
+        const artifacts = comment.artifacts || [];
+        await manager.remove(comment);
+        return artifacts;
+      },
+    );
+
+    // Delete associated artifacts from disk AFTER successful DB removal
+    if (artifactsToDelete.length > 0) {
+      for (const artifact of artifactsToDelete) {
         try {
           await this.storageService.delete(artifact.filePath);
         } catch (error) {
@@ -131,8 +153,6 @@ export class CommentsService {
         }
       }
     }
-
-    await this.commentsRepository.remove(comment);
   }
 
   async update(
@@ -140,20 +160,32 @@ export class CommentsService {
     updateCommentDto: UpdateCommentDto,
     taskId?: string,
   ) {
-    const comment = await this.findOne(id, taskId);
+    return this.commentsRepository.manager.transaction(async (manager) => {
+      const where: FindOptionsWhere<TaskComment> = { id };
+      if (taskId) {
+        where.task = { id: taskId };
+      }
+      const comment = await manager.findOne(TaskComment, {
+        where,
+        relations: ['authorUser', 'authorAgent'],
+      });
+      if (!comment) {
+        throw new NotFoundException(`Comment with ID ${id} not found`);
+      }
 
-    if (updateCommentDto.content !== undefined) {
-      comment.content = updateCommentDto.content;
-    }
+      if (updateCommentDto.content !== undefined) {
+        comment.content = updateCommentDto.content;
+      }
 
-    if (updateCommentDto.artifacts !== undefined) {
-      comment.artifacts =
-        updateCommentDto.artifacts?.map((artifact) => ({
-          id: artifact.id || crypto.randomUUID(),
-          ...artifact,
-        })) || null;
-    }
+      if (updateCommentDto.artifacts !== undefined) {
+        comment.artifacts =
+          updateCommentDto.artifacts?.map((artifact) => ({
+            id: artifact.id || crypto.randomUUID(),
+            ...artifact,
+          })) || null;
+      }
 
-    return this.commentsRepository.save(comment);
+      return manager.save(comment);
+    });
   }
 }

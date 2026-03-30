@@ -14,15 +14,17 @@ export class ProjectsService {
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
-    const project = this.projectsRepository.create({
-      title: createProjectDto.title,
-      description: createProjectDto.description,
-      status: createProjectDto.status ?? ProjectStatus.PLANNING,
-      ownerAgent: createProjectDto.ownerAgentId
-        ? ({ id: createProjectDto.ownerAgentId } as AgentEntity)
-        : null,
+    return this.projectsRepository.manager.transaction(async (manager) => {
+      const project = manager.create(Project, {
+        title: createProjectDto.title,
+        description: createProjectDto.description,
+        status: createProjectDto.status ?? ProjectStatus.PLANNING,
+        ownerAgent: createProjectDto.ownerAgentId
+          ? ({ id: createProjectDto.ownerAgentId } as AgentEntity)
+          : null,
+      });
+      return manager.save(project);
     });
-    return this.projectsRepository.save(project);
   }
 
   async findAll(): Promise<Project[]> {
@@ -41,21 +43,26 @@ export class ProjectsService {
     id: string,
     updateProjectDto: UpdateProjectDto,
   ): Promise<Project> {
-    const project = await this.findOne(id);
+    return this.projectsRepository.manager.transaction(async (manager) => {
+      const project = await manager.findOne(Project, { where: { id } });
+      if (!project) {
+        throw new NotFoundException(`Project with ID ${id} not found`);
+      }
 
-    if (updateProjectDto.title !== undefined)
-      project.title = updateProjectDto.title;
-    if (updateProjectDto.description !== undefined)
-      project.description = updateProjectDto.description;
-    if (updateProjectDto.status !== undefined)
-      project.status = updateProjectDto.status;
-    if (updateProjectDto.ownerAgentId !== undefined) {
-      project.ownerAgent = updateProjectDto.ownerAgentId
-        ? ({ id: updateProjectDto.ownerAgentId } as AgentEntity)
-        : null;
-    }
+      if (updateProjectDto.title !== undefined)
+        project.title = updateProjectDto.title;
+      if (updateProjectDto.description !== undefined)
+        project.description = updateProjectDto.description;
+      if (updateProjectDto.status !== undefined)
+        project.status = updateProjectDto.status;
+      if (updateProjectDto.ownerAgentId !== undefined) {
+        project.ownerAgent = updateProjectDto.ownerAgentId
+          ? ({ id: updateProjectDto.ownerAgentId } as AgentEntity)
+          : null;
+      }
 
-    return this.projectsRepository.save(project);
+      return manager.save(project);
+    });
   }
 
   async remove(id: string): Promise<void> {
