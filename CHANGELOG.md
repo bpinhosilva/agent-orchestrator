@@ -1,3 +1,10 @@
+# [1.0.0-alpha.19](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.18...v1.0.0-alpha.19) (2026-03-30)
+
+
+### Features
+
+* implement transaction management in services and tests for improved data integrity ([7b213da](https://github.com/bpinhosilva/agent-orchestrator/commit/7b213da8e9ee46da2e40f3e51e3d61c8a50ac850))
+
 # [1.0.0-alpha.18](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.17...v1.0.0-alpha.18) (2026-03-29)
 
 
