@@ -23,10 +23,24 @@ export class UploadsController {
     @Param('filename') filename: string,
     @Res({ passthrough: true }) res: Response,
   ): StreamableFile {
+    // Sanitize filename to prevent path traversal attacks
+    const safeFilename = path.basename(filename);
     const fullPath = path.join(
       this.storageService.getArtifactsPath(),
-      filename,
+      safeFilename,
     );
+
+    // Verify the resolved path is within the artifacts directory
+    const artifactsPath = this.storageService.getArtifactsPath();
+    const resolvedPath = path.resolve(fullPath);
+    const resolvedArtifactsPath = path.resolve(artifactsPath);
+
+    if (
+      !resolvedPath.startsWith(resolvedArtifactsPath + path.sep) &&
+      resolvedPath !== resolvedArtifactsPath
+    ) {
+      throw new NotFoundException(`File ${filename} not found`);
+    }
 
     if (!fs.existsSync(fullPath)) {
       throw new NotFoundException(`File ${filename} not found`);

@@ -1,8 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
+import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -15,7 +18,29 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // Apply Helmet for security headers
+  app.use(helmet());
+
+  // Parse cookies
+  app.use(cookieParser());
+
+  // Configure CORS based on environment
   const configService = app.get(ConfigService);
+  const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
+  const corsOptions: CorsOptions = {
+    credentials: true,
+  };
+
+  if (nodeEnv === 'development') {
+    corsOptions.origin = ['http://localhost:5173', 'http://localhost:3000'];
+  } else if (nodeEnv === 'production') {
+    corsOptions.origin = ['http://localhost:15789', 'http://0.0.0.0:15789'];
+  } else {
+    corsOptions.origin = true;
+  }
+
+  app.enableCors(corsOptions);
+
   const port = configService.get<number>('PORT') || 3000;
 
   const config = new DocumentBuilder()

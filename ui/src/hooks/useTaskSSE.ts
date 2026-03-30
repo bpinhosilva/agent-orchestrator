@@ -12,16 +12,15 @@ export const useTaskSSE = (
     if (!projectId) return;
 
     abortControllerRef.current = new AbortController();
-    const token = localStorage.getItem('auth_token');
 
     const connect = async () => {
       try {
         await fetchEventSource(`/api/v1/projects/${projectId}/tasks/events`, {
           method: 'GET',
           headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             'Accept': 'text/event-stream',
           },
+          credentials: 'include',
           signal: abortControllerRef.current?.signal,
           onmessage(msg) {
             if (!msg.data) return;

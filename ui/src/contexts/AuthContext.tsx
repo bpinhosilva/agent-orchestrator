@@ -3,57 +3,69 @@ import type { ReactNode } from 'react';
 import { AuthContext } from './AuthContextInstance';
 import type { AuthContextType } from './AuthContextInstance';
 import { authApi } from '../api/auth';
+import { setUnauthorizedHandler } from '../api/client';
 import type { User } from '../api/users';
-
-const AUTH_TOKEN_KEY = 'auth_token';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem(AUTH_TOKEN_KEY));
-  const [isLoading, setIsLoading] = useState<boolean>(!!localStorage.getItem(AUTH_TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+  const clearSession = useCallback(() => {
     setToken(null);
     setUser(null);
   }, []);
 
-  const restoreSession = useCallback(async () => {
-    const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (!storedToken) {
-      setIsLoading(false);
-      return;
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    } finally {
+      clearSession();
     }
+  }, [clearSession]);
 
+  const restoreSession = useCallback(async () => {
     try {
       setIsLoading(true);
       const currentUser = await authApi.me();
       setUser(currentUser);
+      setToken('authenticated');
     } catch (error) {
       console.error('Failed to restore session:', error);
-      logout();
+      clearSession();
     } finally {
       setIsLoading(false);
     }
-  }, [logout]);
+  }, [clearSession]);
 
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
 
+  useEffect(() => {
+    setUnauthorizedHandler(clearSession);
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [clearSession]);
+
   const login = async (email: string, password: string) => {
-    const response = await authApi.login(email, password);
-    localStorage.setItem(AUTH_TOKEN_KEY, response.access_token);
-    setToken(response.access_token);
-    
-    // Fetch user info after login
+    await authApi.login(email, password);
+    setToken('authenticated');
+
     const currentUser = await authApi.me();
     setUser(currentUser);
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+  ) => {
     await authApi.register(username, email, password);
-    // Automatically login after registration
     await login(email, password);
   };
 

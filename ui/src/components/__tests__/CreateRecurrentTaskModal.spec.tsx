@@ -1,8 +1,13 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CreateRecurrentTaskModal from '../CreateRecurrentTaskModal';
-import { agentsApi } from '../../api/agents';
-import { recurrentTasksApi } from '../../api/recurrent-tasks';
+import { agentsApi, type Agent } from '../../api/agents';
+import {
+  recurrentTasksApi,
+  RecurrentTaskStatus,
+  type RecurrentTask,
+} from '../../api/recurrent-tasks';
+import { TaskPriority } from '../../api/tasks';
 
 // Mock focus-trap-react or other potential issues
 vi.mock('framer-motion', async () => {
@@ -48,7 +53,7 @@ vi.mock('../../api/recurrent-tasks', () => ({
   },
 }));
 
-const mockAgents = [
+const mockAgents: Agent[] = [
   { id: 'agent-1', name: 'Fin-Oracle v2.4', role: 'Financial Analyst' },
   { id: 'agent-2', name: 'Admin-Bot 4000', role: 'System Admin' },
 ];
@@ -59,7 +64,9 @@ const mockOnSuccess = vi.fn();
 describe('CreateRecurrentTaskModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(agentsApi.findAll).mockResolvedValue({ data: mockAgents } as any);
+    vi.mocked(agentsApi.findAll).mockResolvedValue({
+      data: mockAgents,
+    } as Awaited<ReturnType<typeof agentsApi.findAll>>);
   });
 
   it('renders correctly when open', async () => {
@@ -76,7 +83,19 @@ describe('CreateRecurrentTaskModal', () => {
   });
 
   it('submits correctly when creating a new task', async () => {
-    vi.mocked(recurrentTasksApi.create).mockResolvedValue({ data: { id: 'new-id' } } as any);
+    vi.mocked(recurrentTasksApi.create).mockResolvedValue({
+      data: {
+        id: 'new-id',
+        title: 'Test Task',
+        description: 'Test Description',
+        cronExpression: '0 0 * * *',
+        assignee: mockAgents[0],
+        priority: TaskPriority.MEDIUM,
+        status: RecurrentTaskStatus.ACTIVE,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    } as Awaited<ReturnType<typeof recurrentTasksApi.create>>);
 
     render(
       <CreateRecurrentTaskModal
@@ -112,14 +131,16 @@ describe('CreateRecurrentTaskModal', () => {
   });
 
   it('renders correctly in edit mode', async () => {
-    const initialData = {
+    const initialData: RecurrentTask = {
       id: 'task-1',
       title: 'Existing Task',
       description: 'Existing Description',
       cronExpression: '*/15 * * * *',
       assignee: mockAgents[0],
-      priority: 1,
-      status: 'active',
+      priority: TaskPriority.LOW,
+      status: RecurrentTaskStatus.ACTIVE,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     render(
@@ -127,7 +148,7 @@ describe('CreateRecurrentTaskModal', () => {
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}
-        initialData={initialData as any}
+        initialData={initialData}
       />
     );
 
@@ -143,24 +164,28 @@ describe('CreateRecurrentTaskModal', () => {
   });
 
   it('submits correctly when editing a task', async () => {
-    const initialData = {
+    const initialData: RecurrentTask = {
       id: 'task-1',
       title: 'Existing Task',
       description: 'Existing Description',
       cronExpression: '0 0 * * *',
       assignee: mockAgents[0],
-      priority: 1,
-      status: 'active',
+      priority: TaskPriority.LOW,
+      status: RecurrentTaskStatus.ACTIVE,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    vi.mocked(recurrentTasksApi.update).mockResolvedValue({ data: { ...initialData, title: 'Updated Task' } } as any);
+    vi.mocked(recurrentTasksApi.update).mockResolvedValue({
+      data: { ...initialData, title: 'Updated Task' },
+    } as Awaited<ReturnType<typeof recurrentTasksApi.update>>);
 
     render(
       <CreateRecurrentTaskModal
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}
-        initialData={initialData as any}
+        initialData={initialData}
       />
     );
 
