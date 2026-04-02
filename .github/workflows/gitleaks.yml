@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - alpha
   pull_request:
     branches:
       - main
+      - alpha
 
 jobs:
   scan:
