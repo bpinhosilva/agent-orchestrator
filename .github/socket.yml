@@ -1,3 +1,10 @@
+# Socket.dev configuration
+# Docs: https://docs.socket.dev/docs/socket-yml
+
+# Monitor all branches including alpha/pre-release
+projectIgnorePaths: []
+branchIgnorePaths: []
+
 issueRules:
   # Block PRs that introduce packages with known security issues
   - module: true
