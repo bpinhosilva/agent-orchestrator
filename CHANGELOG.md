@@ -1,3 +1,12 @@
+# [1.0.0-alpha.23](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2026-04-02)
+
+
+### Features
+
+* enhance project management with user roles and member management ([877832f](https://github.com/bpinhosilva/agent-orchestrator/commit/877832fc4ad8d77499124a4da23c14a1270622a4))
+* implement release workflow with semantic release and build steps; remove old release.yml ([f17eb48](https://github.com/bpinhosilva/agent-orchestrator/commit/f17eb48c64b165c8fd05e142d175716f7990f670))
+* update CI workflow to include E2E and UI tests; bump lodash version ([b8ceee6](https://github.com/bpinhosilva/agent-orchestrator/commit/b8ceee6adf0855b54d4a45d959e87ec338c55887))
+
 # [1.0.0-alpha.22](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2026-04-02)
 
 
