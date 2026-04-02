@@ -1,58 +1,67 @@
-import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { projectsApi, type Project } from '../api/projects';
 import { ProjectContext } from './ProjectContextInstance';
 
+const PROJECTS_QUERY_KEY = ['projects'] as const;
+
 export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [preferredActiveProjectId, setPreferredActiveProjectId] = useState<string | null>(null);
+
+  const {
+    data: projects = [],
+    isPending,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: PROJECTS_QUERY_KEY,
+    queryFn: async () => {
+      const response = await projectsApi.findAll();
+      return response.data;
+    },
+  });
+
+  const activeProject = useMemo<Project | null>(() => {
+    if (projects.length === 0) {
+      return null;
+    }
+
+    return (
+      projects.find((project) => project.id === preferredActiveProjectId) ??
+      projects[0] ??
+      null
+    );
+  }, [preferredActiveProjectId, projects]);
 
   const refreshProjects = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await projectsApi.findAll();
-      const fetchedProjects = res.data;
-      setProjects(fetchedProjects);
-      
-      // Update activeProject if needed, without causing a dependency loop
-      setActiveProject(currentActive => {
-        if (fetchedProjects.length > 0) {
-          if (!currentActive) {
-            return fetchedProjects[0];
-          } else {
-            const updatedActive = fetchedProjects.find(p => p.id === currentActive.id);
-            return updatedActive || fetchedProjects[0];
-          }
-        }
-        return null;
+    await refetch();
+  }, [refetch]);
+
+  const setActiveProjectById = useCallback(
+    (id: string) => {
+      setPreferredActiveProjectId((currentActiveProjectId) => {
+        const nextActiveProject = projects.find((project) => project.id === id);
+        return nextActiveProject?.id ?? currentActiveProjectId;
       });
-    } catch (error) {
-      console.error('Failed to fetch projects in context:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const setActiveProjectById = useCallback((id: string) => {
-    setActiveProject(currentActive => {
-        const project = projects.find(p => p.id === id);
-        return project || currentActive;
-    });
-  }, [projects]);
-
-  useEffect(() => {
-    refreshProjects();
-  }, [refreshProjects]);
-
-  return (
-    <ProjectContext.Provider value={{ 
-      projects, 
-      activeProject, 
-      loading, 
-      refreshProjects,
-      setActiveProjectById
-    }}>
-      {children}
-    </ProjectContext.Provider>
+    },
+    [projects],
   );
+
+  const value = useMemo(
+    () => ({
+      projects,
+      activeProject,
+      loading: isPending || isFetching,
+      refreshProjects,
+      setActiveProjectById,
+    }),
+    [activeProject, isFetching, isPending, projects, refreshProjects, setActiveProjectById],
+  );
+
+  return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 };

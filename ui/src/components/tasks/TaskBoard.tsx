@@ -1,35 +1,89 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import TaskColumn from './TaskColumn';
 import type { Task, TaskStatus } from './types';
+import { cn } from '../../lib/cn';
+
+type BoardColumnId = Exclude<TaskStatus, 'archived'>;
+
+const BOARD_COLUMNS: ReadonlyArray<{
+  id: BoardColumnId;
+  title: string;
+  dotColorClass: string;
+  badgeBgClass: string;
+  badgeTextClass: string;
+}> = [
+  {
+    id: 'backlog',
+    title: 'Backlog',
+    dotColorClass: 'bg-outline',
+    badgeBgClass: 'bg-surface-container-high',
+    badgeTextClass: 'text-outline-variant',
+  },
+  {
+    id: 'in-progress',
+    title: 'In Progress',
+    dotColorClass: 'bg-primary animate-pulse',
+    badgeBgClass: 'bg-primary-container',
+    badgeTextClass: 'text-primary',
+  },
+  {
+    id: 'review',
+    title: 'Review',
+    dotColorClass: 'bg-tertiary',
+    badgeBgClass: 'bg-tertiary-container',
+    badgeTextClass: 'text-tertiary',
+  },
+  {
+    id: 'done',
+    title: 'Done',
+    dotColorClass: 'bg-secondary',
+    badgeBgClass: 'bg-secondary-container/20',
+    badgeTextClass: 'text-secondary',
+  },
+];
 
 interface TaskBoardProps {
   tasks: Task[];
 }
 
-const TaskBoard: React.FC<TaskBoardProps> = ({ tasks }) => {
-  const columns: { id: TaskStatus; title: string; dot: string; bg: string; text: string }[] = [
-    { id: 'backlog', title: 'Backlog', dot: 'bg-outline', bg: 'bg-surface-container-high', text: 'text-outline-variant' },
-    { id: 'in-progress', title: 'In-Progress', dot: 'bg-primary animate-pulse', bg: 'bg-primary-container', text: 'text-primary' },
-    { id: 'review', title: 'Review', dot: 'bg-tertiary', bg: 'bg-tertiary-container', text: 'text-tertiary' },
-    { id: 'done', title: 'Done', dot: 'bg-secondary', bg: 'bg-secondary-container/20', text: 'text-secondary' }
-  ];
+const TaskBoardComponent: React.FC<TaskBoardProps> = ({ tasks }) => {
+  const tasksByStatus = useMemo(() => {
+    const grouped: Record<BoardColumnId, Task[]> = {
+      backlog: [],
+      'in-progress': [],
+      review: [],
+      done: [],
+    };
+
+    tasks.forEach((task) => {
+      if (task.status !== 'archived') {
+        grouped[task.status].push(task);
+      }
+    });
+
+    return grouped;
+  }, [tasks]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-      {columns.map(col => (
+    <section
+      aria-label="Kanban task board"
+      className={cn('grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:grid-cols-4')}
+    >
+      {BOARD_COLUMNS.map((column) => (
         <TaskColumn
-          key={col.id}
-          id={col.id}
-          title={col.title}
-          dotColorClass={col.dot}
-          badgeBgClass={col.bg}
-          badgeTextClass={col.text}
-          tasks={tasks.filter(t => t.status === col.id)}
-          colorClass=""
+          key={column.id}
+          id={column.id}
+          title={column.title}
+          dotColorClass={column.dotColorClass}
+          badgeBgClass={column.badgeBgClass}
+          badgeTextClass={column.badgeTextClass}
+          tasks={tasksByStatus[column.id]}
         />
       ))}
-    </div>
+    </section>
   );
 };
+
+const TaskBoard = memo(TaskBoardComponent);
 
 export default TaskBoard;

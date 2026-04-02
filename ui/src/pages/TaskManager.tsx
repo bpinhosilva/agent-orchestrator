@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ListPlus, Sparkles, ArrowRight, ShieldAlert, Layout } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import TaskBoard from '../components/tasks/TaskBoard';
@@ -10,6 +10,8 @@ import { tasksApi, TaskStatus, type Task as ApiTask } from '../api/tasks';
 import TaskCard from '../components/tasks/TaskCard';
 import ArchiveZone from '../components/tasks/ArchiveZone';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AppErrorBoundary from '../components/AppErrorBoundary';
+import { cn } from '../lib/cn';
 import {
   DndContext,
   closestCenter,
@@ -291,7 +293,28 @@ const TaskManager: React.FC = () => {
     setPendingArchiveId(null);
   };
 
-  const activeTask = tasks.find(t => t.id === activeId);
+  const activeTask = useMemo(
+    () => tasks.find((task) => task.id === activeId),
+    [tasks, activeId],
+  );
+
+  const taskCounts = useMemo(
+    () =>
+      tasks.reduce(
+        (counts, task) => {
+          counts[task.status] += 1;
+          return counts;
+        },
+        {
+          backlog: 0,
+          'in-progress': 0,
+          review: 0,
+          done: 0,
+          archived: 0,
+        } as Record<ComponentTask['status'], number>,
+      ),
+    [tasks],
+  );
 
   if (projectLoading) {
     return (
@@ -388,15 +411,24 @@ const TaskManager: React.FC = () => {
       />
 
       {/* Kanban Board */}
-      {loadingTasks && tasks.length === 0 ? (
-        <div className="w-full h-96 flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border border-outline-variant/30 border-t-primary animate-spin rounded-full"></div>
-        </div>
-      ) : (
-        <TaskBoard 
-            tasks={tasks} 
-        />
-      )}
+      <AppErrorBoundary
+        title="Unable to render task board"
+        description="The Kanban board hit an unexpected error. You can still use the rest of Task Manager while retrying this section."
+      >
+        <section
+          aria-label="Task board panel"
+          aria-busy={loadingTasks}
+          className={cn('space-y-4', loadingTasks && tasks.length === 0 && 'min-h-96')}
+        >
+          {loadingTasks && tasks.length === 0 ? (
+            <div className="flex h-96 w-full items-center justify-center">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-outline-variant/30 border-t-primary" />
+            </div>
+          ) : (
+            <TaskBoard tasks={tasks} />
+          )}
+        </section>
+      </AppErrorBoundary>
 
       {/* Stats Section with dynamic data if possible, else simplified */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -407,13 +439,13 @@ const TaskManager: React.FC = () => {
             <div className="mt-4 flex gap-6">
               <div className="flex flex-col">
                 <span className="text-2xl font-extrabold text-primary">
-                    {tasks.filter(t => t.status === 'done').length}
+                    {taskCounts.done}
                 </span>
                 <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Completed</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-extrabold text-secondary">
-                    {tasks.filter(t => t.status === 'in-progress').length}
+                    {taskCounts['in-progress']}
                 </span>
                 <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Active Nodes</span>
               </div>
@@ -422,10 +454,10 @@ const TaskManager: React.FC = () => {
           
           <div className="w-full md:w-48 h-24 bg-surface-container-highest/30 rounded-lg relative overflow-hidden flex items-end px-2 gap-1">
              {/* Dynamic mini-bars based on real counts */}
-            {['backlog', 'in-progress', 'review', 'done'].map((status, i) => {
-                const count = tasks.filter(t => t.status === status).length;
-                const height = tasks.length > 0 ? (count / tasks.length) * 100 : 10;
-                return (
+             {['backlog', 'in-progress', 'review', 'done'].map((status, i) => {
+                 const count = taskCounts[status as keyof typeof taskCounts];
+                 const height = tasks.length > 0 ? (count / tasks.length) * 100 : 10;
+                 return (
                     <div 
                         key={status} 
                         className="w-full bg-primary/40 rounded-t transition-all duration-500" 

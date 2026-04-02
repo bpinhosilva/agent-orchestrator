@@ -14,6 +14,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContextInstance';
 import NotificationModal from './components/NotificationModal';
 import NotificationInterceptor from './components/NotificationInterceptor';
+import AppErrorBoundary from './components/AppErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -36,46 +37,119 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  return (
-    <NotificationProvider>
-      <NotificationInterceptor />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+  const suspenseFallback = (
+    <div className="flex items-center justify-center p-8 h-full min-h-[50vh]">
+      <div className="w-8 h-8 rounded-full border-4 border-outline-variant/30 border-t-primary animate-spin"></div>
+    </div>
+  );
 
-            {/* Protected Routes */}
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <ProjectProvider>
-                  <Shell>
-                    <Suspense fallback={
-                      <div className="flex items-center justify-center p-8 h-full min-h-[50vh]">
-                        <div className="w-8 h-8 rounded-full border-4 border-outline-variant/30 border-t-primary animate-spin"></div>
-                      </div>
-                    }>
-                      <Routes>
-                        <Route path="/" element={<TaskManager />} />
-                        <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
-                        <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                        <Route path="/agents" element={<AgentFleet />} />
-                        <Route path="/providers" element={<Providers />} />
-                        <Route path="/flow" element={<div className="text-on-surface-variant font-mono">FLOW_BUILDER_CANVAS</div>} />
-                        <Route path="/scheduler" element={<Scheduler />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </Suspense>
-                  </Shell>
-                </ProjectProvider>
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-      <NotificationModal />
-    </NotificationProvider>
+  return (
+    <AppErrorBoundary
+      title="The app shell crashed"
+      description="A rendering error escaped the route tree. Retry to recover the application shell."
+    >
+      <NotificationProvider>
+        <NotificationInterceptor />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route
+                path="/login"
+                element={
+                  <AppErrorBoundary title="Unable to render login">
+                    <Login />
+                  </AppErrorBoundary>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <AppErrorBoundary title="Unable to render registration">
+                    <Register />
+                  </AppErrorBoundary>
+                }
+              />
+
+              {/* Protected Routes */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <ProjectProvider>
+                      <Shell>
+                        <Suspense fallback={suspenseFallback}>
+                          <Routes>
+                            <Route
+                              path="/"
+                              element={
+                                <AppErrorBoundary title="Unable to render task manager">
+                                  <TaskManager />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/projects/:projectId/tasks/:taskId"
+                              element={
+                                <AppErrorBoundary title="Unable to render task detail">
+                                  <TaskDetail />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/projects/:projectId"
+                              element={
+                                <AppErrorBoundary title="Unable to render project detail">
+                                  <ProjectDetail />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/agents"
+                              element={
+                                <AppErrorBoundary title="Unable to render agents">
+                                  <AgentFleet />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/providers"
+                              element={
+                                <AppErrorBoundary title="Unable to render providers">
+                                  <Providers />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/flow"
+                              element={
+                                <AppErrorBoundary title="Unable to render flow builder">
+                                  <div className="text-on-surface-variant font-mono">FLOW_BUILDER_CANVAS</div>
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/scheduler"
+                              element={
+                                <AppErrorBoundary title="Unable to render scheduler">
+                                  <Scheduler />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                          </Routes>
+                        </Suspense>
+                      </Shell>
+                    </ProjectProvider>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+        <NotificationModal />
+      </NotificationProvider>
+    </AppErrorBoundary>
   );
 }
 
