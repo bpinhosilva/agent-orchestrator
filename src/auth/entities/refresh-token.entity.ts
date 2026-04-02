@@ -11,6 +11,7 @@ import { User } from '../../users/entities/user.entity';
 
 @Entity('refresh_tokens')
 @Index(['userId', 'expiresAt'])
+@Index(['userId', 'revokedAt'])
 export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -13,50 +13,76 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskStatus } from './entities/task.entity';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { ProjectsService } from '../projects/projects.service';
 
 @Controller('projects/:projectId/tasks')
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly projectsService: ProjectsService,
+  ) {}
 
   @Sse('events')
-  events(@Param('projectId') projectId: string) {
+  async events(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
     return this.tasksService.subscribeToProjectTasks(projectId);
   }
 
   @Post()
-  create(
+  async create(
     @Param('projectId') projectId: string,
     @Body() createTaskDto: CreateTaskDto,
+    @CurrentUser() user: User,
   ) {
+    await this.projectsService.findOne(projectId, user);
     return this.tasksService.create({ ...createTaskDto, projectId });
   }
 
   @Get()
-  findAll(
+  async findAll(
     @Param('projectId') projectId: string,
+    @CurrentUser() user: User,
     @Query('status') status?: TaskStatus,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 50,
   ) {
+    await this.projectsService.findOne(projectId, user);
     return this.tasksService.findAll(projectId, { status, page, limit });
   }
 
   @Get(':id')
-  findOne(@Param('projectId') projectId: string, @Param('id') id: string) {
+  async findOne(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
     return this.tasksService.findOne(id, projectId);
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('projectId') projectId: string,
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
+    @CurrentUser() user: User,
   ) {
+    await this.projectsService.findOne(projectId, user);
     return this.tasksService.update(id, updateTaskDto, projectId);
   }
 
   @Delete(':id')
-  remove(@Param('projectId') projectId: string, @Param('id') id: string) {
+  async remove(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
     return this.tasksService.remove(id, projectId);
   }
 }

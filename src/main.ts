@@ -46,33 +46,38 @@ async function bootstrap() {
   // Parse cookies
   app.use(cookieParser());
 
-  // Configure CORS based on environment
+  // Configure CORS from ALLOWED_ORIGINS env var, falling back to safe defaults
   const configService = app.get(ConfigService);
   const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
+  const allowedOrigins = configService.get<string>('ALLOWED_ORIGINS');
   const corsOptions: CorsOptions = {
     credentials: true,
   };
 
-  if (nodeEnv === 'development') {
+  if (allowedOrigins) {
+    corsOptions.origin = allowedOrigins.split(',').map((o) => o.trim());
+  } else if (nodeEnv === 'development') {
     corsOptions.origin = ['http://localhost:5173', 'http://localhost:3000'];
-  } else if (nodeEnv === 'production') {
-    corsOptions.origin = ['http://localhost:15789', 'http://0.0.0.0:15789'];
   } else {
-    corsOptions.origin = true;
+    // In production without explicit ALLOWED_ORIGINS, deny cross-origin requests
+    corsOptions.origin = false;
   }
 
   app.enableCors(corsOptions);
 
   const port = configService.get<number>('PORT') || 3000;
 
-  const config = new DocumentBuilder()
-    .setTitle('Agent Orchestrator API')
-    .setDescription('The core API for the Agent Orchestrator platform')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  // Only enable Swagger in non-production environments
+  if (nodeEnv !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Agent Orchestrator API')
+      .setDescription('The core API for the Agent Orchestrator platform')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+  }
 
   await app.listen(port);
   logger.log(`Application is running on: ${await app.getUrl()}`);

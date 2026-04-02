@@ -1,7 +1,22 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'text/markdown',
+  'application/json',
+]);
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 @Injectable()
 export class StorageService {
@@ -42,7 +57,9 @@ export class StorageService {
     mimeType: string;
     filePath: string;
   }> {
+    this.validateMimeType(mimeType);
     const buffer = Buffer.from(base64, 'base64');
+    this.validateFileSize(buffer.length);
     return this.saveBuffer(buffer, mimeType, originalName);
   }
 
@@ -56,6 +73,9 @@ export class StorageService {
     mimeType: string;
     filePath: string;
   }> {
+    this.validateMimeType(mimeType);
+    this.validateFileSize(buffer.length);
+
     const id = crypto.randomUUID();
     const extension = mimeType.split('/')[1] || 'bin';
     const filename = `${id}.${extension}`;
@@ -77,6 +97,22 @@ export class StorageService {
     if (fs.existsSync(fullPath)) {
       await fs.promises.unlink(fullPath);
       this.logger.debug(`Deleted artifact file: ${fullPath}`);
+    }
+  }
+
+  private validateMimeType(mimeType: string): void {
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+      throw new BadRequestException(
+        `File type '${mimeType}' is not allowed. Allowed types: ${[...ALLOWED_MIME_TYPES].join(', ')}`,
+      );
+    }
+  }
+
+  private validateFileSize(sizeInBytes: number): void {
+    if (sizeInBytes > MAX_FILE_SIZE_BYTES) {
+      throw new BadRequestException(
+        `File size (${Math.round(sizeInBytes / 1024 / 1024)}MB) exceeds the maximum allowed size of ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
+      );
     }
   }
 }

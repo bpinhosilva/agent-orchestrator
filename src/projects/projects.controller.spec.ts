@@ -2,9 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
 import { ProjectStatus } from './entities/project.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 
 describe('ProjectsController', () => {
   let controller: ProjectsController;
+
+  const mockUser = { id: 'user-1', role: UserRole.USER } as User;
 
   const mockProjectsService = {
     create: jest.fn(),
@@ -12,6 +15,9 @@ describe('ProjectsController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    addMember: jest.fn(),
+    getMembers: jest.fn(),
+    removeMember: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -49,9 +55,12 @@ describe('ProjectsController', () => {
         status: ProjectStatus.PLANNING,
       });
 
-      const result = await controller.create(createDto);
+      const result = await controller.create(createDto, mockUser);
       expect(result.id).toEqual('1');
-      expect(mockProjectsService.create).toHaveBeenCalledWith(createDto);
+      expect(mockProjectsService.create).toHaveBeenCalledWith(
+        createDto,
+        mockUser,
+      );
     });
   });
 
@@ -60,9 +69,9 @@ describe('ProjectsController', () => {
       mockProjectsService.findAll.mockResolvedValue([
         { id: '1', title: 'Task 1' },
       ]);
-      const result = await controller.findAll();
+      const result = await controller.findAll(mockUser);
       expect(result).toHaveLength(1);
-      expect(mockProjectsService.findAll).toHaveBeenCalled();
+      expect(mockProjectsService.findAll).toHaveBeenCalledWith(mockUser);
     });
   });
 
@@ -72,9 +81,9 @@ describe('ProjectsController', () => {
         id: '1',
         title: 'Task 1',
       });
-      const result = await controller.findOne('1');
+      const result = await controller.findOne('1', mockUser);
       expect(result.id).toEqual('1');
-      expect(mockProjectsService.findOne).toHaveBeenCalledWith('1');
+      expect(mockProjectsService.findOne).toHaveBeenCalledWith('1', mockUser);
     });
   });
 
@@ -85,17 +94,58 @@ describe('ProjectsController', () => {
         id: '1',
         title: 'New Title',
       });
-      const result = await controller.update('1', updateDto);
+      const result = await controller.update('1', updateDto, mockUser);
       expect(result.title).toEqual('New Title');
-      expect(mockProjectsService.update).toHaveBeenCalledWith('1', updateDto);
+      expect(mockProjectsService.update).toHaveBeenCalledWith(
+        '1',
+        updateDto,
+        mockUser,
+      );
     });
   });
 
   describe('remove', () => {
     it('should remove a project', async () => {
       mockProjectsService.remove.mockResolvedValue(undefined);
-      await controller.remove('1');
-      expect(mockProjectsService.remove).toHaveBeenCalledWith('1');
+      await controller.remove('1', mockUser);
+      expect(mockProjectsService.remove).toHaveBeenCalledWith('1', mockUser);
+    });
+  });
+
+  describe('addMember', () => {
+    it('should add a member to a project', async () => {
+      const addMemberDto = { userId: 'user-2' };
+      mockProjectsService.addMember.mockResolvedValue(undefined);
+      await controller.addMember('1', addMemberDto, mockUser);
+      expect(mockProjectsService.addMember).toHaveBeenCalledWith(
+        '1',
+        addMemberDto,
+        mockUser,
+      );
+    });
+  });
+
+  describe('getMembers', () => {
+    it('should return members of a project', async () => {
+      mockProjectsService.getMembers.mockResolvedValue([]);
+      const result = await controller.getMembers('1', mockUser);
+      expect(result).toEqual([]);
+      expect(mockProjectsService.getMembers).toHaveBeenCalledWith(
+        '1',
+        mockUser,
+      );
+    });
+  });
+
+  describe('removeMember', () => {
+    it('should remove a member from a project', async () => {
+      mockProjectsService.removeMember.mockResolvedValue(undefined);
+      await controller.removeMember('1', 'user-2', mockUser);
+      expect(mockProjectsService.removeMember).toHaveBeenCalledWith(
+        '1',
+        'user-2',
+        mockUser,
+      );
     });
   });
 });

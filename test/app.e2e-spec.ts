@@ -24,6 +24,7 @@ import { AgentsService } from '../src/agents/agents.service';
 import { AuthService } from '../src/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource } from 'typeorm';
+import { UserRole } from '../src/users/entities/user.entity';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -76,6 +77,7 @@ describe('AppController (e2e)', () => {
       id: 'test-user-id',
       email: 'test@test.com',
       name: 'Test User',
+      role: UserRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

@@ -6,7 +6,6 @@ describe('UsersController', () => {
   let controller: UsersController;
 
   const mockUsersService = {
-    create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
@@ -29,17 +28,6 @@ describe('UsersController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
-  });
-
-  describe('create', () => {
-    it('should create a user', async () => {
-      const dto = { name: 'Test', email: 'test@test.com' };
-      mockUsersService.create.mockResolvedValue({ id: '1', ...dto });
-
-      const result = await controller.create(dto);
-      expect(result.id).toEqual('1');
-      expect(mockUsersService.create).toHaveBeenCalledWith(dto);
-    });
   });
 
   describe('findAll', () => {

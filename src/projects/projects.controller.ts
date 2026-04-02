@@ -10,33 +10,66 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { AddMemberDto } from './dto/add-member.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  create(@Body() createProjectDto: CreateProjectDto) {
-    return this.projectsService.create(createProjectDto);
+  create(
+    @Body() createProjectDto: CreateProjectDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectsService.create(createProjectDto, user);
   }
 
   @Get()
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@CurrentUser() user: User) {
+    return this.projectsService.findAll(user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.projectsService.findOne(id, user);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(id, updateProjectDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectsService.update(id, updateProjectDto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.projectsService.remove(id, user);
+  }
+
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string,
+    @Body() addMemberDto: AddMemberDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectsService.addMember(id, addMemberDto, user);
+  }
+
+  @Get(':id/members')
+  getMembers(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.projectsService.getMembers(id, user);
+  }
+
+  @Delete(':id/members/:userId')
+  removeMember(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectsService.removeMember(id, userId, user);
   }
 }

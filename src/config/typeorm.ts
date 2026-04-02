@@ -41,7 +41,7 @@ export const getTypeOrmConfig = (
     database: databaseUrl ? undefined : sqlitePath,
     entities,
     migrations,
-    synchronize: configService.get<string>('NODE_ENV') === 'development',
+    synchronize: false,
     logging: configService.get<string>('DB_LOGGING') === 'true',
   } as DataSourceOptions;
 };

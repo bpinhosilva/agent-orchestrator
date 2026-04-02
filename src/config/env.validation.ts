@@ -10,4 +10,6 @@ export const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test', 'provision')
     .default('development'),
+  ALLOWED_ORIGINS: Joi.string().optional(),
+  SCHEDULER_ENABLED: Joi.boolean().default(true),
 });

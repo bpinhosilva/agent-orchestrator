@@ -4,10 +4,12 @@ import {
   Entity,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Index,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
+import { ProjectMember } from './project-member.entity';
 
 export enum ProjectStatus {
   PLANNING = 'planning',
@@ -18,6 +20,7 @@ export enum ProjectStatus {
 }
 
 @Entity('projects')
+@Index(['status'])
 export class Project {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -42,6 +45,9 @@ export class Project {
     onDelete: 'SET NULL',
   })
   ownerAgent: AgentEntity | null;
+
+  @OneToMany(() => ProjectMember, (member) => member.project)
+  members: ProjectMember[];
 
   @CreateDateColumn()
   createdAt: Date;

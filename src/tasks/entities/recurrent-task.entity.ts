@@ -6,10 +6,12 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 import { RecurrentTaskExec } from './recurrent-task-exec.entity';
 import { TaskPriority } from './task.entity';
+import { Project } from '../../projects/entities/project.entity';
 
 export enum RecurrentTaskStatus {
   ACTIVE = 'active',
@@ -18,6 +20,7 @@ export enum RecurrentTaskStatus {
 }
 
 @Entity('recurrent_tasks')
+@Index(['status'])
 export class RecurrentTask {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -51,6 +54,14 @@ export class RecurrentTask {
     onDelete: 'CASCADE',
   })
   assignee: AgentEntity;
+
+  @Index()
+  @ManyToOne(() => Project, {
+    nullable: true,
+    eager: false,
+    onDelete: 'CASCADE',
+  })
+  project: Project | null;
 
   @OneToMany(() => RecurrentTaskExec, (exec) => exec.recurrentTask)
   executions: RecurrentTaskExec[];

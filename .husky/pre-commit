@@ -1,6 +1,8 @@
 npm run lint
 npm test
 
+# Validate lockfile integrity (supply chain protection)
+npx lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https
 
 # Note: Local gitleaks execution via npm is disabled because the executable isn't reliably available across environments.
 # The GitHub Action will still enforce secret scanning on all Pull Requests and pushes.

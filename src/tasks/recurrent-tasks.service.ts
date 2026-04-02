@@ -13,6 +13,7 @@ import {
 import { CreateRecurrentTaskDto } from './dto/create-recurrent-task.dto';
 import { UpdateRecurrentTaskDto } from './dto/update-recurrent-task.dto';
 import { AgentEntity } from '../agents/entities/agent.entity';
+import { Project } from '../projects/entities/project.entity';
 
 import { RecurrentTaskSchedulerService } from './recurrent-task-scheduler.service';
 import { Inject, forwardRef } from '@nestjs/common';
@@ -28,7 +29,10 @@ export class RecurrentTasksService {
     private readonly schedulerService: RecurrentTaskSchedulerService,
   ) {}
 
-  async create(dto: CreateRecurrentTaskDto): Promise<RecurrentTask> {
+  async create(
+    dto: CreateRecurrentTaskDto,
+    projectId: string,
+  ): Promise<RecurrentTask> {
     return this.repository.manager.transaction(async (manager) => {
       const activeCount = await manager.count(RecurrentTask, {
         where: { status: RecurrentTaskStatus.ACTIVE },
@@ -44,12 +48,13 @@ export class RecurrentTasksService {
         ...dto,
         status: dto.status ?? RecurrentTaskStatus.ACTIVE,
         assignee: { id: dto.assigneeId } as AgentEntity,
+        project: { id: projectId } as Project,
       });
       return manager.save(task);
     });
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(projectId: string): Promise<any[]> {
     const tasks = await this.repository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.assignee', 'assignee')
@@ -58,6 +63,7 @@ export class RecurrentTasksService {
         'execution',
         'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e.recurrentTaskId = task.id ORDER BY e.updatedAt DESC LIMIT 1)',
       )
+      .where('task.projectId = :projectId', { projectId })
       .orderBy('task.createdAt', 'DESC')
       .getMany();
 
@@ -67,8 +73,8 @@ export class RecurrentTasksService {
     }));
   }
 
-  async findOne(id: string): Promise<any> {
-    const task = await this.repository
+  async findOne(id: string, projectId?: string): Promise<any> {
+    const qb = this.repository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect(
@@ -76,8 +82,13 @@ export class RecurrentTasksService {
         'execution',
         'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e.recurrentTaskId = task.id ORDER BY e.updatedAt DESC LIMIT 1)',
       )
-      .where('task.id = :id', { id })
-      .getOne();
+      .where('task.id = :id', { id });
+
+    if (projectId) {
+      qb.andWhere('task.projectId = :projectId', { projectId });
+    }
+
+    const task = await qb.getOne();
 
     if (!task) {
       throw new NotFoundException(`Recurrent task ${id} not found`);
@@ -89,10 +100,18 @@ export class RecurrentTasksService {
     };
   }
 
-  async update(id: string, dto: UpdateRecurrentTaskDto): Promise<any> {
+  async update(
+    id: string,
+    dto: UpdateRecurrentTaskDto,
+    projectId?: string,
+  ): Promise<any> {
     await this.repository.manager.transaction(async (manager) => {
+      const where: Record<string, unknown> = { id };
+      if (projectId) {
+        where.project = { id: projectId };
+      }
       const task = await manager.findOne(RecurrentTask, {
-        where: { id },
+        where,
         relations: ['assignee'],
       });
       if (!task) {
@@ -137,25 +156,22 @@ export class RecurrentTasksService {
       }
     }
 
-    return this.findOne(id); // Return mapped object with lastRun
+    return this.findOne(id, projectId);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, projectId?: string): Promise<void> {
     await this.repository.manager.transaction(async (manager) => {
-      const task = await manager.findOne(RecurrentTask, { where: { id } });
+      const where: Record<string, unknown> = { id };
+      if (projectId) {
+        where.project = { id: projectId };
+      }
+      const task = await manager.findOne(RecurrentTask, { where });
       if (!task) {
         throw new NotFoundException(`Recurrent task ${id} not found`);
       }
-
-      // 1. Explicitly stop and unregister from memory scheduler
-      // We can do this inside or outside, but since it's idempotent, inside is fine to ensure it stops if DB remove succeeds.
-      // Wait, if DB remove fails, we stopped the task in memory but it's still in DB.
-      // Better to do it after DB remove or ensure it's easily restartable.
-      // Given the current architecture, doing it after is safer for consistency.
       await manager.remove(task);
     });
 
-    // 2. stop it in the memory scheduler
     this.schedulerService.unregisterTasks(id);
   }
 }

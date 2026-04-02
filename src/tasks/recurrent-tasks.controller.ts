@@ -6,40 +6,70 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
 import { RecurrentTasksService } from './recurrent-tasks.service';
 import { CreateRecurrentTaskDto } from './dto/create-recurrent-task.dto';
 import { UpdateRecurrentTaskDto } from './dto/update-recurrent-task.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { ProjectsService } from '../projects/projects.service';
 
-@UseGuards(JwtAuthGuard)
-@Controller('recurrent-tasks')
+@Controller('projects/:projectId/recurrent-tasks')
 export class RecurrentTasksController {
-  constructor(private readonly service: RecurrentTasksService) {}
+  constructor(
+    private readonly service: RecurrentTasksService,
+    private readonly projectsService: ProjectsService,
+  ) {}
 
   @Post()
-  create(@Body() dto: CreateRecurrentTaskDto) {
-    return this.service.create(dto);
+  async create(
+    @Param('projectId') projectId: string,
+    @Body() dto: CreateRecurrentTaskDto,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
+    return this.service.create(dto, projectId);
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  async findAll(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
+    return this.service.findAll(projectId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  async findOne(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return this.service.findOne(id, projectId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateRecurrentTaskDto) {
-    return this.service.update(id, dto);
+  async update(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateRecurrentTaskDto,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return this.service.update(id, dto, projectId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  async remove(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
+    return this.service.remove(id, projectId);
   }
 }

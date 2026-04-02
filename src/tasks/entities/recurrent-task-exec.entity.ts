@@ -5,6 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { RecurrentTask } from './recurrent-task.entity';
 
@@ -20,6 +21,7 @@ export class RecurrentTaskExec {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @ManyToOne(() => RecurrentTask, (rt) => rt.executions, {
     nullable: false,
     onDelete: 'CASCADE',

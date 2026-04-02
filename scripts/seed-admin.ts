@@ -3,6 +3,7 @@ import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/auth/auth.service';
 import { UsersService } from '../src/users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { UserRole } from '../src/users/entities/user.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 const { prompt } = require('enquirer');
@@ -69,6 +70,12 @@ async function bootstrap() {
       email,
       password,
     });
+
+    // Promote the new user to admin role
+    const user = await usersService.findByEmail(email);
+    if (user) {
+      await usersService.update(user.id, { role: UserRole.ADMIN } as any);
+    }
 
     console.log(`\n✅ Admin user successfully seeded: ${email}\n`);
   } catch (error) {

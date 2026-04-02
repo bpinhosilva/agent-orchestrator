@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { Project, ProjectStatus } from '../projects/entities/project.entity';
 import { Task, TaskStatus } from './entities/task.entity';
 import { AgentsService } from '../agents/agents.service';
@@ -13,6 +14,7 @@ import { TasksService } from './tasks.service';
 @Injectable()
 export class TaskSchedulerService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TaskSchedulerService.name);
+  private readonly schedulerEnabled: boolean;
 
   constructor(
     @InjectRepository(Project)
@@ -24,15 +26,27 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
     private readonly agentsService: AgentsService,
     private readonly storageService: StorageService,
     private readonly tasksService: TasksService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.schedulerEnabled =
+      this.configService.get<boolean>('SCHEDULER_ENABLED') !== false;
+  }
 
   async onApplicationBootstrap() {
+    if (!this.schedulerEnabled) {
+      this.logger.log(
+        'Task Scheduler is disabled (SCHEDULER_ENABLED=false). Skipping.',
+      );
+      return;
+    }
     this.logger.log('Task Scheduler initialized. First run starting...');
     await this.handleTaskScheduling();
   }
 
   @Cron('*/45 * * * * *')
   async handleTaskScheduling() {
+    if (!this.schedulerEnabled) return;
+
     this.logger.debug('Running Task Scheduler job...');
 
     try {

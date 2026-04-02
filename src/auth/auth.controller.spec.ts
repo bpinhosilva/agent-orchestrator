@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
 import type { Response, Request } from 'express';
 
 describe('AuthController', () => {
@@ -24,6 +25,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue('test') },
         },
       ],
     }).compile();
@@ -130,6 +135,15 @@ describe('AuthController', () => {
 
       expect(refreshMock).toHaveBeenCalledWith('old_refresh_token');
       expect(cookie).toHaveBeenCalledWith(
+        'auth_token',
+        'new_access_token',
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'strict',
+          path: '/',
+        }),
+      );
+      expect(cookie).toHaveBeenCalledWith(
         'refresh_token',
         'new_refresh_token',
         expect.objectContaining({
@@ -139,7 +153,7 @@ describe('AuthController', () => {
         }),
       );
       expect(json).toHaveBeenCalledWith({
-        access_token: 'new_access_token',
+        message: 'Token refreshed successfully',
         expires_in: 3600,
         token_type: 'Bearer',
       });

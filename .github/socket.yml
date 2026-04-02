@@ -1,0 +1,64 @@
+issueRules:
+  # Block PRs that introduce packages with known security issues
+  - module: true
+    action: error
+
+# Package policies — what to flag on new or updated dependencies
+packageRules:
+  # Block packages with critical/high CVEs
+  - action: error
+    severity:
+      - critical
+      - high
+
+  # Warn on medium severity issues
+  - action: warn
+    severity:
+      - medium
+      - low
+
+  # Supply chain risk categories to flag
+  alerts:
+    # Block install scripts (post-install hooks are a supply chain risk)
+    installScripts:
+      action: error
+
+    # Block known malware
+    malware:
+      action: error
+
+    # Block packages with network access at install time
+    networkAccess:
+      action: error
+
+    # Block shell access at install time
+    shellAccess:
+      action: error
+
+    # Warn on typosquat risks
+    typosquat:
+      action: warn
+
+    # Warn on packages with obfuscated code
+    obfuscatedCode:
+      action: warn
+
+    # Warn on telemetry/tracking
+    telemetry:
+      action: warn
+
+    # Warn on packages with no license
+    noLicense:
+      action: warn
+
+    # Warn on deprecated packages
+    deprecated:
+      action: warn
+
+    # Warn on unmaintained packages (no updates in 12+ months)
+    unmaintained:
+      action: warn
+
+    # Warn on trivial packages (small utility packages easily inlined)
+    trivialPackage:
+      action: warn

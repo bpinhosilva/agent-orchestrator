@@ -8,6 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskComment } from './entities/comment.entity';
 import { StorageService } from '../common/storage.service';
 import { TasksService } from './tasks.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('TaskSchedulerService', () => {
   let service: TaskSchedulerService;
@@ -66,6 +67,10 @@ describe('TaskSchedulerService', () => {
         { provide: AgentsService, useValue: mockAgentsService },
         { provide: StorageService, useValue: mockStorageService },
         { provide: TasksService, useValue: { emitTaskEvent: jest.fn() } },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(true) },
+        },
       ],
     }).compile();
 
