@@ -25,7 +25,7 @@ jobs:
       run: npm ci
 
     - name: Rebuild native modules
-      run: npm rebuild
+      run: npm rebuild --ignore-scripts=false
 
     - name: Install UI dependencies
       run: npm ci --prefix ui --legacy-peer-deps
