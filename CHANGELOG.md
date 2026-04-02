@@ -1,3 +1,10 @@
+# [1.0.0-alpha.24](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.23...v1.0.0-alpha.24) (2026-04-02)
+
+
+### Features
+
+* update README and documentation files with additional references and streamlined content ([ae7b1ac](https://github.com/bpinhosilva/agent-orchestrator/commit/ae7b1acbd47eebbc91b154f2b54da83eb8da0be8))
+
 # [1.0.0-alpha.23](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2026-04-02)
 
 
