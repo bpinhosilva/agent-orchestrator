@@ -240,6 +240,12 @@ npm test -- --testNamePattern="should validate email"
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Additional Documentation
+
+- [CLI reference](docs/CLI.md)
+- [CI/CD pipeline](docs/CI_CD.md)
+- [Release process](docs/RELEASE.md)
+
 ## License
 
 See [LICENSE](LICENSE) for details.
