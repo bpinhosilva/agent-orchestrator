@@ -1,3 +1,10 @@
+# [1.0.0-alpha.22](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2026-04-02)
+
+
+### Features
+
+* add InitialsAvatar component and do some refactor ([417eff3](https://github.com/bpinhosilva/agent-orchestrator/commit/417eff3bdf4ac8cf072c99fc56744a3a93807a31))
+
 # [1.0.0-alpha.21](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.20...v1.0.0-alpha.21) (2026-03-30)
 
 
