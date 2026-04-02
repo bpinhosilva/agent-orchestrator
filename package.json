@@ -21,6 +21,9 @@
   ],
   "files": [
     "dist",
+    "!dist/ui",
+    "!dist/**/*.map",
+    "!dist/**/*.tsbuildinfo",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
