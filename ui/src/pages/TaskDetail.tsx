@@ -18,6 +18,7 @@ import { agentsApi, type Agent } from '../api/agents';
 import { tasksApi, TaskPriority, TaskStatus, type Task } from '../api/tasks';
 import MarkdownField from '../components/MarkdownField';
 import CommentSection from '../components/tasks/CommentSection';
+import InitialsAvatar from '../components/InitialsAvatar';
 import { useNotification } from '../hooks/useNotification';
 import { taskDetailSchema, type TaskDetailFormValues } from '../lib/taskFormSchemas';
 
@@ -463,10 +464,10 @@ const TaskDetail = () => {
               {selectedAgent ? (
                 <div className="flex items-center gap-5 p-5 bg-tertiary/5 rounded-2xl border border-tertiary/10 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="h-14 w-14 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary overflow-hidden shadow-inner">
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAgent.name || 'U')}&background=random&color=fff`}
-                      alt={`${selectedAgent.name} avatar`}
-                      className="w-full h-full p-1 rounded-xl object-cover"
+                    <InitialsAvatar
+                      name={selectedAgent.name || 'U'}
+                      size={48}
+                      className="rounded-lg"
                     />
                   </div>
                   <div className="flex-1">

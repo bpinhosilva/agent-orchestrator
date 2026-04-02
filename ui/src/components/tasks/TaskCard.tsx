@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Check, Clock, MessageSquare, Paperclip } from 'lucide-react';
 import type { Task } from './types';
 import { cn } from '../../lib/cn';
+import InitialsAvatar from '../InitialsAvatar';
 
 interface TaskCardProps {
   task: Task;
@@ -170,11 +171,19 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({ task, isOverlay }) => {
               showActiveDetails && 'border-primary/30',
             )}
           >
-            <img
-              src={task.agent.avatar}
-              alt={`${task.agent.name} avatar`}
-              className={cn('h-5 w-5 rounded-sm object-cover', isDone && 'grayscale')}
-            />
+            {task.agent.avatar ? (
+              <img
+                src={task.agent.avatar}
+                alt={`${task.agent.name} avatar`}
+                className={cn('h-5 w-5 rounded-sm object-cover', isDone && 'grayscale')}
+              />
+            ) : (
+              <InitialsAvatar
+                name={task.agent.name}
+                size={20}
+                className={cn('rounded-sm text-[8px]', isDone && 'grayscale')}
+              />
+            )}
           </div>
           <span
             className={cn(

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Grid2X2, List, Plus, Loader2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AgentCard from './AgentCard';
 import AgentConfigDrawer from './AgentConfigDrawer';
 import CreateAgentModal from './CreateAgentModal';
@@ -10,8 +11,7 @@ import { useNotification } from '../hooks/useNotification';
 
 const AgentFleet = () => {
   const { notifySuccess, notifyApiError } = useNotification();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,21 +19,34 @@ const AgentFleet = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  useEffect(() => {
-    fetchAgents();
-  }, []);
-
-  const fetchAgents = async () => {
-    try {
-      setLoading(true);
+  const { data: agents = [], isLoading: loading } = useQuery({
+    queryKey: ['agents'],
+    queryFn: async () => {
       const { data } = await agentsApi.findAll();
-      setAgents(data);
-    } catch (error) {
-      console.error('Failed to fetch agents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data;
+    },
+  });
+
+  const invalidateAgents = () => queryClient.invalidateQueries({ queryKey: ['agents'] });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => agentsApi.delete(id),
+    onSuccess: () => {
+      notifySuccess('Agent Inactivated', 'Neural node has been marked as inactive.');
+      setIsConfirmOpen(false);
+      invalidateAgents();
+    },
+    onError: (error) => notifyApiError(error, 'Operation Failed'),
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => agentsApi.update(id, { status: 'active' }),
+    onSuccess: () => {
+      notifySuccess('Neural Link Restored', 'The agent has been reactivated and synchronized.');
+      invalidateAgents();
+    },
+    onError: (error) => notifyApiError(error, 'Activation Failed'),
+  });
 
   const handleConfigure = (agent: Agent) => {
     setSelectedAgent(agent);
@@ -50,31 +63,13 @@ const AgentFleet = () => {
     setIsConfirmOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = () => {
     if (!selectedAgent) return;
-    
-    try {
-      await agentsApi.delete(selectedAgent.id);
-      notifySuccess('Agent Inactivated', 'Neural node has been marked as inactive.');
-      setIsConfirmOpen(false);
-      fetchAgents();
-      setIsConfirmOpen(false);
-      fetchAgents();
-    } catch (error) {
-      notifyApiError(error, 'Operation Failed');
-    }
+    deleteMutation.mutate(selectedAgent.id);
   };
 
-  const handleActivate = async (id: string) => {
-    try {
-      await agentsApi.update(id, { status: 'active' });
-      notifySuccess('Neural Link Restored', 'The agent has been reactivated and synchronized.');
-      fetchAgents();
-      notifySuccess('Neural Link Restored', 'The agent has been reactivated and synchronized.');
-      fetchAgents();
-    } catch (error) {
-      notifyApiError(error, 'Activation Failed');
-    }
+  const handleActivate = (id: string) => {
+    activateMutation.mutate(id);
   };
 
   return (
@@ -89,15 +84,19 @@ const AgentFleet = () => {
         <div className="flex gap-2">
           <button 
             onClick={() => setViewMode('grid')}
+            aria-label="Grid view"
+            aria-pressed={viewMode === 'grid'}
             className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-surface-container-high text-white' : 'text-on-surface-variant hover:text-white'}`}
           >
-            <Grid2X2 size={20} />
+            <Grid2X2 size={20} aria-hidden="true" />
           </button>
           <button 
             onClick={() => setViewMode('list')}
+            aria-label="List view"
+            aria-pressed={viewMode === 'list'}
             className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-surface-container-high text-white' : 'text-on-surface-variant hover:text-white'}`}
           >
-            <List size={20} />
+            <List size={20} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -144,7 +143,7 @@ const AgentFleet = () => {
         key={selectedAgent?.id || 'none'}
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)} 
-        onUpdated={fetchAgents}
+        onUpdated={invalidateAgents}
         agent={selectedAgent} 
       />
 
@@ -157,7 +156,7 @@ const AgentFleet = () => {
       <CreateAgentModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onCreated={fetchAgents}
+        onCreated={invalidateAgents}
       />
 
       <ConfirmDialog 

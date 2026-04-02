@@ -195,9 +195,6 @@ describe('CreateRecurrentTaskModal', () => {
     
     // Ensure agent is loaded
     await waitFor(() => {
-      if (screen.queryByText(/Scanning fleet/i)) {
-        console.log('Still scanning fleet...');
-      }
       expect(screen.queryByText(/Scanning fleet/i)).not.toBeInTheDocument();
       const agentSelect = screen.getByTestId('agent-select');
       expect(agentSelect).toHaveTextContent('Fin-Oracle v2.4');

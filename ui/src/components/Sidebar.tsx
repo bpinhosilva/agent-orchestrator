@@ -30,7 +30,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="h-screen w-64 sticky top-0 bg-surface-container-low flex flex-col py-6 shadow-xl z-50 transition-all duration-300">
+    <aside className="h-screen w-64 sticky top-0 bg-surface-container-low flex flex-col py-6 shadow-xl z-50 transition-all duration-300" role="complementary" aria-label="Main sidebar">
       <div className="px-6 mb-8">
         <h1 className="text-lg font-black text-primary font-headline tracking-tight uppercase">Orchestrator</h1>
         <p className="text-[10px] text-on-surface-variant font-medium tracking-[0.2em] mt-1">AI CONTROL CENTER</p>
@@ -79,7 +79,7 @@ const Sidebar = () => {
         onCreated={refreshProjects}
       />
 
-      <nav className="flex-1 px-3 space-y-2">
+      <nav className="flex-1 px-3 space-y-2" aria-label="Main navigation">
         {navItems.map((item, index) => (
           <NavLink
             key={index}

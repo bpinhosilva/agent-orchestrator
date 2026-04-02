@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { MessagesSquare } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { commentsApi, CommentAuthorType } from '../../api/comments';
-import type { TaskComment } from '../../api/comments';
-import { usersApi } from '../../api/users';
-import type { User } from '../../api/users';
+import { useAuth } from '../../contexts/AuthContextInstance';
 import CommentList from './CommentList';
 import CommentEditor from './CommentEditor';
 import ConfirmDialog from '../ConfirmDialog';
@@ -14,62 +13,42 @@ interface CommentSectionProps {
 }
 
 const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
-  const [comments, setComments] = useState<TaskComment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useAuth();
   const { notifySuccess, notifyApiError } = useNotification();
+  const queryClient = useQueryClient();
 
-  const fetchComments = useCallback(async (silent = false) => {
-    try {
-      if (!silent) setIsLoading(true);
+  const { data: comments = [], isLoading } = useQuery({
+    queryKey: ['comments', taskId],
+    queryFn: async () => {
       const data = await commentsApi.findAllByTask(taskId);
-      setComments([...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    } catch (error) {
-      console.error('Failed to fetch comments:', error);
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-  }, [taskId]);
+      return [...data].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    },
+    enabled: Boolean(taskId),
+    refetchInterval: 10_000,
+  });
 
-  const fetchUser = useCallback(async () => {
-    try {
-      const users = await usersApi.findAll();
-      if (users.length > 0) {
-        // We'll use the user with "bruno" in it if available, as that's the current user's workspace
-        const bruno = users.find(u => u.username.toLowerCase().includes('bruno'));
-        setCurrentUser(bruno || users[0]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    }
-  }, []);
-
-
-  useEffect(() => {
-    fetchComments();
-    fetchUser();
-
-    // Small polling to "fill the section" with agent updates if they happen
-    const interval = setInterval(() => fetchComments(true), 10000);
-    return () => clearInterval(interval);
-  }, [fetchComments, fetchUser]);
+  const invalidateComments = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['comments', taskId] });
+  }, [queryClient, taskId]);
 
   const handleSendComment = async (content: string) => {
-    if (!taskId || !currentUser) return;
+    if (!taskId || !user) return;
 
     try {
       setIsSending(true);
-      
-      const newComment = await commentsApi.create(taskId, {
+
+      await commentsApi.create(taskId, {
         content,
-        authorType: CommentAuthorType.USER, // Default to user for manual comments
-        authorUserId: currentUser.id,
+        authorType: CommentAuthorType.USER,
+        authorUserId: user.id,
       });
 
-      setComments((prev) => [newComment, ...prev]);
+      invalidateComments();
     } catch (error) {
       console.error('Failed to send comment:', error);
     } finally {
@@ -87,10 +66,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
     try {
       setIsDeleting(true);
       await commentsApi.remove(taskId, deleteConfirmId);
-      
-      // Update local state
-      setComments((prev) => prev.filter((c) => c.id !== deleteConfirmId));
-      
+      invalidateComments();
       setDeleteConfirmId(null);
       notifySuccess('Protocol Cleared', 'The comment data has been purged from the orchestration logs.');
     } catch (error) {

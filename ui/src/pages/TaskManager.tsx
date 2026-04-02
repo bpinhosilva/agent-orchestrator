@@ -1,33 +1,20 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ListPlus, Sparkles, ArrowRight, ShieldAlert, Layout } from 'lucide-react';
+import { ListPlus, ArrowRight, ShieldAlert, Layout } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 import TaskBoard from '../components/tasks/TaskBoard';
-import CreateTaskModal from '../components/tasks/CreateTaskModal';
-import { useProject } from '../hooks/useProject';
-import { useNotification } from '../hooks/useNotification';
-import { useTaskSSE } from '../hooks/useTaskSSE';
-import { tasksApi, TaskStatus, type Task as ApiTask } from '../api/tasks';
 import TaskCard from '../components/tasks/TaskCard';
+import TaskStats from '../components/tasks/TaskStats';
+import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import ArchiveZone from '../components/tasks/ArchiveZone';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppErrorBoundary from '../components/AppErrorBoundary';
+import { useProject } from '../hooks/useProject';
+import { useNotification } from '../hooks/useNotification';
+import { useTaskSSE } from '../hooks/useTaskSSE';
+import { useTaskDnD } from '../hooks/useTaskDnD';
+import { tasksApi, TaskStatus, type Task as ApiTask } from '../api/tasks';
 import { cn } from '../lib/cn';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
 import type { Task as ComponentTask } from '../components/tasks/types';
 
 const TaskManager: React.FC = () => {
@@ -38,20 +25,10 @@ const TaskManager: React.FC = () => {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // DnD State
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [initialStatus, setInitialStatus] = useState<ComponentTask['status'] | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [pendingArchiveId, setPendingArchiveId] = useState<string | null>(null);
   const [skipConfirm, setSkipConfirm] = useState(() => {
     return localStorage.getItem('skipArchiveConfirm') === 'true';
   });
   const [checkValue, setCheckValue] = useState(false);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
 
   const fetchTasks = useCallback(async () => {
     if (!activeProject) return;
@@ -72,7 +49,6 @@ const TaskManager: React.FC = () => {
         priority: t.priority as ComponentTask['priority'],
         agent: {
           name: t.assignee?.name || 'Unassigned',
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(t.assignee?.name || 'U')}&background=random&color=fff`,
           colorClass: 'bg-surface-container-highest border-outline-variant/30'
         },
         isActive: t.status === 'in-progress',
@@ -118,7 +94,6 @@ const TaskManager: React.FC = () => {
       priority: updatedTaskData.priority as ComponentTask['priority'],
       agent: {
         name: updatedTaskData.assignee?.name || 'Unassigned',
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(updatedTaskData.assignee?.name || 'U')}&background=random&color=fff`,
         colorClass: 'bg-surface-container-highest border-outline-variant/30'
       },
       isActive: updatedTaskData.status === 'in-progress',
@@ -165,12 +140,10 @@ const TaskManager: React.FC = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  const handleStatusChange = async (taskId: string, newStatus: string) => {
+  const handleStatusChange = useCallback(async (taskId: string, newStatus: string) => {
      if (!activeProject) return;
      try {
        await tasksApi.update(activeProject.id, taskId, { status: newStatus as TaskStatus });
-       // No need to fetch here, TaskBoard already updated optimistically in most cases, 
-       // but we could refresh to be sure or just update local state if needed.
        if (newStatus === 'archived') {
          setTasks(prev => prev.filter(t => t.id !== taskId));
        } else {
@@ -183,105 +156,24 @@ const TaskManager: React.FC = () => {
      } catch (error) {
        console.error('Failed to update task status:', error);
       notifyError('Status Update Failed', 'Failed to update task status in the neural mesh.');
-      fetchTasks(); // Reload on error
+      fetchTasks();
     }
-  };
+  }, [activeProject, notifyError, fetchTasks]);
 
-  // DnD Handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    const id = event.active.id as string;
-    setActiveId(id);
-    const task = tasks.find(t => t.id === id);
-    if (task) setInitialStatus(task.status);
-  };
+  const {
+    activeId,
+    sensors,
+    collisionDetection,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    isConfirmOpen,
+    setIsConfirmOpen,
+    pendingArchiveId,
+    setPendingArchiveId,
+  } = useTaskDnD({ tasks, setTasks, onStatusChange: handleStatusChange, skipArchiveConfirm: skipConfirm });
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeId = active.id;
-    const overId = over.id;
-
-    if (activeId === overId) return;
-
-    const activeIndex = tasks.findIndex(t => t.id === activeId);
-    const overIndex = tasks.findIndex(t => t.id === overId);
-    
-    if (activeIndex === -1) return;
-
-    const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
-
-    if (!isOverColumn && overIndex >= 0) {
-      if (tasks[activeIndex].status !== tasks[overIndex].status) {
-        const newItems = [...tasks];
-        const newStatus = tasks[overIndex].status;
-        newItems[activeIndex] = { 
-          ...newItems[activeIndex], 
-          status: newStatus,
-          isActive: newStatus === 'in-progress'
-        };
-        setTasks(arrayMove(newItems, activeIndex, overIndex));
-      }
-    } else if (isOverColumn) {
-      if (tasks[activeIndex].status !== overId) {
-        const newItems = [...tasks];
-        const newStatus = overId as ComponentTask['status'];
-        newItems[activeIndex] = { 
-          ...newItems[activeIndex], 
-          status: newStatus,
-          isActive: newStatus === 'in-progress'
-        };
-        setTasks(arrayMove(newItems, activeIndex, tasks.length - 1));
-      }
-    }
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    
-    if (!over) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    const activeTask = tasks.find(t => t.id === activeId);
-    if (!activeTask) return;
-
-    if (overId === 'archive') {
-      if (skipConfirm) {
-        await handleStatusChange(activeId, 'archived');
-      } else {
-        setPendingArchiveId(activeId);
-        setIsConfirmOpen(true);
-      }
-      return;
-    }
-
-    const isOverColumn = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
-    const newStatus = isOverColumn ? (overId as ComponentTask['status']) : tasks.find(t => t.id === overId)?.status;
-
-    if (newStatus && initialStatus !== newStatus) {
-       await handleStatusChange(activeId, newStatus);
-    }
-
-    setInitialStatus(null);
-    if (activeId === overId) return;
-
-    const activeIndex = tasks.findIndex(t => t.id === activeId);
-    const overIndex = tasks.findIndex(t => t.id === overId);
-    
-    if (activeIndex === -1) return;
-
-    const isOverColumnCheck = overId === 'backlog' || overId === 'in-progress' || overId === 'review' || overId === 'done';
-    if (!isOverColumnCheck && overIndex >= 0) {
-      if (tasks[activeIndex].status === tasks[overIndex].status) {
-         setTasks(arrayMove(tasks, activeIndex, overIndex));
-      }
-    }
-  };
-
-  const confirmArchive = async () => {
+  const confirmArchive = useCallback(async () => {
     if (pendingArchiveId) {
       if (checkValue) {
         localStorage.setItem('skipArchiveConfirm', 'true');
@@ -291,7 +183,7 @@ const TaskManager: React.FC = () => {
     }
     setIsConfirmOpen(false);
     setPendingArchiveId(null);
-  };
+  }, [pendingArchiveId, checkValue, handleStatusChange, setIsConfirmOpen, setPendingArchiveId]);
 
   const activeTask = useMemo(
     () => tasks.find((task) => task.id === activeId),
@@ -430,67 +322,14 @@ const TaskManager: React.FC = () => {
         </section>
       </AppErrorBoundary>
 
-      {/* Stats Section with dynamic data if possible, else simplified */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card p-6 rounded-2xl border border-outline-variant/10 col-span-1 md:col-span-2 flex flex-col md:flex-row justify-between items-center gap-6" style={{ background: 'rgba(34, 42, 61, 0.4)', backdropFilter: 'blur(12px)' }}>
-          <div>
-            <h3 className="font-headline font-bold text-lg text-on-surface">Efficiency Matrix</h3>
-            <p className="text-outline text-sm">System performance metrics for active sector.</p>
-            <div className="mt-4 flex gap-6">
-              <div className="flex flex-col">
-                <span className="text-2xl font-extrabold text-primary">
-                    {taskCounts.done}
-                </span>
-                <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Completed</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-extrabold text-secondary">
-                    {taskCounts['in-progress']}
-                </span>
-                <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Active Nodes</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="w-full md:w-48 h-24 bg-surface-container-highest/30 rounded-lg relative overflow-hidden flex items-end px-2 gap-1">
-             {/* Dynamic mini-bars based on real counts */}
-             {['backlog', 'in-progress', 'review', 'done'].map((status, i) => {
-                 const count = taskCounts[status as keyof typeof taskCounts];
-                 const height = tasks.length > 0 ? (count / tasks.length) * 100 : 10;
-                 return (
-                    <div 
-                        key={status} 
-                        className="w-full bg-primary/40 rounded-t transition-all duration-500" 
-                        style={{ height: `${Math.max(height, 5)}%`, opacity: 0.3 + (i * 0.2) }}
-                    />
-                );
-            })}
-            <div className="absolute inset-0 pointer-events-none opacity-30 flex items-center justify-center">
-              <span className="text-primary text-[8px] font-mono uppercase tracking-[0.5em]">Live Stats</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-tertiary-container/10 p-6 rounded-2xl border border-tertiary/10 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 text-tertiary/5 text-8xl transition-transform group-hover:scale-110">
-            <Sparkles size={80} />
-          </div>
-          <h3 className="font-headline font-bold text-tertiary">Orchestration Info</h3>
-          <p className="text-on-surface-variant text-sm mt-2 relative z-10">
-              {tasks.length > 0 
-                ? `Managing ${tasks.length} tasks across ${activeProject.title}. Drag tasks between columns to update their operational status.`
-                : "Initialize new tasks to begin sector orchestration. Tasks will automatically be mapped to assigned intelligence nodes."
-              }
-          </p>
-        </div>
-      </div>
+      <TaskStats tasks={tasks} taskCounts={taskCounts} projectTitle={activeProject.title} />
     </div>
   );
 
   return (
     <DndContext 
       sensors={sensors} 
-      collisionDetection={closestCenter} 
+      collisionDetection={collisionDetection} 
       onDragStart={handleDragStart} 
       onDragOver={handleDragOver} 
       onDragEnd={handleDragEnd}

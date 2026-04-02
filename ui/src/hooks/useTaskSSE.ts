@@ -7,6 +7,12 @@ export const useTaskSSE = (
   onTaskUpdate: (event: string, task: Task) => void
 ) => {
   const abortControllerRef = useRef<AbortController | null>(null);
+  const callbackRef = useRef(onTaskUpdate);
+
+  // Keep the callback ref current without re-running the SSE effect
+  useEffect(() => {
+    callbackRef.current = onTaskUpdate;
+  }, [onTaskUpdate]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -27,7 +33,7 @@ export const useTaskSSE = (
             try {
               const data = JSON.parse(msg.data);
               if (data && data.task && data.event) {
-                onTaskUpdate(data.event, data.task);
+                callbackRef.current(data.event, data.task);
               }
             } catch (err) {
               console.error('Failed to parse SSE message', err);
@@ -38,11 +44,9 @@ export const useTaskSSE = (
           },
           onerror(err) {
             console.error('SSE connection error:', err);
-            // Optionally we can wait or re-throw, by default returning nothing retries.
           },
         });
       } catch (err) {
-        // Will be caught if the request fails before SSE stream starts
         console.error('SSE initialization failed', err);
       }
     };
@@ -54,5 +58,5 @@ export const useTaskSSE = (
         abortControllerRef.current.abort();
       }
     };
-  }, [projectId, onTaskUpdate]);
+  }, [projectId]);
 };

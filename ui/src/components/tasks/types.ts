@@ -3,7 +3,7 @@ export type TaskPriority = 0 | 1 | 2 | 3; // CRITICAL, HIGH, MEDIUM, LOW
 
 export interface Agent {
   name: string;
-  avatar: string;
+  avatar?: string;
   colorClass?: string;
 }
 

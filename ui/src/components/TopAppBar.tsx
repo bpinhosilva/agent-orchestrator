@@ -5,7 +5,7 @@ const TopAppBar = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="w-full top-0 sticky bg-surface flex items-center justify-between px-6 py-3 shadow-[0_8px_32px_rgba(173,198,255,0.06)] z-40">
+    <header role="banner" className="w-full top-0 sticky bg-surface flex items-center justify-between px-6 py-3 shadow-[0_8px_32px_rgba(173,198,255,0.06)] z-40">
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-3 bg-surface-container-low px-4 py-1.5 rounded-full ring-1 ring-outline-variant/20">
           <Search size={18} className="text-primary" />
@@ -27,11 +27,11 @@ const TopAppBar = () => {
           <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">{user?.email || 'Active Protocol'}</span>
         </div>
         
-        <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
-          <Bell size={20} />
+        <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+          <Bell size={20} aria-hidden="true" />
         </button>
-        <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
-          <Settings size={20} />
+        <button aria-label="Settings" className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+          <Settings size={20} aria-hidden="true" />
         </button>
         
         <div className="flex items-center gap-3 pl-4 border-l border-outline-variant/20">

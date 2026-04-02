@@ -120,9 +120,10 @@ const AgentCard: React.FC<AgentCardProps> = ({
               e.stopPropagation();
               setIsMenuOpen(!isMenuOpen);
             }}
+            aria-label="Agent actions menu"
             className={`px-3 py-2 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors h-full ${isMenuOpen ? 'bg-surface-container-highest text-white' : ''}`}
           >
-            <MoreVertical size={16} />
+            <MoreVertical size={16} aria-hidden="true" />
           </button>
 
           {isMenuOpen && (
