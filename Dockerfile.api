@@ -1,0 +1,27 @@
+FROM node:24-bookworm AS deps
+WORKDIR /app
+COPY package*.json .npmrc ./
+RUN npm ci && npm rebuild
+
+FROM deps AS builder
+COPY nest-cli.json tsconfig*.json ./
+COPY src ./src
+COPY scripts ./scripts
+RUN npm run build
+
+FROM deps AS development
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "start:dev"]
+
+FROM deps AS production-deps
+RUN npm prune --omit=dev
+
+FROM gcr.io/distroless/nodejs24-debian12 AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=production-deps /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY package.json ./
+EXPOSE 3000
+CMD ["dist/main.js"]

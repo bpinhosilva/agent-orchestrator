@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: agent-orchestrator-db
+    container_name: agent-orchestrator-db-dev
     env_file:
       - .env
     environment:
@@ -11,7 +11,7 @@ services:
     ports:
       - '${POSTGRES_PORT:-5433}:5432'
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data-dev:/var/lib/postgresql/data
     healthcheck:
       test:
         [
@@ -26,43 +26,49 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
-      target: runtime
-    container_name: agent-orchestrator-api
+      target: development
+    container_name: agent-orchestrator-api-dev
     env_file:
       - .env
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 3000
       DB_TYPE: postgres
       DATABASE_URL: postgresql://${POSTGRES_USER:-orchestrator}:${POSTGRES_PASSWORD:-orchestrator_password}@db:5432/${POSTGRES_DB:-agent_orchestrator}
       SERVE_STATIC_UI: 'false'
-      CHECK_PENDING_MIGRATIONS_ON_STARTUP: 'true'
-      ALLOWED_ORIGINS: https://localhost,https://agent-orchestrator.localhost
+      CHECK_PENDING_MIGRATIONS_ON_STARTUP: 'false'
+      CHOKIDAR_USEPOLLING: 'true'
+      WATCHPACK_POLLING: 'true'
+    command: ["npm", "run", "start:dev"]
     depends_on:
       db:
         condition: service_healthy
     ports:
       - '3000:3000'
-    restart: unless-stopped
+    volumes:
+      - .:/app
+      - api-node-modules:/app/node_modules
 
   ui:
     build:
       context: .
       dockerfile: Dockerfile.ui
-      target: runtime
-    container_name: agent-orchestrator-ui
+      target: development
+    container_name: agent-orchestrator-ui-dev
+    environment:
+      VITE_DEV_HOST: 0.0.0.0
+      VITE_API_PROXY_TARGET: http://api:3000
+      CHOKIDAR_USEPOLLING: 'true'
     depends_on:
       api:
         condition: service_started
     ports:
-      - '80:80'
-      - '443:443'
+      - '5173:5173'
     volumes:
-      - caddy-data:/data
-      - caddy-config:/config
-    restart: unless-stopped
+      - ./ui:/app/ui
+      - ui-node-modules:/app/ui/node_modules
 
 volumes:
-  postgres-data:
-  caddy-data:
-  caddy-config:
+  postgres-data-dev:
+  api-node-modules:
+  ui-node-modules:

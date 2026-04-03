@@ -25,7 +25,7 @@ Agent Orchestrator is an open-source project designed to manage and orchestrate 
 
 ## Prerequisites
 - [Node.js](https://nodejs.org/) (v24+)
-- [Docker](https://www.docker.com/) and Docker Compose (optional, for PostgreSQL)
+- [Docker](https://www.docker.com/) and Docker Compose (optional, for the containerized stack)
 - A [Google Gemini API Key](https://aistudio.google.com/) or [Anthropic API Key](https://console.anthropic.com/)
 
 ## Quick Start
@@ -89,6 +89,8 @@ DATABASE_URL=                       # PostgreSQL connection string (omit for SQL
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 SCHEDULER_ENABLED=true              # Enable/disable task scheduler CRON
 DB_LOGGING=false                    # Enable TypeORM query logging
+SERVE_STATIC_UI=true                # Set false when the UI is served by a separate container/proxy
+CHECK_PENDING_MIGRATIONS_ON_STARTUP=false
 ```
 
 ### 3. Set Up the Database
@@ -97,11 +99,11 @@ DB_LOGGING=false                    # Enable TypeORM query logging
 
 SQLite is used automatically when `DATABASE_URL` is not set. The database file is created at `local.sqlite` in the project root (or `$AGENT_ORCHESTRATOR_HOME/local.sqlite`).
 
-**Option B: PostgreSQL (Production)**
+**Option B: PostgreSQL (Production / Docker)**
 
 ```bash
-# Start PostgreSQL via Docker Compose
-docker compose up -d
+# Start only PostgreSQL
+docker compose up -d db
 
 # Set the connection string
 export DATABASE_URL="postgresql://orchestrator:orchestrator_password@localhost:5433/agent_orchestrator"
@@ -138,6 +140,100 @@ npm run start:prod
 ```
 
 The dashboard is available at `http://localhost:3000` and the API at `http://localhost:3000/api/v1/`.
+
+### 5. Run with Docker
+
+The repository now includes three compose entrypoints:
+
+- `docker-compose.yml` — production-like stack with **PostgreSQL + distroless API + Caddy UI**
+- `docker-compose.dev.yml` — development stack with hot reload for API and UI
+- `docker-compose-test.yml` — containerized integration stack for migration, CLI, API, and UI checks
+
+All Docker entrypoints read from the repository-root `.env` file. For the Docker flows, the most relevant variables are:
+
+```bash
+JWT_SECRET="at-least-32-characters-long-secret-key"
+POSTGRES_USER=orchestrator
+POSTGRES_PASSWORD=orchestrator_password
+POSTGRES_DB=agent_orchestrator
+POSTGRES_PORT=5433
+POSTGRES_TEST_DB=agent_orchestrator_test
+POSTGRES_TEST_PORT=5434
+GEMINI_API_KEY=
+ANTHROPIC_API_KEY=
+```
+
+#### Production-like Docker stack
+
+```bash
+# Build and start PostgreSQL + API + UI
+npm run docker:up
+
+# The API will refuse to start until migrations are applied
+docker compose run --rm api dist/cli/index.js migrate --yes
+
+# Stop the stack
+npm run docker:down
+```
+
+- UI: `https://localhost` or `https://agent-orchestrator.localhost`
+- API: `http://localhost:3000/api/v1`
+
+The API container does **not** serve the SPA in Docker mode. The UI is served by **Caddy**, which also proxies `/api/*` traffic to the API container so the browser can use the same origin for UI + API.
+
+The UI container uses **Caddy** with `tls internal`, so HTTPS works locally without an external CA. Browsers will still warn until you trust Caddy's local root certificate on your host machine. You can copy it out of the container with:
+
+```bash
+docker compose cp ui:/data/caddy/pki/authorities/local/root.crt ./caddy-local-root.crt
+```
+
+After trusting that certificate in your OS/browser trust store, local HTTPS becomes trusted as well.
+
+#### Development Docker stack
+
+```bash
+npm run docker:dev
+
+# Stop the dev stack
+docker compose -f docker-compose.dev.yml down
+```
+
+- UI dev server: `http://localhost:5173`
+- API: `http://localhost:3000/api/v1`
+- PostgreSQL: `localhost:5433`
+
+The dev stack disables bundled UI serving in the API container and points the Vite dev proxy at the `api` service over the Docker network.
+
+#### Docker integration / end-to-end stack
+
+Use the test compose file when you want to exercise migration behavior, CLI commands, API startup, and the UI together:
+
+```bash
+# Start only the database first
+docker compose -f docker-compose-test.yml up -d db
+
+# Verify pending migrations block API startup
+docker compose -f docker-compose-test.yml up api
+
+# Apply migrations with the packaged CLI runtime
+docker compose -f docker-compose-test.yml run --rm migrate
+
+# Then bring up the full app stack
+docker compose -f docker-compose-test.yml up ui api
+
+# Run ad hoc CLI checks
+docker compose -f docker-compose-test.yml run --rm cli dist/cli/index.js status
+
+# Tear the test stack down
+docker compose -f docker-compose-test.yml down -v
+```
+
+The test stack is designed for:
+
+- verifying that pending migrations block API startup,
+- applying migrations through the packaged CLI/runtime path,
+- checking UI reachability through Caddy,
+- exercising future CLI-driven Docker behaviors without depending on the local SQLite test path.
 
 ## Database Management
 
@@ -192,17 +288,19 @@ This creates a user with the `admin` role. All subsequent users registered via `
 ### Docker
 
 ```bash
-# Build and run with Docker Compose (includes PostgreSQL)
-docker compose up -d
+# Production-like stack
+npm run docker:up
 
-# Apply migrations
-DATABASE_URL="postgresql://orchestrator:orchestrator_password@localhost:5433/agent_orchestrator" \
-  npm run migration:run
+# Apply migrations with the packaged runtime inside the API container
+docker compose run --rm api dist/cli/index.js migrate --yes
 
-# Seed admin
-DATABASE_URL="postgresql://orchestrator:orchestrator_password@localhost:5433/agent_orchestrator" \
-  npm run seed:admin
+# Stop the stack
+npm run docker:down
 ```
+
+The API container is configured to **fail fast when migrations are pending**. This keeps schema changes explicit instead of silently mutating the database during startup.
+
+This behavior is controlled by `CHECK_PENDING_MIGRATIONS_ON_STARTUP=true` in the Docker API service. Docker mode also sets `SERVE_STATIC_UI=false` so the backend does not try to serve bundled frontend assets.
 
 ### Updating an Existing Deployment
 

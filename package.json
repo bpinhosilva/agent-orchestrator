@@ -61,7 +61,11 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "seed:admin": "ts-node scripts/seed-admin.ts",
-    "generate:postman": "ts-node scripts/generate-postman.ts"
+    "generate:postman": "ts-node scripts/generate-postman.ts",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up --build",
+    "docker:test": "docker compose -f docker-compose-test.yml up --build"
   },
   "bin": {
     "agent-orchestrator": "dist/cli/index.js"

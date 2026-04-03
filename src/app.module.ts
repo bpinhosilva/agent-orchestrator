@@ -21,9 +21,16 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { getTypeOrmConfig } from './config/typeorm';
+import {
+  getRuntimeEnvPath,
+  isEnvEnabled,
+  loadRuntimeEnv,
+} from './config/runtime-paths';
 
-const APP_HOME = process.env.AGENT_ORCHESTRATOR_HOME;
-const ENV_PATH = APP_HOME ? join(APP_HOME, '.env') : '.env';
+loadRuntimeEnv();
+
+const ENV_PATH = getRuntimeEnvPath();
+const shouldServeStaticUi = isEnvEnabled('SERVE_STATIC_UI', true);
 
 @Module({
   imports: [
@@ -57,12 +64,16 @@ const ENV_PATH = APP_HOME ? join(APP_HOME, '.env') : '.env';
         };
       },
     }),
-    ServeStaticModule.forRoot({
-      rootPath:
-        process.env.NODE_ENV === 'production'
-          ? join(__dirname, 'ui')
-          : join(__dirname, '..', 'ui', 'dist'),
-    }),
+    ...(shouldServeStaticUi
+      ? [
+          ServeStaticModule.forRoot({
+            rootPath:
+              process.env.NODE_ENV === 'production'
+                ? join(__dirname, 'ui')
+                : join(__dirname, '..', 'ui', 'dist'),
+          }),
+        ]
+      : []),
     CommonModule,
     UploadsModule,
     AgentsModule,

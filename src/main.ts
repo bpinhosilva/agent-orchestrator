@@ -8,10 +8,35 @@ import { ConfigService } from '@nestjs/config';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { checkPendingMigrations } from './database/migration-state';
+import { isEnvEnabled, loadRuntimeEnv } from './config/runtime-paths';
 
 const logger = new Logger('Bootstrap');
 
+loadRuntimeEnv();
+
+async function ensureDatabaseIsReadyForStartup() {
+  if (!isEnvEnabled('CHECK_PENDING_MIGRATIONS_ON_STARTUP')) {
+    return;
+  }
+
+  const { hasPending } = await checkPendingMigrations();
+
+  if (!hasPending) {
+    return;
+  }
+
+  throw new Error(
+    [
+      'Pending database migrations were detected.',
+      'Run `npm run migration:run` locally or `docker compose run --rm api dist/cli/index.js migrate --yes` in the Docker stack, then start the server again.',
+    ].join(' '),
+  );
+}
+
 async function bootstrap() {
+  await ensureDatabaseIsReadyForStartup();
+
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
@@ -57,7 +82,12 @@ async function bootstrap() {
   if (allowedOrigins) {
     corsOptions.origin = allowedOrigins.split(',').map((o) => o.trim());
   } else if (nodeEnv === 'development') {
-    corsOptions.origin = ['http://localhost:5173', 'http://localhost:3000'];
+    corsOptions.origin = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://localhost',
+      'https://agent-orchestrator.localhost',
+    ];
   } else {
     // In production without explicit ALLOWED_ORIGINS, deny cross-origin requests
     corsOptions.origin = false;

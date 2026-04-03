@@ -15,6 +15,10 @@ import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import * as bcrypt from 'bcrypt';
 import { createDataSource } from '../config/typeorm';
+import {
+  checkPendingMigrations,
+  runMigrations,
+} from '../database/migration-state';
 import { User } from '../users/entities/user.entity';
 
 let program = new Command();
@@ -708,65 +712,6 @@ function buildEnvContent(
     .concat('\n');
 }
 
-export async function checkPendingMigrations(): Promise<{
-  hasPending: boolean;
-  isEmpty: boolean;
-}> {
-  const dataSource = createDataSource();
-  try {
-    await dataSource.initialize();
-    const hasPending = await dataSource.showMigrations();
-
-    // Check if any tables exist (other than the migrations table itself)
-    const tables: any[] = await dataSource.query(
-      dataSource.options.type === 'sqlite'
-        ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
-        : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
-    );
-
-    const isEmpty = tables.length === 0;
-
-    await dataSource.destroy();
-    return { hasPending, isEmpty };
-  } catch {
-    if (dataSource.isInitialized) {
-      await dataSource.destroy();
-    }
-    // If it fails, assume it's new/empty and needs migrations
-    return { hasPending: true, isEmpty: true };
-  }
-}
-
-export async function runMigrations(force = false): Promise<void> {
-  const dataSource = createDataSource();
-  try {
-    await dataSource.initialize();
-
-    if (force) {
-      console.log('Dropping database schema...');
-      await dataSource.dropDatabase();
-      console.log('Schema dropped successfully.');
-    }
-
-    console.log('Running database migrations...');
-    const result = await dataSource.runMigrations();
-
-    if (result.length > 0) {
-      console.log(`Successfully executed ${result.length} migrations.`);
-    } else {
-      console.log('No pending migrations found.');
-    }
-
-    await dataSource.destroy();
-  } catch (err: unknown) {
-    if (dataSource.isInitialized) {
-      await dataSource.destroy();
-    }
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    throw new Error(`Migration execution failed: ${errorMessage}`);
-  }
-}
-
 export async function setupAdminUser(
   options: SetupAdminOptions = {},
 ): Promise<void> {
@@ -929,7 +874,9 @@ async function handleSetup(options: SetupCommandOptions): Promise<void> {
   writePrivateFile(ENV_PATH, envContent);
   console.log(`Configuration saved to ${ENV_PATH} with mode 600.`);
 
-  const { hasPending, isEmpty } = await checkPendingMigrations();
+  const { hasPending, isEmpty } = await checkPendingMigrations({
+    assumePendingOnError: true,
+  });
   if (isEmpty) {
     console.log('Database is empty. Initializing...');
     await runMigrations();
@@ -1202,7 +1149,9 @@ export function defineCommands() {
           return;
         }
 
-        const { hasPending, isEmpty } = await checkPendingMigrations();
+        const { hasPending, isEmpty } = await checkPendingMigrations({
+          assumePendingOnError: true,
+        });
 
         if (isEmpty) {
           console.log('Database is empty. Initializing...');

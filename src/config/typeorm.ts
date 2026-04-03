@@ -1,10 +1,7 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { config } from 'dotenv';
-import { join, resolve } from 'path';
-
-const APP_HOME = process.env.AGENT_ORCHESTRATOR_HOME;
-const ENV_PATH = APP_HOME ? join(APP_HOME, '.env') : undefined;
+import { join } from 'path';
+import { getPackageRoot, getSqlitePath, loadRuntimeEnv } from './runtime-paths';
 
 export const getTypeOrmConfig = (
   configService: ConfigService,
@@ -14,7 +11,7 @@ export const getTypeOrmConfig = (
     configService.get<string>('DB_TYPE') ||
     (databaseUrl ? 'postgres' : 'sqlite');
 
-  const packageRoot = resolve(__dirname, '..', '..');
+  const packageRoot = getPackageRoot();
   const isTsNode =
     process.env.TS_NODE === 'true' ||
     !!process.env.JEST_WORKER_ID ||
@@ -31,14 +28,10 @@ export const getTypeOrmConfig = (
     console.log('Entities:', entities, 'Migrations:', migrations);
   }
 
-  const sqlitePath = APP_HOME
-    ? join(APP_HOME, 'local.sqlite')
-    : join(packageRoot, 'local.sqlite');
-
   return {
     type: dbType as 'sqlite' | 'postgres',
     url: databaseUrl,
-    database: databaseUrl ? undefined : sqlitePath,
+    database: databaseUrl ? undefined : getSqlitePath(),
     entities,
     migrations,
     synchronize: false,
@@ -47,11 +40,7 @@ export const getTypeOrmConfig = (
 };
 
 export const createDataSource = (): DataSource => {
-  if (ENV_PATH) {
-    config({ path: ENV_PATH, override: true });
-  } else {
-    config({ override: true }); // Fallback to current dir if AGENT_ORCHESTRATOR_HOME not set
-  }
+  loadRuntimeEnv();
   const configService = new ConfigService();
   return new DataSource(getTypeOrmConfig(configService));
 };

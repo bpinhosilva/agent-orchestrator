@@ -1,0 +1,8 @@
+localhost, agent-orchestrator.localhost {
+  tls internal
+  encode zstd gzip
+  root * /srv
+  reverse_proxy /api/* api:3000
+  try_files {path} /index.html
+  file_server
+}

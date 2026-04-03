@@ -4,6 +4,12 @@ export class CreateRefreshTokens1774850116434 implements MigrationInterface {
   name = 'CreateRefreshTokens1774850116434';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const isPostgres = queryRunner.connection.options.type === 'postgres';
+    const timestampType = isPostgres ? 'timestamp' : 'datetime';
+    const defaultTimestamp = isPostgres
+      ? 'CURRENT_TIMESTAMP'
+      : "(datetime('now'))";
+
     await queryRunner.createTable(
       new Table({
         name: 'refresh_tokens',
@@ -25,32 +31,32 @@ export class CreateRefreshTokens1774850116434 implements MigrationInterface {
           },
           {
             name: 'issuedAt',
-            type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
+            type: timestampType,
+            default: defaultTimestamp,
           },
           {
             name: 'expiresAt',
-            type: 'datetime',
+            type: timestampType,
           },
           {
             name: 'absoluteExpiry',
-            type: 'datetime',
+            type: timestampType,
           },
           {
             name: 'createdAt',
-            type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
+            type: timestampType,
+            default: defaultTimestamp,
           },
           {
             name: 'revokedAt',
-            type: 'datetime',
+            type: timestampType,
             isNullable: true,
           },
         ],
         foreignKeys: [
           {
             columnNames: ['userId'],
-            referencedTableName: 'user',
+            referencedTableName: 'users',
             referencedColumnNames: ['id'],
             onDelete: 'CASCADE',
           },
