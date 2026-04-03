@@ -1,3 +1,10 @@
+# [1.0.0-alpha.25](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.24...v1.0.0-alpha.25) (2026-04-03)
+
+
+### Features
+
+* **cli:** enhance setup command with detailed configuration options and improved process ([2b7f51d](https://github.com/bpinhosilva/agent-orchestrator/commit/2b7f51d16e8f1949e222c03968d925030e4b0574))
+
 # [1.0.0-alpha.24](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.23...v1.0.0-alpha.24) (2026-04-02)
 
 
