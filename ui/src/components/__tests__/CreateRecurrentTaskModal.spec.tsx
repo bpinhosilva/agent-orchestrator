@@ -80,6 +80,9 @@ describe('CreateRecurrentTaskModal', () => {
 
     expect(screen.getByText('Deploy New Task')).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Daily Market Sweep/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('agent-select'));
+    expect(await screen.findByTestId('agent-option-agent-1')).toBeInTheDocument();
   });
 
   it('submits correctly when creating a new task', async () => {

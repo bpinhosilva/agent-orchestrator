@@ -24,21 +24,53 @@ Agent Orchestrator is an open-source project designed to manage and orchestrate 
 - **Architecture**: 3-Tier (Controller → Service → Repository)
 
 ## Prerequisites
-- [Node.js](https://nodejs.org/) (v18+)
+- [Node.js](https://nodejs.org/) (v24+)
 - [Docker](https://www.docker.com/) and Docker Compose (optional, for PostgreSQL)
 - A [Google Gemini API Key](https://aistudio.google.com/) or [Anthropic API Key](https://console.anthropic.com/)
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Choose an installation path
+
+**Option A: install the packaged CLI**
 
 ```bash
-npm install
+npm install -g @bpinhosilva/agent-orchestrator
+agent-orchestrator --help
 ```
 
-> **Note**: The project uses `ignore-scripts=true` in `.npmrc` for supply chain security. After installing, run `npm rebuild` to compile native modules (bcrypt, sqlite3).
+**Option B: run from a source checkout**
 
-### 2. Configure Environment
+```bash
+git clone <repo> && cd agent-orchestrator
+npm install
+npm rebuild
+npm run build:all
+```
+
+> **Note**: The project uses `ignore-scripts=true` in `.npmrc` for supply chain security. After installing dependencies from source, run `npm rebuild` to compile native modules (bcrypt, sqlite3).
+
+### 2. Configure the runtime
+
+**CLI-driven setup (recommended for local/runtime installs)**
+
+```bash
+agent-orchestrator setup
+```
+
+The CLI writes `${AGENT_ORCHESTRATOR_HOME}/.env` with user-only permissions (`0600`), can run migrations, and can seed an admin user. It also supports non-interactive setup:
+
+```bash
+agent-orchestrator setup \
+  --yes \
+  --db-type postgres \
+  --database-url postgresql://orchestrator:orchestrator_password@localhost:5433/agent_orchestrator \
+  --provider gemini \
+  --gemini-key your-gemini-api-key \
+  --skip-admin-setup
+```
+
+**Manual `.env` setup**
 
 Create a `.env` file in the project root (or set `AGENT_ORCHESTRATOR_HOME` to point to a directory containing `.env`):
 
@@ -88,6 +120,12 @@ npm run seed:admin
 ### 4. Run the Application
 
 ```bash
+# Packaged/runtime CLI
+agent-orchestrator run
+agent-orchestrator status
+agent-orchestrator logs --lines 50
+agent-orchestrator stop
+
 # Development (API + UI with hot reload)
 npm run dev
 

@@ -21,7 +21,6 @@
   ],
   "files": [
     "dist",
-    "!dist/ui",
     "!dist/**/*.map",
     "!dist/**/*.tsbuildinfo",
     "README.md",
@@ -54,6 +53,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky",
+    "prepack": "npm run build:all",
     "cli:build": "tsc src/cli/index.ts --outDir dist --rootDir src --esModuleInterop --skipLibCheck --target es2020 --moduleResolution node --module commonjs --experimentalDecorators --emitDecoratorMetadata && chmod +x dist/cli/index.js",
     "typeorm": "TS_NODE=true ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/config/typeorm.ts",
     "schema:drop": "npm run typeorm -- schema:drop",
