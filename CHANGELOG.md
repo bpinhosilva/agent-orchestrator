@@ -1,3 +1,11 @@
+# [1.0.0-alpha.27](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.26...v1.0.0-alpha.27) (2026-04-04)
+
+
+### Features
+
+* update default port to 15789 for production, enhance migration handling, and refactor env ([e59ba31](https://github.com/bpinhosilva/agent-orchestrator/commit/e59ba3105c5ce7367281bf3ee637bcc3bc124dcc))
+* update mascot image format and adjust display size in README ([6779313](https://github.com/bpinhosilva/agent-orchestrator/commit/6779313a26a6906ecb47a8819789dc8312f3d6fc))
+
 # [1.0.0-alpha.26](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.25...v1.0.0-alpha.26) (2026-04-04)
 
 
