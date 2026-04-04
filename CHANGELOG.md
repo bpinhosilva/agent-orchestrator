@@ -1,3 +1,11 @@
+# [1.0.0-alpha.28](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.27...v1.0.0-alpha.28) (2026-04-04)
+
+
+### Features
+
+* **migrations:** add initial schema with users, providers, models, agents, projects, tasks ([e08e338](https://github.com/bpinhosilva/agent-orchestrator/commit/e08e3388794e8a556be3584daedd30252a8904fb))
+* **migrations:** db schema ([a0a98b7](https://github.com/bpinhosilva/agent-orchestrator/commit/a0a98b725e09f6d3a9a8fc2305704772195fe2d8))
+
 # [1.0.0-alpha.27](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.26...v1.0.0-alpha.27) (2026-04-04)
 
 
