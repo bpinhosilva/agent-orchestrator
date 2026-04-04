@@ -1,3 +1,12 @@
+# [1.0.0-alpha.26](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.25...v1.0.0-alpha.26) (2026-04-04)
+
+
+### Features
+
+* add AGENTS.md file ([51c706f](https://github.com/bpinhosilva/agent-orchestrator/commit/51c706f8784dd354280d853f605bb8c69e53175c))
+* implement containerization, add health check endpoint, and update RBAC ([17149d3](https://github.com/bpinhosilva/agent-orchestrator/commit/17149d32a623f532308ba0f415a4b2ba332ec794))
+* **refactor:** project terminology and update UI components ([47e5cb4](https://github.com/bpinhosilva/agent-orchestrator/commit/47e5cb4d45c05f893ebdd898f02ceeadcd213652))
+
 # [1.0.0-alpha.25](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.24...v1.0.0-alpha.25) (2026-04-03)
 
 
