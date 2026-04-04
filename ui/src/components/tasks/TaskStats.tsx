@@ -16,7 +16,7 @@ const TaskStats: React.FC<TaskStatsProps> = ({ tasks, taskCounts, projectTitle }
     >
       <div>
         <h3 className="font-headline font-bold text-lg text-on-surface">Efficiency Matrix</h3>
-        <p className="text-outline text-sm">System performance metrics for active sector.</p>
+        <p className="text-outline text-sm">System performance metrics for the active project.</p>
         <div className="mt-4 flex gap-6">
           <div className="flex flex-col">
             <span className="text-2xl font-extrabold text-primary">{taskCounts.done}</span>
@@ -55,7 +55,7 @@ const TaskStats: React.FC<TaskStatsProps> = ({ tasks, taskCounts, projectTitle }
       <p className="text-on-surface-variant text-sm mt-2 relative z-10">
         {tasks.length > 0
           ? `Managing ${tasks.length} tasks across ${projectTitle}. Drag tasks between columns to update their operational status.`
-          : 'Initialize new tasks to begin sector orchestration. Tasks will automatically be mapped to assigned intelligence nodes.'}
+          : 'Create new tasks to begin project orchestration. Tasks will automatically be mapped to assigned intelligence nodes.'}
       </p>
     </div>
   </div>

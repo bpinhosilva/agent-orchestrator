@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { serializeUser, type SerializedUser } from './avatar.constants';
 
 @Injectable()
 export class UsersService {
@@ -36,8 +37,10 @@ export class UsersService {
         'id',
         'email',
         'name',
+        'last_name',
         'password',
         'role',
+        'avatar',
         'createdAt',
         'updatedAt',
       ],
@@ -57,5 +60,13 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
+  }
+
+  serializeUser(user: Omit<User, 'password'>): SerializedUser {
+    return serializeUser(user);
+  }
+
+  serializeUsers(users: Omit<User, 'password'>[]): SerializedUser[] {
+    return users.map((user) => this.serializeUser(user));
   }
 }

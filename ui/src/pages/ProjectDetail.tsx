@@ -78,7 +78,7 @@ const ProjectDetail: React.FC = () => {
       });
       
       await refreshProjects();
-      notifySuccess('Protocol Synchronized', 'Sector configurations have been updated');
+      notifySuccess('Project Updated', 'Project settings have been updated');
     } catch (error) {
       console.error('Failed to update project:', error);
       notifyApiError(error, 'Sync Error');
@@ -98,7 +98,7 @@ const ProjectDetail: React.FC = () => {
   if (!project) {
     return (
       <div className="p-8 text-center bg-surface-container-low rounded-3xl border border-outline-variant/10 max-w-lg mx-auto mt-20">
-        <h2 className="text-xl font-black text-white mb-4">Sector Not Found</h2>
+        <h2 className="text-xl font-black text-white mb-4">Project Not Found</h2>
         <button 
           onClick={() => navigate('/')}
           className="bg-primary text-surface px-6 py-2 rounded-lg font-bold hover:scale-105 transition-all"
@@ -125,7 +125,7 @@ const ProjectDetail: React.FC = () => {
               <div className="w-6 h-6 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary">
                 <Briefcase size={12} />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-on-surface-variant">Strategic Sector Console</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-on-surface-variant">Project Console</span>
             </div>
             <h1 className="text-3xl font-black font-headline text-white tracking-tight -mt-1">{project.title}</h1>
           </div>
@@ -136,7 +136,7 @@ const ProjectDetail: React.FC = () => {
             className="flex-1 md:flex-initial px-6 py-3 rounded-2xl bg-surface-container-high text-on-article-variant font-bold text-sm flex items-center justify-center gap-2 hover:bg-error/10 hover:text-error transition-all ring-1 ring-outline-variant/10 border-none"
           >
             <Trash2 size={18} />
-            Decommission Sector
+            Delete Project
           </button>
           <button 
             onClick={handleSave}
@@ -155,7 +155,7 @@ const ProjectDetail: React.FC = () => {
           <section className="bg-surface-container-low rounded-3xl border border-outline-variant/10 overflow-hidden shadow-2xl">
             <div className="px-8 py-6 border-b border-outline-variant/5 flex items-center gap-3">
               <Layers size={18} className="text-primary" />
-              <h3 className="text-sm font-black uppercase tracking-widest text-on-surface">Sector Parameters</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-on-surface">Project Settings</h3>
             </div>
             <div className="p-8 space-y-8">
               <div className="space-y-2">
@@ -215,7 +215,7 @@ const ProjectDetail: React.FC = () => {
             <div className="pt-6 border-t border-outline-variant/5 space-y-4">
               <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 flex items-center gap-2">
                 <User size={14} className="text-primary" />
-                Designated Sector Lead
+                Designated Project Lead
               </label>
               <div className="bg-surface-container-high/30 rounded-2xl p-0.5 ring-1 ring-outline-variant/10 transition-all relative">
                  <select 
@@ -233,7 +233,7 @@ const ProjectDetail: React.FC = () => {
                   </div>
               </div>
               <p className="px-1 text-[11px] text-on-surface-variant/70 italic leading-relaxed">
-                *The Sector Lead will oversee autonomous reasoning and token allocation for this operational branch.
+                *The Project Lead will oversee autonomous reasoning and token allocation for this project.
               </p>
             </div>
           </section>

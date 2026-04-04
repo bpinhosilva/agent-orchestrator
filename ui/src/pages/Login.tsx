@@ -36,7 +36,7 @@ const Login: React.FC = () => {
     <div className="bg-surface font-body text-on-surface selection:bg-primary selection:text-on-primary min-h-screen">
       {/* Top Navigation Anchor */}
       <header className="fixed top-0 w-full flex justify-between items-center px-6 py-4 bg-transparent z-50">
-        <div className="text-xl font-bold tracking-tight text-[#adc6ff] font-headline">Aetheric Logic</div>
+        <div className="text-xl font-bold tracking-tight text-[#adc6ff] font-headline">Agent Orchestrator</div>
         <div className="flex items-center gap-4 text-slate-400">
           <span className="material-symbols-outlined hover:text-[#adc6ff] transition-colors cursor-pointer">help_outline</span>
           <span className="material-symbols-outlined hover:text-[#adc6ff] transition-colors cursor-pointer">dark_mode</span>
@@ -158,7 +158,7 @@ const Login: React.FC = () => {
 
       {/* Footer Navigation Anchor */}
       <footer className="fixed bottom-0 w-full flex flex-col md:flex-row justify-center items-center gap-4 pb-8 bg-transparent z-50">
-        <p className="text-[10px] uppercase tracking-widest text-slate-500">© 2024 Aetheric Logic Orchestrator. All rights reserved.</p>
+        <p className="text-[10px] uppercase tracking-widest text-slate-500">© 2024 Agent Orchestrator. All rights reserved.</p>
         <div className="flex gap-6">
           <a className="text-[10px] uppercase tracking-widest text-slate-600 hover:text-[#adc6ff] transition-opacity duration-200" href="#">Security Architecture</a>
           <a className="text-[10px] uppercase tracking-widest text-slate-600 hover:text-[#adc6ff] transition-opacity duration-200" href="#">Privacy Policy</a>

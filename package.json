@@ -30,7 +30,7 @@
   "scripts": {
     "build": "nest build && chmod +x dist/cli/index.js",
     "build:ui": "npm --prefix ui run build",
-    "build:all": "npm run build && npm run build:ui && mkdir -p dist/ui && cp -R ui/dist/* dist/ui/",
+    "build:all": "npm run build && npm run build:ui && mkdir -p dist/ui && rsync -a --delete --exclude='*.map' ui/dist/ dist/ui/",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

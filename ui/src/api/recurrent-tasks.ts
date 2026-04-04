@@ -36,14 +36,17 @@ export interface CreateRecurrentTaskDto {
 export type UpdateRecurrentTaskDto = Partial<CreateRecurrentTaskDto>;
 
 export const recurrentTasksApi = {
-  create: (data: CreateRecurrentTaskDto) =>
-    client.post<RecurrentTask>('/recurrent-tasks', data),
-  findAll: () =>
-    client.get<RecurrentTask[]>('/recurrent-tasks'),
-  findOne: (id: string) =>
-    client.get<RecurrentTask>(`/recurrent-tasks/${id}`),
-  update: (id: string, data: UpdateRecurrentTaskDto) =>
-    client.patch<RecurrentTask>(`/recurrent-tasks/${id}`, data),
-  delete: (id: string) =>
-    client.delete(`/recurrent-tasks/${id}`),
+  create: (projectId: string, data: CreateRecurrentTaskDto) =>
+    client.post<RecurrentTask>(`/projects/${projectId}/recurrent-tasks`, data),
+  findAll: (projectId: string) =>
+    client.get<RecurrentTask[]>(`/projects/${projectId}/recurrent-tasks`),
+  findOne: (projectId: string, id: string) =>
+    client.get<RecurrentTask>(`/projects/${projectId}/recurrent-tasks/${id}`),
+  update: (projectId: string, id: string, data: UpdateRecurrentTaskDto) =>
+    client.patch<RecurrentTask>(
+      `/projects/${projectId}/recurrent-tasks/${id}`,
+      data,
+    ),
+  delete: (projectId: string, id: string) =>
+    client.delete(`/projects/${projectId}/recurrent-tasks/${id}`),
 };

@@ -72,6 +72,7 @@ describe('CreateRecurrentTaskModal', () => {
   it('renders correctly when open', async () => {
     render(
       <CreateRecurrentTaskModal
+        projectId="project-1"
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}
@@ -102,6 +103,7 @@ describe('CreateRecurrentTaskModal', () => {
 
     render(
       <CreateRecurrentTaskModal
+        projectId="project-1"
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}
@@ -122,12 +124,15 @@ describe('CreateRecurrentTaskModal', () => {
     fireEvent.click(screen.getByText('Create Task'));
 
     await waitFor(() => {
-      expect(recurrentTasksApi.create).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Test Task',
-        description: 'Test Description',
-        cronExpression: '0 0 * * *',
-        assigneeId: 'agent-1',
-      }));
+      expect(recurrentTasksApi.create).toHaveBeenCalledWith(
+        'project-1',
+        expect.objectContaining({
+          title: 'Test Task',
+          description: 'Test Description',
+          cronExpression: '0 0 * * *',
+          assigneeId: 'agent-1',
+        }),
+      );
       expect(mockOnSuccess).toHaveBeenCalled();
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -148,6 +153,7 @@ describe('CreateRecurrentTaskModal', () => {
 
     render(
       <CreateRecurrentTaskModal
+        projectId="project-1"
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}
@@ -185,6 +191,7 @@ describe('CreateRecurrentTaskModal', () => {
 
     render(
       <CreateRecurrentTaskModal
+        projectId="project-1"
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}
@@ -206,9 +213,13 @@ describe('CreateRecurrentTaskModal', () => {
     fireEvent.click(screen.getByText('Update Task'));
 
     await waitFor(() => {
-      expect(recurrentTasksApi.update).toHaveBeenCalledWith('task-1', expect.objectContaining({
-        title: 'Updated Task',
-      }));
+      expect(recurrentTasksApi.update).toHaveBeenCalledWith(
+        'project-1',
+        'task-1',
+        expect.objectContaining({
+          title: 'Updated Task',
+        }),
+      );
       expect(mockOnSuccess).toHaveBeenCalled();
     });
   });
@@ -216,6 +227,7 @@ describe('CreateRecurrentTaskModal', () => {
   it('shows validation errors for invalid cron expression', async () => {
     render(
       <CreateRecurrentTaskModal
+        projectId="project-1"
         isOpen={true}
         onClose={mockOnClose}
         onSuccess={mockOnSuccess}

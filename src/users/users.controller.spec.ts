@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import type { User } from './entities/user.entity';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -10,6 +11,16 @@ describe('UsersController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    serializeUser: jest.fn((user: Partial<User>) => ({
+      ...user,
+      avatarUrl: `/avatar-presets/${user.avatar ?? 'avatar-01'}.svg`,
+    })),
+    serializeUsers: jest.fn((users: Array<Partial<User>>) =>
+      users.map((user: { avatar?: string }) => ({
+        ...user,
+        avatarUrl: `/avatar-presets/${user.avatar ?? 'avatar-01'}.svg`,
+      })),
+    ),
   };
 
   beforeEach(async () => {
@@ -32,29 +43,41 @@ describe('UsersController', () => {
 
   describe('findAll', () => {
     it('should find all users', async () => {
-      mockUsersService.findAll.mockResolvedValue([{ id: '1' }]);
+      mockUsersService.findAll.mockResolvedValue([
+        { id: '1', avatar: 'avatar-01' },
+      ]);
       const result = await controller.findAll();
       expect(result).toHaveLength(1);
       expect(mockUsersService.findAll).toHaveBeenCalled();
+      expect(mockUsersService.serializeUsers).toHaveBeenCalled();
     });
   });
 
   describe('findOne', () => {
     it('should find a single user', async () => {
-      mockUsersService.findOne.mockResolvedValue({ id: '1' });
+      mockUsersService.findOne.mockResolvedValue({
+        id: '1',
+        avatar: 'avatar-01',
+      });
       const result = await controller.findOne('1');
       expect(result.id).toEqual('1');
       expect(mockUsersService.findOne).toHaveBeenCalledWith('1');
+      expect(mockUsersService.serializeUser).toHaveBeenCalled();
     });
   });
 
   describe('update', () => {
     it('should update a user', async () => {
       const dto = { name: 'New' };
-      mockUsersService.update.mockResolvedValue({ id: '1', ...dto });
+      mockUsersService.update.mockResolvedValue({
+        id: '1',
+        avatar: 'avatar-01',
+        ...dto,
+      });
       const result = await controller.update('1', dto);
       expect(result.name).toEqual('New');
       expect(mockUsersService.update).toHaveBeenCalledWith('1', dto);
+      expect(mockUsersService.serializeUser).toHaveBeenCalled();
     });
   });
 

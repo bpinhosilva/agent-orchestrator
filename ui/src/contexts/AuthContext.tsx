@@ -61,11 +61,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (
-    username: string,
+    name: string,
+    last_name: string,
     email: string,
     password: string,
   ) => {
-    await authApi.register(username, email, password);
+    await authApi.register(name, last_name, email, password);
     await login(email, password);
   };
 
@@ -76,6 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     register,
     logout,
+    refreshUser: restoreSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

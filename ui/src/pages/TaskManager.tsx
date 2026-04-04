@@ -227,8 +227,8 @@ const TaskManager: React.FC = () => {
              <Layout size={40} />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black font-headline text-white tracking-tight">No Active Sectors Found</h2>
-            <p className="text-on-surface-variant text-sm leading-relaxed">The orchestration grid is currently offline. Please initialize a new project sector in the sidebar to begin commissioning agentic tasks.</p>
+            <h2 className="text-2xl font-black font-headline text-white tracking-tight">No Active Projects Found</h2>
+            <p className="text-on-surface-variant text-sm leading-relaxed">The orchestration grid is currently offline. Please create a project in the sidebar to begin commissioning agentic tasks.</p>
           </div>
           <NavLink 
             to="/" 
@@ -256,8 +256,8 @@ const TaskManager: React.FC = () => {
             <div>
               <h4 className="text-sm font-black text-white uppercase tracking-tight">Administrative Protocol Warning</h4>
               <p className="text-xs text-on-surface-variant max-w-2xl leading-relaxed mt-0.5">
-                The <span className="text-error font-bold italic">"{activeProject.title}"</span> sector currently lacks a Designated Lead Agent. 
-                A lead is required to oversee autonomous task assignment, token allocation, and critical sector operations.
+                The <span className="text-error font-bold italic">"{activeProject.title}"</span> project currently lacks a Designated Lead Agent. 
+                A lead is required to oversee autonomous task assignment, token allocation, and critical project operations.
               </p>
             </div>
           </div>
@@ -345,7 +345,7 @@ const TaskManager: React.FC = () => {
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={confirmArchive}
         title="Archive Protocol Task"
-        message="Are you sure you want to transfer this task to the archival sector? This operation will remove the task node from the active grid."
+        message="Are you sure you want to transfer this task to the archive? This operation will remove the task node from the active grid."
         confirmText="Archive Task"
         variant="warning"
         showCheckbox

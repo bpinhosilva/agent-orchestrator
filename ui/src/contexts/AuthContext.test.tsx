@@ -19,7 +19,7 @@ const TestComponent = () => {
   const { user, login, logout, isLoading } = useAuth();
   return (
     <div>
-      <div data-testid="user">{user ? user.username : 'null'}</div>
+      <div data-testid="user">{user ? user.name : 'null'}</div>
       <div data-testid="loading">{isLoading.toString()}</div>
       <button onClick={() => login('test@example.com', 'password')}>Login</button>
       <button onClick={() => logout()}>Logout</button>
@@ -49,7 +49,12 @@ describe('AuthContext', () => {
   });
 
   it('should login successfully', async () => {
-    const mockUser: User = { id: '1', username: 'testuser', email: 'test@example.com' };
+    const mockUser: User = {
+      id: '1',
+      name: 'Test',
+      last_name: 'User',
+      email: 'test@example.com',
+    };
     vi.mocked(authApi.login).mockResolvedValue(undefined);
     vi.mocked(authApi.me).mockResolvedValue(mockUser);
 
@@ -64,14 +69,19 @@ describe('AuthContext', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('testuser');
+      expect(screen.getByTestId('user')).toHaveTextContent('Test');
     });
 
     expect(authApi.login).toHaveBeenCalledWith('test@example.com', 'password');
   });
 
   it('should logout and clear user', async () => {
-    const mockUser: User = { id: '1', username: 'testuser', email: 'test@example.com' };
+    const mockUser: User = {
+      id: '1',
+      name: 'Test',
+      last_name: 'User',
+      email: 'test@example.com',
+    };
     vi.mocked(authApi.me).mockResolvedValue(mockUser);
     vi.mocked(authApi.logout).mockResolvedValue(undefined);
 
@@ -82,7 +92,7 @@ describe('AuthContext', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('testuser');
+      expect(screen.getByTestId('user')).toHaveTextContent('Test');
     });
 
     await act(async () => {
@@ -96,7 +106,12 @@ describe('AuthContext', () => {
   });
 
   it('should restore user on mount if authenticated', async () => {
-    const mockUser: User = { id: '1', username: 'restored-user', email: 'test@example.com' };
+    const mockUser: User = {
+      id: '1',
+      name: 'Restored',
+      last_name: 'User',
+      email: 'test@example.com',
+    };
     vi.mocked(authApi.me).mockResolvedValue(mockUser);
 
     render(
@@ -108,7 +123,7 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('loading')).toHaveTextContent('true');
 
     await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('restored-user');
+      expect(screen.getByTestId('user')).toHaveTextContent('Restored');
     });
     
     expect(screen.getByTestId('loading')).toHaveTextContent('false');

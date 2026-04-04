@@ -48,12 +48,14 @@ describe('AuthController', () => {
     it('should register a user', async () => {
       const dto = {
         name: 'Test',
+        last_name: 'User',
         email: 'test@test.com',
         password: 'password',
       };
       registerMock.mockResolvedValue({
         id: '1',
         name: 'Test',
+        last_name: 'User',
         email: 'test@test.com',
       });
 

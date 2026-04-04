@@ -33,7 +33,7 @@ const ArchiveZone: React.FC<ArchiveZoneProps> = ({ isDragging }) => {
           {isOver ? 'Authorization Required' : 'Archival Logic Sink'}
         </span>
         <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest mt-1.5 whitespace-nowrap">
-          {isOver ? 'Release to decommissioning' : isDragging ? 'Drag node here to decommission' : 'Sector dormant'}
+          {isOver ? 'Release to decommissioning' : isDragging ? 'Drag node here to decommission' : 'Project dormant'}
         </span>
       </div>
       

@@ -22,6 +22,7 @@ import { TaskPriority } from '../api/tasks';
 import { useNotification } from '../hooks/useNotification';
 
 interface CreateRecurrentTaskModalProps {
+  projectId: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -29,6 +30,7 @@ interface CreateRecurrentTaskModalProps {
 }
 
 const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
+  projectId,
   isOpen,
   onClose,
   onSuccess,
@@ -140,7 +142,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
     try {
       setLoading(true);
       if (initialData) {
-        await recurrentTasksApi.update(initialData.id, {
+        await recurrentTasksApi.update(projectId, initialData.id, {
           title,
           description,
           cronExpression,
@@ -148,7 +150,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
           priority,
         });
       } else {
-        await recurrentTasksApi.create({
+        await recurrentTasksApi.create(projectId, {
           title,
           description,
           cronExpression,

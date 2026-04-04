@@ -39,12 +39,18 @@ describe('Sidebar Component', () => {
     });
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: 'user-1', username: 'testuser', email: 'test@example.com' },
+      user: {
+        id: 'user-1',
+        name: 'Test',
+        last_name: 'User',
+        email: 'test@example.com',
+      },
       token: 'fake-token',
       isLoading: false,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
   });
 

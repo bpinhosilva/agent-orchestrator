@@ -11,15 +11,18 @@ import {
   Database,
   Sparkles,
   Search,
-  Plus
+  Plus,
+  Layout,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { recurrentTasksApi, type RecurrentTask, RecurrentTaskStatus } from '../api/recurrent-tasks';
 import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
 import { useNotification } from '../hooks/useNotification';
+import { useProject } from '../hooks/useProject';
 import { useState, useEffect, useCallback } from 'react';
 
 const Scheduler: React.FC = () => {
+  const { activeProject, loading: projectLoading } = useProject();
   const { notifySuccess, notifyApiError } = useNotification();
   
   const [tasks, setTasks] = useState<RecurrentTask[]>([]);
@@ -28,28 +31,38 @@ const Scheduler: React.FC = () => {
   const [editingTask, setEditingTask] = useState<RecurrentTask | undefined>(undefined);
 
   const fetchTasks = useCallback(async () => {
+    if (!activeProject) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await recurrentTasksApi.findAll();
-      setTasks(res.data);
+      const res = await recurrentTasksApi.findAll(activeProject.id);
+      setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       notifyApiError(error, 'Error fetching recurrent tasks');
     } finally {
       setLoading(false);
     }
-  }, [notifyApiError]);
+  }, [activeProject, notifyApiError]);
 
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
   const handleDelete = async (id: string, title: string) => {
+    if (!activeProject) {
+      return;
+    }
+
     if (!window.confirm(`Are you sure you want to delete the recurrent protocol "${title}"? This action cannot be undone.`)) {
       return;
     }
 
     try {
-      await recurrentTasksApi.delete(id);
+      await recurrentTasksApi.delete(activeProject.id, id);
       notifySuccess('Protocol Terminated', `The task "${title}" has been removed from the fleet.`);
       fetchTasks();
     } catch (error) {
@@ -68,12 +81,18 @@ const Scheduler: React.FC = () => {
   };
 
   const handleToggleStatus = async (task: RecurrentTask) => {
+    if (!activeProject) {
+      return;
+    }
+
     const newStatus = task.status === RecurrentTaskStatus.ACTIVE 
       ? RecurrentTaskStatus.PAUSED 
       : RecurrentTaskStatus.ACTIVE;
     
     try {
-      await recurrentTasksApi.update(task.id, { status: newStatus });
+      await recurrentTasksApi.update(activeProject.id, task.id, {
+        status: newStatus,
+      });
       notifySuccess(
         `Protocol ${newStatus === RecurrentTaskStatus.ACTIVE ? 'Resumed' : 'Paused'}`, 
         `Operation "${task.title}" has been ${newStatus === RecurrentTaskStatus.ACTIVE ? 're-activated' : 'suspended'}.`
@@ -90,6 +109,33 @@ const Scheduler: React.FC = () => {
     { label: 'Paused Agents', value: tasks.filter(t => t.status === RecurrentTaskStatus.PAUSED).length.toString(), subtext: 'Awaiting manual audit', icon: Pause, color: 'text-on-surface-variant' },
     { label: 'Critical Errors', value: tasks.filter(t => t.status === RecurrentTaskStatus.ERROR).length.toString(), subtext: 'System integrity: nominal', icon: CheckCircle, color: 'text-error', bg: 'bg-error/10' },
   ];
+
+  if (projectLoading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-on-surface-variant text-sm font-black uppercase tracking-[0.3em] animate-pulse">Initializing Temporal Grid</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeProject) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="w-20 h-20 bg-surface-container-highest rounded-3xl flex items-center justify-center text-on-surface-variant/20 mx-auto border border-outline-variant/10 shadow-xl">
+            <Layout size={40} />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black font-headline text-white tracking-tight">No Active Projects Found</h2>
+            <p className="text-on-surface-variant text-sm leading-relaxed">Temporal orchestration requires an active project. Create or select a project from the sidebar to manage recurrent tasks.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -358,6 +404,7 @@ const Scheduler: React.FC = () => {
       </motion.div>
 
       <CreateRecurrentTaskModal 
+        projectId={activeProject.id}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {

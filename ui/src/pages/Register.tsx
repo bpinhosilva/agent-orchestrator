@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContextInstance';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Register: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,7 +26,7 @@ const Register: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await register(username, email, password);
+      await register(name, lastName, email, password);
       navigate('/');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string | string[] } } };
@@ -43,7 +44,7 @@ const Register: React.FC = () => {
     <div className="bg-surface font-body text-on-surface selection:bg-primary selection:text-on-primary min-h-screen">
       {/* Top Navigation Anchor */}
       <header className="fixed top-0 w-full flex justify-between items-center px-6 py-4 bg-transparent z-50">
-        <div className="text-xl font-bold tracking-tight text-[#adc6ff] font-headline">Aetheric Logic</div>
+        <div className="text-xl font-bold tracking-tight text-[#adc6ff] font-headline">Agent Orchestrator</div>
         <div className="flex items-center gap-4 text-slate-400">
           <span className="material-symbols-outlined hover:text-[#adc6ff] transition-colors cursor-pointer">help_outline</span>
           <span className="material-symbols-outlined hover:text-[#adc6ff] transition-colors cursor-pointer">dark_mode</span>
@@ -79,19 +80,34 @@ const Register: React.FC = () => {
 
           {/* Register Form */}
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Username Field */}
-            <div className="space-y-2">
-              <label className="font-label text-[10px] uppercase tracking-widest text-outline ml-1">Agent Handle</label>
-              <div className="relative group">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">fingerprint</span>
-                <input 
-                  className="w-full bg-surface-container-lowest border-none rounded-lg py-4 pl-12 pr-4 text-sm font-body text-on-surface placeholder:text-surface-variant focus:ring-1 focus:ring-tertiary transition-all duration-300" 
-                  placeholder="agent.zero" 
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="font-label text-[10px] uppercase tracking-widest text-outline ml-1">First Name</label>
+                <div className="relative group">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">fingerprint</span>
+                  <input 
+                    className="w-full bg-surface-container-lowest border-none rounded-lg py-4 pl-12 pr-4 text-sm font-body text-on-surface placeholder:text-surface-variant focus:ring-1 focus:ring-tertiary transition-all duration-300" 
+                    placeholder="Agent" 
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="font-label text-[10px] uppercase tracking-widest text-outline ml-1">Last Name</label>
+                <div className="relative group">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">badge</span>
+                  <input 
+                    className="w-full bg-surface-container-lowest border-none rounded-lg py-4 pl-12 pr-4 text-sm font-body text-on-surface placeholder:text-surface-variant focus:ring-1 focus:ring-tertiary transition-all duration-300" 
+                    placeholder="Zero" 
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             </div>
 
@@ -173,7 +189,7 @@ const Register: React.FC = () => {
 
       {/* Footer Navigation Anchor */}
       <footer className="fixed bottom-0 w-full flex flex-col md:flex-row justify-center items-center gap-4 pb-8 bg-transparent z-50">
-        <p className="text-[10px] uppercase tracking-widest text-slate-500">© 2024 Aetheric Logic Orchestrator. All rights reserved.</p>
+        <p className="text-[10px] uppercase tracking-widest text-slate-500">© 2024 Agent Orchestrator. All rights reserved.</p>
         <div className="flex gap-6">
           <a className="text-[10px] uppercase tracking-widest text-slate-600 hover:text-[#adc6ff] transition-opacity duration-200" href="#">Security Architecture</a>
           <a className="text-[10px] uppercase tracking-widest text-slate-600 hover:text-[#adc6ff] transition-opacity duration-200" href="#">Privacy Policy</a>

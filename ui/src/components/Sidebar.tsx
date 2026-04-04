@@ -55,7 +55,7 @@ const Sidebar = () => {
                 <Layout size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 leading-none mb-1">Active Sector</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 leading-none mb-1">Active Project</p>
                 <h3 className="text-xs font-bold text-white truncate">{activeProject.title}</h3>
               </div>
             </div>
@@ -68,7 +68,7 @@ const Sidebar = () => {
             <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
               <Plus size={16} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Construct Sector</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Create Project</span>
           </button>
         )}
       </div>

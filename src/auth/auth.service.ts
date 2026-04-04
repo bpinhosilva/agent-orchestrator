@@ -10,9 +10,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RefreshToken } from './entities/refresh-token.entity';
 import * as bcrypt from 'bcrypt';
-import { User } from '../users/entities/user.entity';
+import { type SerializedUser } from '../users/avatar.constants';
 
 @Injectable()
 export class AuthService {
@@ -28,13 +29,11 @@ export class AuthService {
     private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
-  async validateUser(userId: string): Promise<Omit<User, 'password'> | null> {
+  async validateUser(userId: string): Promise<SerializedUser | null> {
     try {
       const user = await this.usersService.findOne(userId);
       if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...result } = user;
-        return result;
+        return this.usersService.serializeUser(user);
       }
     } catch {
       return null;
@@ -151,9 +150,7 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...result } = user;
-    return result;
+    return this.usersService.serializeUser(user);
   }
 
   async login(loginDto: LoginDto) {
@@ -215,6 +212,50 @@ export class AuthService {
       refresh_expires_in: 86400,
       token_type: 'Bearer',
     };
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+  ): Promise<SerializedUser> {
+    const user = await this.usersService.findOne(userId);
+
+    // If changing password, verify current password when provided
+    if (dto.newPassword && dto.currentPassword) {
+      // Load user with password for comparison
+      const userWithPassword = await this.usersService.findByEmail(user.email);
+      if (!userWithPassword?.password) {
+        throw new UnauthorizedException('Cannot verify credentials');
+      }
+
+      const isMatch = await bcrypt.compare(
+        dto.currentPassword,
+        userWithPassword.password,
+      );
+      if (!isMatch) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+    }
+
+    // Check email uniqueness if changing email
+    if (dto.email && dto.email !== user.email) {
+      const existing = await this.usersService.findByEmail(dto.email);
+      if (existing) {
+        throw new ConflictException('Email already in use');
+      }
+    }
+
+    const updateData: Record<string, string> = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.last_name !== undefined) updateData.last_name = dto.last_name;
+    if (dto.email !== undefined) updateData.email = dto.email;
+    if (dto.avatar !== undefined) updateData.avatar = dto.avatar;
+    if (dto.newPassword) {
+      updateData.password = await bcrypt.hash(dto.newPassword, 10);
+    }
+
+    const updated = await this.usersService.update(userId, updateData);
+    return this.usersService.serializeUser(updated);
   }
 
   async revokeRefreshToken(token: string): Promise<void> {

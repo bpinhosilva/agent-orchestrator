@@ -22,7 +22,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    sourcemap: 'hidden',
+    sourcemap: false,
     cssMinify: true,
     rollupOptions: {
       output: {

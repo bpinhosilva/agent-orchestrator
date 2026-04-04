@@ -522,15 +522,15 @@ const CreateTaskModal = ({ isOpen, onClose, onCreated }: CreateTaskModalProps) =
                 ) : projects.length === 1 ? (
                   <div className="col-span-full px-4 py-2 bg-surface-container-highest/10 rounded-lg border border-outline-variant/10 flex items-center justify-between">
                     <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">
-                      Target Sector
+                      Target Project
                     </span>
                     <span className="text-xs font-bold text-primary/80">{projects[0].title}</span>
                   </div>
                 ) : (
                   <div className="col-span-full p-4 bg-error/5 border border-error/20 rounded-xl text-center">
-                    <p className="text-xs font-bold text-error">No Project Sector Detected</p>
+                    <p className="text-xs font-bold text-error">No Project Detected</p>
                     <p className="text-[10px] text-on-surface-variant/60 mt-1 uppercase tracking-widest font-black">
-                      Initialize a sector in the sidebar before commissioning tasks
+                      Create a project in the sidebar before commissioning tasks
                     </p>
                   </div>
                 )}

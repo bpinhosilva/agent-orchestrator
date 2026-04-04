@@ -1,7 +1,6 @@
 import {
   IsEmail,
   IsIn,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -12,25 +11,33 @@ import {
   type UserAvatarKey,
 } from '../../users/avatar.constants';
 
-export class RegisterDto {
+export class UpdateProfileDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(100)
-  name: string;
+  name?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(100)
-  last_name: string;
+  last_name?: string;
 
+  @IsOptional()
   @IsEmail()
   @MaxLength(255)
-  email: string;
+  email?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(8)
   @MaxLength(72)
-  password: string;
+  currentPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  newPassword?: string;
 
   @IsOptional()
   @IsString()

@@ -4,6 +4,7 @@ import { AuthService } from '../src/auth/auth.service';
 import { UsersService } from '../src/users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { UserRole } from '../src/users/entities/user.entity';
+import { DEFAULT_USER_AVATAR } from '../src/users/avatar.constants';
 import * as fs from 'fs';
 import * as path from 'path';
 const { prompt } = require('enquirer');
@@ -39,8 +40,14 @@ async function bootstrap() {
       {
         type: 'input',
         name: 'name',
-        message: 'Admin name:',
-        initial: 'admin',
+        message: 'Admin first name:',
+        initial: 'Admin',
+      },
+      {
+        type: 'input',
+        name: 'last_name',
+        message: 'Admin last name:',
+        initial: 'User',
       },
       {
         type: 'input',
@@ -56,7 +63,7 @@ async function bootstrap() {
       },
     ]);
 
-    const { name, email, password } = response;
+    const { name, last_name, email, password } = response;
 
     const existingUser = await usersService.findByEmail(email);
     if (existingUser) {
@@ -67,8 +74,10 @@ async function bootstrap() {
 
     await authService.register({
       name,
+      last_name,
       email,
       password,
+      avatar: DEFAULT_USER_AVATAR,
     });
 
     // Promote the new user to admin role

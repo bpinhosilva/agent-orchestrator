@@ -17,6 +17,7 @@ process.env.AGENT_ORCHESTRATOR_HOME = testHome;
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -52,6 +53,7 @@ describe('AppController (e2e)', () => {
     app.useGlobalPipes(
       new ValidationPipe({ transform: true, whitelist: true }),
     );
+    app.use(cookieParser());
 
     // Sync schema to ensure tables exist before module init hooks
     const dataSource = app.get(DataSource);
@@ -77,6 +79,7 @@ describe('AppController (e2e)', () => {
       id: 'test-user-id',
       email: 'test@test.com',
       name: 'Test User',
+      last_name: 'Tester',
       role: UserRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -100,6 +103,41 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect((res) => {
         expect(res.body).toEqual({ content: 'mocked output from e2e' });
+      });
+  });
+
+  it('/api/v1/auth/me (GET) returns current user after cookie login', async () => {
+    const authService = app.get(AuthService);
+
+    await authService.register({
+      name: 'Cookie User',
+      last_name: 'Tester',
+      email: 'cookie-user@example.com',
+      password: 'password123',
+    });
+
+    const agent = request.agent(app.getHttpServer());
+
+    await agent
+      .post('/api/v1/auth/login')
+      .send({
+        email: 'cookie-user@example.com',
+        password: 'password123',
+      })
+      .expect(200);
+
+    await agent
+      .get('/api/v1/auth/me')
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          email: 'cookie-user@example.com',
+          name: 'Cookie User',
+          last_name: 'Tester',
+          avatar: 'avatar-01',
+          avatarUrl: '/avatar-presets/avatar-01.svg',
+        });
+        expect(res.body).not.toHaveProperty('password');
       });
   });
 });

@@ -19,6 +19,7 @@ import {
   checkPendingMigrations,
   runMigrations,
 } from '../database/migration-state';
+import { DEFAULT_USER_AVATAR } from '../users/avatar.constants';
 import { User } from '../users/entities/user.entity';
 
 let program = new Command();
@@ -793,8 +794,10 @@ export async function setupAdminUser(
       const hashedPassword = await bcrypt.hash(response.password, 10);
       const user = userRepository.create({
         name: response.name,
+        last_name: 'User',
         email: response.email,
         password: hashedPassword,
+        avatar: DEFAULT_USER_AVATAR,
       });
       await userRepository.save(user);
       console.log('Admin user created successfully!');

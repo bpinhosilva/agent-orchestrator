@@ -105,7 +105,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
               </div>
               <div>
                 <h2 className="text-xl font-black font-headline text-white tracking-tight">Init Project</h2>
-                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">New Operational Sector</p>
+                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">New Project</p>
               </div>
             </div>
             <button
@@ -119,7 +119,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
           {/* Form Area */}
           <div className="p-8 space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Sector Title</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Project Title</label>
               <div className="bg-surface-container-highest/30 rounded-xl p-0.5 ring-1 ring-outline-variant/10 focus-within:ring-primary/40 focus-within:bg-surface-container-highest/50 transition-all">
                 <input
                   type="text"
@@ -132,7 +132,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Sector Directives</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Project Description</label>
               <div className="bg-surface-container-highest/30 rounded-xl p-0.5 ring-1 ring-outline-variant/10 focus-within:ring-primary/40 transition-all">
                 <textarea
                   placeholder="Define the scope and strategic goals..."
@@ -163,7 +163,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Sector Lead (Optional)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 ml-1">Project Lead (Optional)</label>
                 <div className="bg-surface-container-highest/30 rounded-xl p-0.5 ring-1 ring-outline-variant/10 focus-within:ring-primary/40 transition-all relative">
                   <select 
                     value={ownerAgentId}
@@ -202,7 +202,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                 className="px-10 py-2.5 rounded-lg bg-secondary text-surface text-sm font-black shadow-[0_8px_20px_rgba(78,222,163,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed group relative overflow-hidden"
               >
                  <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-                {loading ? 'Initializing...' : 'Construct Sector'}
+                {loading ? 'Initializing...' : 'Create Project'}
               </button>
             </div>
           </div>

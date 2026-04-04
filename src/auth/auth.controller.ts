@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Get,
+  Patch,
   Request,
   Response,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ApiTags } from '@nestjs/swagger';
 import type {
   Response as ExpressResponse,
@@ -125,6 +127,14 @@ export class AuthController {
   @Get('me')
   getMe(@Request() req: { user: unknown }) {
     return req.user;
+  }
+
+  @Patch('me')
+  updateMe(
+    @Request() req: { user: { id: string } },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(req.user.id, dto);
   }
 
   @Post('logout')

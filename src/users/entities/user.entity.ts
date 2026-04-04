@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { DEFAULT_USER_AVATAR } from '../avatar.constants';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -19,6 +20,9 @@ export class User {
   @Column()
   name: string;
 
+  @Column()
+  last_name: string;
+
   @Column({ unique: true })
   email: string;
 
@@ -27,6 +31,9 @@ export class User {
 
   @Column({ type: 'varchar', default: UserRole.USER })
   role: UserRole;
+
+  @Column({ type: 'varchar', default: DEFAULT_USER_AVATAR })
+  avatar: string;
 
   @CreateDateColumn()
   createdAt: Date;

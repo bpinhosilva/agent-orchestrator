@@ -7,8 +7,11 @@ export interface LoginResponse {
 
 export interface RegisterResponse {
   id: string;
-  username: string;
+  name: string;
+  last_name: string;
   email: string;
+  avatar: string;
+  avatarUrl: string;
 }
 
 export interface RefreshResponse {
@@ -17,16 +20,41 @@ export interface RefreshResponse {
   token_type: string;
 }
 
+export interface UpdateProfilePayload {
+  name?: string;
+  last_name?: string;
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+  avatar?: string;
+}
+
 export const authApi = {
   login: async (email: string, password: string): Promise<void> => {
     await client.post('/auth/login', { email, password });
   },
-  register: async (username: string, email: string, password: string): Promise<RegisterResponse> => {
-    const response = await client.post('/auth/register', { username, email, password });
+  register: async (
+    name: string,
+    last_name: string,
+    email: string,
+    password: string,
+    avatar?: string,
+  ): Promise<RegisterResponse> => {
+    const response = await client.post('/auth/register', {
+      name,
+      last_name,
+      email,
+      password,
+      avatar,
+    });
     return response.data;
   },
   me: async (): Promise<User> => {
     const response = await client.get('/auth/me');
+    return response.data;
+  },
+  updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
+    const response = await client.patch('/auth/me', payload);
     return response.data;
   },
   refresh: async (): Promise<RefreshResponse> => {

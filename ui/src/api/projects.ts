@@ -37,4 +37,8 @@ export const projectsApi = {
   update: (id: string, data: UpdateProjectDto) =>
     client.patch<Project>(`/projects/${id}`, data),
   delete: (id: string) => client.delete(`/projects/${id}`),
+  addMember: (projectId: string, userId: string, role = 'member') =>
+    client.post(`/projects/${projectId}/members`, { userId, role }),
+  removeMember: (projectId: string, userId: string) =>
+    client.delete(`/projects/${projectId}/members/${userId}`),
 };

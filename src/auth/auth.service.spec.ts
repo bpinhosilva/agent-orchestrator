@@ -7,6 +7,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import * as bcrypt from 'bcrypt';
+import type { User } from '../users/entities/user.entity';
 
 jest.mock('bcrypt');
 
@@ -17,6 +18,11 @@ describe('AuthService', () => {
     findByEmail: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
+    serializeUser: jest.fn((user: Partial<User>) => ({
+      ...user,
+      avatar: user.avatar ?? 'avatar-01',
+      avatarUrl: `/avatar-presets/${user.avatar ?? 'avatar-01'}.svg`,
+    })),
   };
 
   const mockJwtService = {
@@ -76,9 +82,16 @@ describe('AuthService', () => {
 
   describe('validateUser', () => {
     it('should return user without password', async () => {
-      mockUsersService.findOne.mockResolvedValue({ id: '1', password: 'hash' });
+      mockUsersService.findOne.mockResolvedValue({
+        id: '1',
+        avatar: 'avatar-01',
+      });
       const result = await service.validateUser('1');
-      expect(result).toEqual({ id: '1' });
+      expect(result).toEqual({
+        id: '1',
+        avatar: 'avatar-01',
+        avatarUrl: '/avatar-presets/avatar-01.svg',
+      });
     });
 
     it('should return null if user not found', async () => {
@@ -94,18 +107,29 @@ describe('AuthService', () => {
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
       mockUsersService.create.mockResolvedValue({
         id: '1',
-        password: 'hashedPassword',
+        name: 'Test',
+        last_name: 'User',
         email: 'test@test.com',
+        avatar: 'avatar-01',
       });
 
       const result = await service.register({
         name: 'Test',
+        last_name: 'User',
         email: 'test@test.com',
         password: 'password',
       });
-      expect(result).toEqual({ id: '1', email: 'test@test.com' });
+      expect(result).toEqual({
+        id: '1',
+        name: 'Test',
+        last_name: 'User',
+        email: 'test@test.com',
+        avatar: 'avatar-01',
+        avatarUrl: '/avatar-presets/avatar-01.svg',
+      });
       expect(mockUsersService.create).toHaveBeenCalledWith({
         name: 'Test',
+        last_name: 'User',
         email: 'test@test.com',
         password: 'hashedPassword',
       });
@@ -116,6 +140,7 @@ describe('AuthService', () => {
       await expect(
         service.register({
           name: 'Test',
+          last_name: 'User',
           email: 'test@test.com',
           password: 'password',
         }),
