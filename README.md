@@ -108,8 +108,8 @@ DB_TYPE=sqlite
 DATABASE_URL=
 
 # Runtime
-PORT=3000
-NODE_ENV=development
+PORT=15789
+NODE_ENV=production
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 SCHEDULER_ENABLED=true
 DB_LOGGING=false
@@ -180,7 +180,7 @@ agent-orchestrator logs --lines 50
 agent-orchestrator stop
 ```
 
-When running the packaged app or a production build with static UI enabled, the dashboard is served from `http://localhost:3000`.
+When running the packaged app or a production build with static UI enabled, the dashboard is served from `http://localhost:15789` by default.
 
 ## Docker
 

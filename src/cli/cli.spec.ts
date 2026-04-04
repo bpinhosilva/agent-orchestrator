@@ -41,12 +41,14 @@ const mockDataSource = {
   query: jest.fn().mockResolvedValue([]),
   runMigrations: jest.fn().mockResolvedValue([]),
   dropDatabase: jest.fn(),
+  migrations: [{ name: 'BaselineSchema1775260737095' }],
   options: { type: 'sqlite' },
   isInitialized: false,
 };
 
 jest.mock('../config/typeorm', () => ({
   createDataSource: jest.fn(() => mockDataSource),
+  isSqliteDriver: jest.fn((type: string) => type === 'sqlite'),
 }));
 
 describe('CLI Commands', () => {
@@ -81,7 +83,7 @@ describe('CLI Commands', () => {
           pid,
           cwd: PACKAGE_ROOT,
           mainPath: MAIN_FILE,
-          port: '3000',
+          port: '15789',
           logFile: LOG_FILE,
           startedAt: '2026-01-01T00:00:00.000Z',
         },
@@ -347,6 +349,52 @@ describe('CLI Commands', () => {
         ),
         expect.objectContaining({ mode: 0o600 }),
       );
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should default setup port to 15789 for runtime installs', async () => {
+      mockDataSource.showMigrations.mockResolvedValue(false);
+      mockDataSource.query.mockResolvedValue([]);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await runCli([
+        'node',
+        'index.js',
+        'setup',
+        '--yes',
+        '--db-type',
+        'sqlite',
+        '--skip-admin-setup',
+      ]);
+
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        path.join(PID_DIR, '.env'),
+        expect.stringContaining('PORT=15789'),
+        expect.objectContaining({ mode: 0o600 }),
+      );
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should fake the baseline migration for an existing sqlite schema without migration history', async () => {
+      mockDataSource.showMigrations.mockResolvedValue(true);
+      mockDataSource.query.mockResolvedValue([{ name: 'users' }]);
+      const promptSpy = jest.mocked(enquirer.prompt);
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await runCli([
+        'node',
+        'index.js',
+        'setup',
+        '--yes',
+        '--db-type',
+        'sqlite',
+        '--skip-admin-setup',
+      ]);
+
+      expect(promptSpy).not.toHaveBeenCalled();
+      expect(mockDataSource.runMigrations).toHaveBeenCalledWith({ fake: true });
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
     });

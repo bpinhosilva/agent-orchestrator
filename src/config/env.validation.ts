@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 
 export const envValidationSchema = Joi.object({
-  PORT: Joi.number().default(3000),
+  PORT: Joi.number().port().optional(),
   DATABASE_URL: Joi.string().optional(),
   DB_TYPE: Joi.string().valid('postgres', 'sqlite').optional(),
   JWT_SECRET: Joi.string().min(32).required(),

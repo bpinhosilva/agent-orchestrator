@@ -15,6 +15,7 @@ import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import * as bcrypt from 'bcrypt';
 import { createDataSource } from '../config/typeorm';
+import { RUNTIME_DEFAULT_PORT } from '../config/port.defaults';
 import {
   checkPendingMigrations,
   runMigrations,
@@ -24,7 +25,7 @@ import { User } from '../users/entities/user.entity';
 
 let program = new Command();
 
-const DEFAULT_PORT = '3000';
+const DEFAULT_PORT = `${RUNTIME_DEFAULT_PORT}`;
 const PACKAGE_JSON_PATH = path.join(
   path.resolve(__dirname, '..', '..'),
   'package.json',
@@ -877,11 +878,21 @@ async function handleSetup(options: SetupCommandOptions): Promise<void> {
   writePrivateFile(ENV_PATH, envContent);
   console.log(`Configuration saved to ${ENV_PATH} with mode 600.`);
 
-  const { hasPending, isEmpty } = await checkPendingMigrations({
-    assumePendingOnError: true,
-  });
+  const { hasPending, isEmpty, requiresBaselineBootstrap } =
+    await checkPendingMigrations({
+      assumePendingOnError: true,
+    });
   if (isEmpty) {
     console.log('Database is empty. Initializing...');
+    await runMigrations();
+    await maybeSetupAdmin(options, interactive);
+    return;
+  }
+
+  if (requiresBaselineBootstrap) {
+    console.log(
+      'Existing database detected without recorded baseline migration. Recording the baseline migration metadata...',
+    );
     await runMigrations();
     await maybeSetupAdmin(options, interactive);
     return;
@@ -1152,12 +1163,21 @@ export function defineCommands() {
           return;
         }
 
-        const { hasPending, isEmpty } = await checkPendingMigrations({
-          assumePendingOnError: true,
-        });
+        const { hasPending, isEmpty, requiresBaselineBootstrap } =
+          await checkPendingMigrations({
+            assumePendingOnError: true,
+          });
 
         if (isEmpty) {
           console.log('Database is empty. Initializing...');
+          await runMigrations();
+          return;
+        }
+
+        if (requiresBaselineBootstrap) {
+          console.log(
+            'Existing database detected without recorded baseline migration. Recording the baseline migration metadata...',
+          );
           await runMigrations();
           return;
         }

@@ -9,6 +9,7 @@ import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-option
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { checkPendingMigrations } from './database/migration-state';
+import { getDefaultPort } from './config/port.defaults';
 import { isEnvEnabled, loadRuntimeEnv } from './config/runtime-paths';
 
 const logger = new Logger('Bootstrap');
@@ -95,7 +96,7 @@ async function bootstrap() {
 
   app.enableCors(corsOptions);
 
-  const port = configService.get<number>('PORT') || 3000;
+  const port = configService.get<number>('PORT') || getDefaultPort(nodeEnv);
 
   // Only enable Swagger in non-production environments
   if (nodeEnv !== 'production') {
