@@ -1,51 +1,83 @@
-# CLI
+# CLI Reference
 
-The package exposes the `agent-orchestrator` binary (`dist/cli/index.js`) built with Commander and Enquirer.
+The package exposes the `agent-orchestrator` CLI for packaged runtime setup and lifecycle management.
+
+- **Node.js requirement:** 24.0.0 or later
+- **Packaged install:** `npm install -g @bpinhosilva/agent-orchestrator`
+- **Source checkout:** build first, then run `node dist/cli/index.js ...`
+
+For general project setup and development guidance, start with [README.md](../README.md).
 
 ## Installation paths
 
-### From a published package
+### Published package
 
 ```bash
 npm install -g @bpinhosilva/agent-orchestrator
 agent-orchestrator --help
 ```
 
-### From a source checkout
+### Source checkout
 
 ```bash
 npm install
 npm rebuild
 npm run build:all
-agent-orchestrator --help
+node dist/cli/index.js --help
 ```
 
-`prepack` now builds the runtime assets, and the npm package includes the UI bundle required by `agent-orchestrator run`.
+The published package includes the backend build and the UI bundle required by `agent-orchestrator run`. In a source checkout, `npm run build:all` produces the same packaged runtime layout under `dist/`.
 
 ## Commands
 
 | Command | Description |
 | --- | --- |
-| `setup` | Create/update `${AGENT_ORCHESTRATOR_HOME}/.env`, optionally non-interactively, run migrations, and optionally create an admin user |
-| `run` | Start the full application in detached mode after verifying the packaged build exists |
+| `setup` | Create or update the runtime `.env`, configure providers, optionally run migrations, and optionally create an admin user |
+| `run` | Start the orchestrator server in detached mode after verifying the packaged build exists |
 | `status` | Show the currently running orchestrator process |
-| `logs` | Print recent log lines from the detached runtime |
-| `stop` | Stop the detached process after verifying the exact entrypoint and working directory |
-| `migrate` | Run pending migrations; supports `--force` and `--yes` |
+| `logs` | Print the most recent orchestrator log lines |
+| `stop` | Stop the detached orchestrator process after verifying it is the expected runtime |
+| `migrate` | Run pending database migrations |
 
-## Key options
+## Common flows
 
-### `setup`
+### First-time packaged runtime setup
+
+```bash
+agent-orchestrator setup
+agent-orchestrator run
+agent-orchestrator status
+```
+
+### Non-interactive setup
 
 ```bash
 agent-orchestrator setup \
   --yes \
   --db-type postgres \
-  --database-url postgresql://user:password@localhost:5432/dbname \
+  --database-url postgresql://orchestrator:orchestrator_password@localhost:5433/agent_orchestrator \
   --provider gemini \
   --gemini-key YOUR_KEY \
   --skip-admin-setup
 ```
+
+### Logs and shutdown
+
+```bash
+agent-orchestrator logs --lines 100
+agent-orchestrator stop
+```
+
+### Migrations
+
+```bash
+agent-orchestrator migrate --yes
+agent-orchestrator migrate --force --yes
+```
+
+## Key options
+
+### `setup`
 
 Supported flags:
 
@@ -78,25 +110,18 @@ agent-orchestrator migrate --force --yes
 
 ## Runtime files
 
-Default home is `${HOME}/.agent-orchestrator` (or `AGENT_ORCHESTRATOR_HOME` if set):
+Default runtime home is `${HOME}/.agent-orchestrator` unless `AGENT_ORCHESTRATOR_HOME` is set.
 
-- `~/.agent-orchestrator/.env` (written with mode `0600`)
-- `~/.agent-orchestrator/pid`
-- `~/.agent-orchestrator/process.json`
-- `~/.agent-orchestrator/server.log`
-
-## Typical flow
-
-```bash
-agent-orchestrator setup
-agent-orchestrator run
-agent-orchestrator status
-agent-orchestrator logs --lines 50
-agent-orchestrator stop
-```
+- Runtime directory: `${HOME}/.agent-orchestrator` by default, created with mode `0700`
+- `.env`: `~/.agent-orchestrator/.env` by default, written with mode `0600`
+- SQLite database: `~/.agent-orchestrator/local.sqlite` by default
+- PID file: `~/.agent-orchestrator/pid` by default
+- Process metadata: `~/.agent-orchestrator/process.json` by default
+- Log file: `~/.agent-orchestrator/server.log` by default
 
 ## Notes
 
 - `setup` accepts both `postgres://...` and `postgresql://...` URLs.
 - `run` requires both `dist/main.js` and `dist/ui/index.html`.
-- `stop` does not trust the PID file alone; it verifies the exact `dist/main.js` process running from the package directory and can recover from stale PID files by scanning the live process table.
+- `stop` does not trust the PID file alone; it verifies the expected process shape and can recover from stale runtime state.
+- `setup` is the preferred way to seed the initial admin user for packaged runtime installs.

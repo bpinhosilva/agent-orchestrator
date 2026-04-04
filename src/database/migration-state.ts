@@ -1,4 +1,4 @@
-import { createDataSource } from '../config/typeorm';
+import { createDataSource, isSqliteDriver } from '../config/typeorm';
 
 export interface MigrationStatus {
   hasPending: boolean;
@@ -20,7 +20,7 @@ export async function checkPendingMigrations(
 
     const tables: Array<{ name?: string; table_name?: string }> =
       await dataSource.query(
-        dataSource.options.type === 'sqlite'
+        isSqliteDriver(dataSource.options.type)
           ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
           : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
       );

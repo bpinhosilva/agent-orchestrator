@@ -1,19 +1,19 @@
 # CI/CD
 
-This repository uses GitHub Actions for continuous integration, automated release, and secret scanning.
+This repository uses GitHub Actions for continuous integration, release automation, and secret scanning.
 
 ## Workflows
 
 | Workflow | File | Trigger | Purpose |
 | --- | --- | --- | --- |
-| CI | `.github/workflows/ci.yml` | Push + PR to `main`, `alpha` | Build, lint, test, security checks, release |
-| Gitleaks | `.github/workflows/gitleaks.yml` | Push + PR to `main`, `alpha` | Scan git history for leaked secrets |
+| CI | `.github/workflows/ci.yml` | Push + pull request on `main`, `alpha` | Run build/test/security checks and, on push only, execute the release job |
+| Gitleaks | `.github/workflows/gitleaks.yml` | Push + pull request on `main`, `alpha` | Scan commits and history for leaked secrets |
 
 ## CI jobs
 
 ### `build-and-test`
 
-Runs on every push and PR:
+The main CI job runs these steps in order:
 
 1. `npm ci`
 2. `npm rebuild --ignore-scripts=false`
@@ -29,12 +29,37 @@ Runs on every push and PR:
 
 ### `release`
 
-Runs only on **push** after `build-and-test` succeeds.
+The release job is part of `ci.yml`, not a separate workflow file.
 
-It builds backend/UI/CLI and runs semantic-release. Publishing uses npm Trusted Publishing (OIDC), so no long-lived `NPM_TOKEN` is required.
+- Runs only on **push**
+- Waits for `build-and-test` to succeed
+- Rebuilds the project, including the CLI
+- Publishes with semantic-release using npm Trusted Publishing via GitHub OIDC
+
+For versioning and branch policy details, see [RELEASE.md](./RELEASE.md).
+
+## Useful local verification
+
+For the closest CI parity, run:
+
+```bash
+npm audit --audit-level=high
+npm run lint:all
+npm run test:cov
+npm run test:e2e
+npm test --prefix ui
+npm run build:all
+```
+
+For quicker day-to-day iteration, this smaller set is still useful:
+
+```bash
+npm run lint:all
+npm run test:all
+```
 
 ## Notes
 
-- Release automation is configured in `.releaserc.json`.
-- Semantic-release plugins are installed at runtime in CI before execution.
-- For versioning rules and release behavior, see [RELEASE.md](./RELEASE.md).
+- CI validates lockfile integrity and package signatures before linting or testing.
+- Native modules are rebuilt in CI because source installs use hardened npm settings.
+- Semantic-release plugins are installed at runtime in the release job before execution.
