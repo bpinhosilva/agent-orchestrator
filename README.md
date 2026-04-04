@@ -1,14 +1,16 @@
 # Agent Orchestrator
 
 <p align="center">
-  <img src="docs/assets/lupy-mascot.png" alt="Lupy, the Agent Orchestrator mascot" width="760" />
+  <img src="docs/assets/lupy-mascot.webp" alt="Lupy, the Agent Orchestrator mascot" width="500" />
 </p>
 
 <p align="center"><em>Lupy, the project mascot, inspired by Bruno's dog and companion of 10 years.</em></p>
 
-[![CI](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/ci.yml)
-[![Gitleaks](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/gitleaks.yml/badge.svg)](https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/gitleaks.yml)
-[![Socket Badge](https://socket.dev/api/badge/npm/package/@bpinhosilva/agent-orchestrator)](https://socket.dev/npm/package/@bpinhosilva/agent-orchestrator)
+<p align="center">
+  <a href="https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/ci.yml"><img src="https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/gitleaks.yml"><img src="https://github.com/bpinhosilva/agent-orchestrator/actions/workflows/gitleaks.yml/badge.svg" alt="Gitleaks" /></a>
+  <a href="https://socket.dev/npm/package/@bpinhosilva/agent-orchestrator"><img src="https://socket.dev/api/badge/npm/package/@bpinhosilva/agent-orchestrator" alt="Socket Badge" /></a>
+</p>
 
 Agent Orchestrator is an open-source platform for managing AI agents, tasks, and project-scoped automation across multiple model providers. It combines a NestJS API, a React dashboard, a packaged CLI/runtime, and Docker deployment options for both local use and production-style environments.
 
