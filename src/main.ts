@@ -30,7 +30,7 @@ async function ensureDatabaseIsReadyForStartup() {
   throw new Error(
     [
       'Pending database migrations were detected.',
-      'Run `npm run migration:run` locally or `docker compose run --rm api dist/cli/index.js migrate --yes` in the Docker stack, then start the server again.',
+      'Run `agent-orchestrator setup` or `agent-orchestrator migrate --yes` for packaged installs, `npm run migration:run` for local source development, or `docker compose run --rm api dist/cli/index.js migrate --yes` in the Docker stack, then start the server again.',
     ].join(' '),
   );
 }

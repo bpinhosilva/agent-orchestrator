@@ -41,7 +41,10 @@ const mockDataSource = {
   query: jest.fn().mockResolvedValue([]),
   runMigrations: jest.fn().mockResolvedValue([]),
   dropDatabase: jest.fn(),
-  migrations: [{ name: 'BaselineSchema1775260737095' }],
+  migrations: [
+    { name: 'BaselineSchema1775260737095' },
+    { name: 'AddUsersLastName1775266000000' },
+  ],
   options: { type: 'sqlite' },
   isInitialized: false,
 };
@@ -314,7 +317,7 @@ describe('CLI Commands', () => {
 
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         path.join(PID_DIR, '.env'),
-        expect.stringContaining('PORT=15789'),
+        expect.stringContaining('CHECK_PENDING_MIGRATIONS_ON_STARTUP=true'),
         expect.objectContaining({ mode: 0o600 }),
       );
       expect(fs.chmodSync).toHaveBeenCalledWith(
@@ -377,7 +380,7 @@ describe('CLI Commands', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should fake the baseline migration for an existing sqlite schema without migration history', async () => {
+    it('should run pending migrations during non-interactive setup when --yes is provided', async () => {
       mockDataSource.showMigrations.mockResolvedValue(true);
       mockDataSource.query.mockResolvedValue([{ name: 'users' }]);
       const promptSpy = jest.mocked(enquirer.prompt);
@@ -394,7 +397,7 @@ describe('CLI Commands', () => {
       ]);
 
       expect(promptSpy).not.toHaveBeenCalled();
-      expect(mockDataSource.runMigrations).toHaveBeenCalledWith({ fake: true });
+      expect(mockDataSource.runMigrations).toHaveBeenCalledWith();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
     });

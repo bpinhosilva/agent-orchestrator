@@ -1,48 +1,47 @@
 services:
   db:
-    image: postgres:17-alpine
-    container_name: agent-orchestrator-db
+    image: postgres:17-alpine@sha256:6f30057d31f5861b66f3545d4821f987aacf1dd920765f0acadea0c58ff975b1
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-orchestrator}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orchestrator_password}
-      POSTGRES_DB: ${POSTGRES_DB:-agent_orchestrator}
-    ports:
-      - '${POSTGRES_PORT:-5433}:5432'
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+    expose:
+      - '5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-orchestrator} -d ${POSTGRES_DB:-agent_orchestrator}",
+          "pg_isready -U ${POSTGRES_USER:?POSTGRES_USER is required} -d ${POSTGRES_DB:?POSTGRES_DB is required}",
         ]
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
       target: runtime
-    container_name: agent-orchestrator-api
     env_file:
       - .env
     environment:
       NODE_ENV: production
       PORT: 3000
       DB_TYPE: postgres
-      DATABASE_URL: postgresql://${POSTGRES_USER:-orchestrator}:${POSTGRES_PASSWORD:-orchestrator_password}@db:5432/${POSTGRES_DB:-agent_orchestrator}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}
       SERVE_STATIC_UI: 'false'
       CHECK_PENDING_MIGRATIONS_ON_STARTUP: 'true'
       ALLOWED_ORIGINS: https://localhost,https://agent-orchestrator.localhost
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - '3000:3000'
+    expose:
+      - '3000'
     restart: unless-stopped
 
   ui:
@@ -50,7 +49,6 @@ services:
       context: .
       dockerfile: Dockerfile.ui
       target: runtime
-    container_name: agent-orchestrator-ui
     depends_on:
       api:
         condition: service_started

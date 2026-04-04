@@ -39,3 +39,6 @@ lerna-debug.log*
 .env
 .env.test
 .env.production
+
+# local planning artifacts
+/docs/plans/

@@ -49,6 +49,8 @@ agent-orchestrator run
 agent-orchestrator status
 ```
 
+`setup` initializes an empty packaged runtime database on first use and prompts you to apply pending migrations after package updates. `run` does not upgrade the database automatically.
+
 ### Non-interactive setup
 
 ```bash

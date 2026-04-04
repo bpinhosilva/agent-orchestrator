@@ -3,11 +3,31 @@ import { createDataSource, isSqliteDriver } from '../config/typeorm';
 export interface MigrationStatus {
   hasPending: boolean;
   isEmpty: boolean;
-  requiresBaselineBootstrap: boolean;
 }
 
 interface CheckPendingMigrationsOptions {
   assumePendingOnError?: boolean;
+}
+
+async function getMigrationContext(
+  dataSource: ReturnType<typeof createDataSource>,
+): Promise<{
+  hasPending: boolean;
+  isEmpty: boolean;
+}> {
+  const hasPending = await dataSource.showMigrations();
+
+  const tables: Array<{ name?: string; table_name?: string }> =
+    await dataSource.query(
+      isSqliteDriver(dataSource.options.type)
+        ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
+        : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
+    );
+
+  return {
+    hasPending,
+    isEmpty: tables.length === 0,
+  };
 }
 
 export async function checkPendingMigrations(
@@ -17,27 +37,10 @@ export async function checkPendingMigrations(
 
   try {
     await dataSource.initialize();
-    const hasPending = await dataSource.showMigrations();
-
-    const tables: Array<{ name?: string; table_name?: string }> =
-      await dataSource.query(
-        isSqliteDriver(dataSource.options.type)
-          ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
-          : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
-      );
-
-    const isEmpty = tables.length === 0;
-    const registeredMigrationNames = dataSource.migrations.map(
-      (migration) => migration.name || migration.constructor.name,
-    );
-    const requiresBaselineBootstrap =
-      !isEmpty &&
-      hasPending &&
-      registeredMigrationNames.length === 1 &&
-      registeredMigrationNames[0]?.startsWith('BaselineSchema') === true;
+    const { hasPending, isEmpty } = await getMigrationContext(dataSource);
 
     await dataSource.destroy();
-    return { hasPending, isEmpty, requiresBaselineBootstrap };
+    return { hasPending, isEmpty };
   } catch (err: unknown) {
     if (dataSource.isInitialized) {
       await dataSource.destroy();
@@ -47,7 +50,6 @@ export async function checkPendingMigrations(
       return {
         hasPending: true,
         isEmpty: true,
-        requiresBaselineBootstrap: false,
       };
     }
 
@@ -68,34 +70,10 @@ export async function runMigrations(force = false): Promise<void> {
       console.log('Schema dropped successfully.');
     }
 
-    const hasPending = await dataSource.showMigrations();
-    const tables: Array<{ name?: string; table_name?: string }> =
-      await dataSource.query(
-        isSqliteDriver(dataSource.options.type)
-          ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
-          : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
-      );
-    const isEmpty = tables.length === 0;
-    const registeredMigrationNames = dataSource.migrations.map(
-      (migration) => migration.name || migration.constructor.name,
-    );
-    const shouldBootstrapBaseline =
-      !force &&
-      !isEmpty &&
-      hasPending &&
-      registeredMigrationNames.length === 1 &&
-      registeredMigrationNames[0]?.startsWith('BaselineSchema') === true;
+    await getMigrationContext(dataSource);
 
     console.log('Running database migrations...');
-    const result = await dataSource.runMigrations(
-      shouldBootstrapBaseline ? { fake: true } : undefined,
-    );
-
-    if (shouldBootstrapBaseline) {
-      console.log(
-        'Existing database schema detected without recorded baseline migration. Recorded the baseline migration without changing the schema.',
-      );
-    }
+    const result = await dataSource.runMigrations();
 
     if (result.length > 0) {
       console.log(`Successfully executed ${result.length} migrations.`);

@@ -675,6 +675,8 @@ function buildEnvContent(
     PORT: basicConfig.port,
     DB_TYPE: basicConfig.dbType,
     DB_LOGGING: `${basicConfig.dbLogging}`,
+    CHECK_PENDING_MIGRATIONS_ON_STARTUP:
+      currentEnv.CHECK_PENDING_MIGRATIONS_ON_STARTUP || 'true',
     JWT_SECRET: jwtSecret,
   };
 
@@ -697,6 +699,7 @@ function buildEnvContent(
     'PORT',
     'DB_TYPE',
     'DB_LOGGING',
+    'CHECK_PENDING_MIGRATIONS_ON_STARTUP',
     'DATABASE_URL',
     'GEMINI_API_KEY',
     'ANTHROPIC_API_KEY',
@@ -878,21 +881,11 @@ async function handleSetup(options: SetupCommandOptions): Promise<void> {
   writePrivateFile(ENV_PATH, envContent);
   console.log(`Configuration saved to ${ENV_PATH} with mode 600.`);
 
-  const { hasPending, isEmpty, requiresBaselineBootstrap } =
-    await checkPendingMigrations({
-      assumePendingOnError: true,
-    });
+  const { hasPending, isEmpty } = await checkPendingMigrations({
+    assumePendingOnError: true,
+  });
   if (isEmpty) {
     console.log('Database is empty. Initializing...');
-    await runMigrations();
-    await maybeSetupAdmin(options, interactive);
-    return;
-  }
-
-  if (requiresBaselineBootstrap) {
-    console.log(
-      'Existing database detected without recorded baseline migration. Recording the baseline migration metadata...',
-    );
     await runMigrations();
     await maybeSetupAdmin(options, interactive);
     return;
@@ -1163,21 +1156,12 @@ export function defineCommands() {
           return;
         }
 
-        const { hasPending, isEmpty, requiresBaselineBootstrap } =
-          await checkPendingMigrations({
-            assumePendingOnError: true,
-          });
+        const { hasPending, isEmpty } = await checkPendingMigrations({
+          assumePendingOnError: true,
+        });
 
         if (isEmpty) {
           console.log('Database is empty. Initializing...');
-          await runMigrations();
-          return;
-        }
-
-        if (requiresBaselineBootstrap) {
-          console.log(
-            'Existing database detected without recorded baseline migration. Recording the baseline migration metadata...',
-          );
           await runMigrations();
           return;
         }

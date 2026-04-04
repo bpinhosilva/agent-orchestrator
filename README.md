@@ -1,7 +1,7 @@
 # Agent Orchestrator
 
 <p align="center">
-  <img src="docs/assets/lupy-mascot.webp" alt="Lupy, the Agent Orchestrator mascot" width="500" />
+  <img src="https://raw.githubusercontent.com/bpinhosilva/agent-orchestrator/main/docs/assets/lupy-mascot.webp" alt="Lupy, the Agent Orchestrator mascot" width="500" />
 </p>
 
 <p align="center"><em>Lupy, the project mascot, inspired by Bruno's dog and companion of 10 years.</em></p>
@@ -66,7 +66,7 @@ agent-orchestrator run
 agent-orchestrator status
 ```
 
-`setup` can create the runtime `.env`, run migrations, and seed an admin user. The default runtime home is `~/.agent-orchestrator`, or `${AGENT_ORCHESTRATOR_HOME}` if you set it explicitly.
+`setup` can create the runtime `.env`, run migrations, seed an admin user, and prompt you to apply pending migrations after package updates. `run` does not upgrade the database automatically. The default runtime home is `~/.agent-orchestrator`, or `${AGENT_ORCHESTRATOR_HOME}` if you set it explicitly.
 
 For deeper CLI usage, see [docs/CLI.md](docs/CLI.md).
 
@@ -188,11 +188,13 @@ When running the packaged app or a production build with static UI enabled, the 
 
 The repository ships three Compose entrypoints:
 
+All Compose stacks now require the database variables in the project `.env` file: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `POSTGRES_TEST_DB` for the integration stack.
+
 | File | Purpose |
 | --- | --- |
 | `docker-compose.yml` | Production-style stack with PostgreSQL, API, and Caddy-served UI |
 | `docker-compose.dev.yml` | Development stack with API hot reload and Vite UI dev server |
-| `docker-compose-test.yml` | Integration stack for migration, CLI/runtime, API, and UI checks |
+| `docker-compose.test.yml` | Integration stack for migration, CLI/runtime, API, and UI checks |
 
 ### Production-style stack
 
@@ -204,7 +206,7 @@ docker compose run --rm api dist/cli/index.js migrate --yes
 Endpoints:
 
 - UI: `https://localhost` or `https://agent-orchestrator.localhost`
-- API: `http://localhost:3000/api/v1`
+- API: `https://localhost/api/v1` or `https://agent-orchestrator.localhost/api/v1`
 
 In this stack the UI is served by **Caddy**, not by the Nest app. Docker explicitly sets `SERVE_STATIC_UI=false` so the backend only serves the API.
 
@@ -222,7 +224,18 @@ Endpoints:
 
 ### Integration stack
 
-Use `docker-compose-test.yml` when you want to exercise migration behavior, packaged CLI/runtime flows, API startup, and UI reachability together.
+Use `docker-compose.test.yml` when you want to exercise migration behavior, packaged CLI/runtime flows, API startup, and UI reachability together.
+
+```bash
+npm run docker:test
+docker compose -f docker-compose.test.yml --profile tools run --rm migrate
+docker compose -f docker-compose.test.yml --profile tools run --rm cli
+```
+
+Endpoints:
+
+- UI: `https://localhost:8444` or `https://agent-orchestrator.localhost:8444`
+- API: `https://localhost:8444/api/v1` or `https://agent-orchestrator.localhost:8444/api/v1`
 
 ## Development workflow
 
