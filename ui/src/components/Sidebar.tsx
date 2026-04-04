@@ -98,7 +98,12 @@ const Sidebar = () => {
 
       <div className="px-3 space-y-2 pt-6">
         <div className="pt-4 border-t border-outline-variant/20">
-          <a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-all">
+          <a
+            href="https://github.com/bpinhosilva/agent-orchestrator/issues"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface transition-all"
+          >
             <HelpCircle size={20} />
             <span className="font-body text-sm">Help</span>
           </a>

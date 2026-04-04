@@ -4,6 +4,7 @@ import { Injectable, Logger, Optional, Scope } from '@nestjs/common';
 import { Task } from '../../tasks/entities/task.entity';
 import { Project } from '../../projects/entities/project.entity';
 import { ConfigService } from '@nestjs/config';
+import { DEFAULT_MODEL_BY_PROVIDER } from '../default-provider-models';
 
 import { RegisterAgent } from '../registry/agent.registry';
 
@@ -20,7 +21,7 @@ export class ClaudeAgent implements Agent {
 
   constructor(
     private readonly configService: ConfigService,
-    @Optional() model: string = 'claude-opus-4-6',
+    @Optional() model: string = DEFAULT_MODEL_BY_PROVIDER.anthropic,
   ) {
     this.model = model;
   }

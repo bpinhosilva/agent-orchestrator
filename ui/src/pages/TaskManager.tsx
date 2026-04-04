@@ -274,16 +274,16 @@ const TaskManager: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Fleet Command</span>
-             <div className="h-1 w-1 rounded-full bg-outline-variant/30" />
-             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-on-surface-variant/40">{activeProject.title}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">Fleet Command</span>
+            <div className="h-1 w-1 rounded-full bg-outline-variant/30" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-on-surface-variant/40">{activeProject.title}</span>
           </div>
           <h1 className="text-4xl font-extrabold font-headline tracking-tight text-white">Agentic Task Canvas</h1>
           <p className="text-outline text-sm mt-1">
             Orchestrating <span className="text-primary font-bold">{tasks.length}</span> parallel node operations
           </p>
         </div>
-        
+
         <div className="flex-1 flex items-center justify-end gap-6 max-w-4xl">
           <ArchiveZone isDragging={!!activeId} />
           <button 

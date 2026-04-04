@@ -5,7 +5,6 @@ import {
   Plus,
   RefreshCcw,
   Server,
-  Terminal,
   TrendingUp,
 } from 'lucide-react';
 import CreateModelModal from '../components/CreateModelModal';
@@ -161,73 +160,6 @@ const Providers = () => {
             }}
             onOpenCreateModel={() => setIsCreateModelModalOpen(true)}
           />
-
-          <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-4 right-4 text-on-surface-variant/5 italic text-[10px] font-mono select-none">
-              SYSTEM_STREAM_L09
-            </div>
-            <div className="flex justify-between items-center mb-6 border-b border-outline-variant/5 pb-5">
-              <span className="flex items-center gap-3 uppercase tracking-[0.2em] font-black text-[10px] text-tertiary">
-                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_rgba(78,222,163,0.5)]" />
-                Live System Event Stream
-              </span>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-[9px] font-bold text-on-surface-variant/60">
-                <Terminal size={12} />
-                <span>FILTER: gemini-1.5-*</span>
-              </div>
-            </div>
-            <div className="space-y-2 font-mono text-[11px] leading-relaxed">
-              <p className="flex gap-4">
-                <span className="text-on-surface-variant/30">[14:22:01]</span>{' '}
-                <span className="text-primary font-bold">INFO</span>{' '}
-                <span className="text-on-surface-variant/80 font-medium">
-                  Node connected: gemini-1.5-pro-instance-09
-                </span>
-              </p>
-              <p className="flex gap-4">
-                <span className="text-on-surface-variant/30">[14:22:05]</span>{' '}
-                <span className="text-secondary font-bold">TRANS</span>{' '}
-                <span className="text-on-surface-variant/80 font-medium">
-                  Request successful: UUID-4421-AX (Lat: 154ms)
-                </span>
-              </p>
-              <p className="flex gap-4">
-                <span className="text-on-surface-variant/30">[14:23:12]</span>{' '}
-                <span className="text-secondary font-bold">TRANS</span>{' '}
-                <span className="text-on-surface-variant/80 font-medium">
-                  Request successful: UUID-9901-BL (Lat: 162ms)
-                </span>
-              </p>
-              <p className="flex gap-4">
-                <span className="text-on-surface-variant/30">[14:24:45]</span>{' '}
-                <span className="text-tertiary font-bold">WARN</span>{' '}
-                <span className="text-on-surface-variant/80 font-medium">
-                  Rate limit approach: gemini-1.5-flash (88% quota)
-                </span>
-              </p>
-              <p className="flex gap-4">
-                <span className="text-on-surface-variant/30">[14:25:00]</span>{' '}
-                <span className="text-primary font-bold">INFO</span>{' '}
-                <span className="text-on-surface-variant/80 font-medium">
-                  Health check passed for all 2 providers.
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-right-10 duration-500">
-        <div className="bg-[#131b2e]/60 backdrop-blur-xl rounded-full px-4 py-2 flex items-center gap-3 ring-1 ring-white/10 shadow-2xl shadow-black/50 overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-r from-secondary/10 via-primary/5 to-tertiary/10 opacity-50 group-hover:opacity-100 transition-opacity" />
-          <div className="flex -space-x-1.5 relative z-10">
-            <div className="w-4 h-4 rounded-full bg-secondary shadow-[0_0_8px_rgba(78,222,163,0.5)]" />
-            <div className="w-4 h-4 rounded-full bg-primary shadow-[0_0_8px_rgba(173,198,255,0.5)]" />
-            <div className="w-4 h-4 rounded-full bg-tertiary shadow-[0_0_8px_rgba(221,183,255,0.5)]" />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 relative z-10">
-            System Synchronized
-          </span>
         </div>
       </div>
 

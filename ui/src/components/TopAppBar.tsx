@@ -1,4 +1,4 @@
-import { Search, Bell, Settings, LogOut } from 'lucide-react';
+import { Bell, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContextInstance';
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from './UserAvatar';
@@ -11,17 +11,15 @@ const TopAppBar = () => {
   return (
     <header role="banner" className="w-full top-0 sticky bg-surface flex items-center justify-between px-6 py-3 shadow-[0_8px_32px_rgba(173,198,255,0.06)] z-40">
       <div className="flex items-center gap-8">
-        <div className="flex items-center gap-3 bg-surface-container-low px-4 py-1.5 rounded-full ring-1 ring-outline-variant/20">
-          <Search size={18} className="text-primary" />
-          <input 
-            type="text" 
-            placeholder="Search agent fleet..." 
-            className="bg-transparent border-none text-sm text-on-surface focus:outline-none w-48 placeholder:text-on-surface-variant/50"
-          />
-        </div>
         <div className="hidden md:flex items-center gap-6">
-          <a href="#" className="text-on-surface-variant hover:text-primary transition-colors font-headline text-sm tracking-tight">Docs</a>
-          <a href="#" className="text-on-surface-variant hover:text-primary transition-colors font-headline text-sm tracking-tight">Support</a>
+          <a
+            href="https://github.com/bpinhosilva/agent-orchestrator/blob/main/README.md"
+            target="_blank"
+            rel="noreferrer"
+            className="text-on-surface-variant hover:text-primary transition-colors font-headline text-sm tracking-tight"
+          >
+            Docs
+          </a>
         </div>
       </div>
 

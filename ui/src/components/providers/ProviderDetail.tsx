@@ -229,7 +229,6 @@ const ProviderDetail = ({
             <thead>
               <tr className="bg-surface-container-high/30 text-on-surface-variant/40 font-black uppercase tracking-[0.2em]">
                 <th className="py-5 px-6">Model ID</th>
-                <th className="py-5 px-6">Capabilities</th>
                 <th className="py-5 px-6 text-right">Status</th>
                 <th className="py-5 px-6 w-12 text-center">Action</th>
               </tr>
@@ -237,7 +236,7 @@ const ProviderDetail = ({
             <tbody className="divide-y divide-outline-variant/5">
               {isLoadingModels ? (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center">
+                  <td colSpan={3} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
                       <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
                       <p className="text-[10px] uppercase font-black tracking-widest text-primary animate-pulse">
@@ -250,18 +249,6 @@ const ProviderDetail = ({
                 models.map((model) => (
                   <tr key={model.id} className="group hover:bg-primary/5 transition-all">
                     <td className="py-5 px-6 font-mono text-on-surface font-medium">{model.name}</td>
-                    <td className="py-5 px-6">
-                      <div className="flex gap-2">
-                        {['TEXT', 'VISION'].map((capability) => (
-                          <span
-                            key={capability}
-                            className="px-2 py-0.5 bg-tertiary/10 text-tertiary rounded-[4px] text-[8px] font-black tracking-tight"
-                          >
-                            {capability}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
                     <td className="py-5 px-6 text-right">
                       <span className="inline-flex items-center px-2 py-1 rounded font-black text-[8px] uppercase tracking-widest bg-secondary/10 text-secondary">
                         Active
@@ -282,7 +269,7 @@ const ProviderDetail = ({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-on-surface-variant/20 italic font-medium">
+                  <td colSpan={3} className="py-12 text-center text-on-surface-variant/20 italic font-medium">
                     No models registered for this provider gate.
                   </td>
                 </tr>
@@ -292,7 +279,7 @@ const ProviderDetail = ({
         </div>
       </div>
 
-      <div className="p-8 border-t border-outline-variant/5 bg-surface-container-lowest/20 flex items-center gap-3 text-on-surface-variant/60 text-[11px] font-medium">
+      <div className="ui-helper-text p-8 border-t border-outline-variant/5 bg-surface-container-lowest/20 flex items-center gap-3">
         <Clock size={14} className="text-tertiary" />
         Model registry updates propagate automatically after provider and model mutations.
       </div>

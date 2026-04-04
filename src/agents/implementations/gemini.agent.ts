@@ -4,6 +4,7 @@ import { Injectable, Logger, Optional, Scope } from '@nestjs/common';
 import { Task } from '../../tasks/entities/task.entity';
 import { Project } from '../../projects/entities/project.entity';
 import { ConfigService } from '@nestjs/config';
+import { DEFAULT_MODEL_BY_PROVIDER } from '../default-provider-models';
 
 import { RegisterAgent } from '../registry/agent.registry';
 
@@ -22,7 +23,7 @@ export class GeminiAgent implements Agent {
 
   constructor(
     private readonly configService: ConfigService,
-    @Optional() model: string = 'gemini-2.5-flash-lite',
+    @Optional() model: string = DEFAULT_MODEL_BY_PROVIDER.google,
   ) {
     this.model = model;
   }
