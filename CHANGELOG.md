@@ -1,3 +1,10 @@
+# [1.0.0-alpha.29](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.28...v1.0.0-alpha.29) (2026-04-04)
+
+
+### Features
+
+* **migrations:** add seed and backfill migrations ([5991146](https://github.com/bpinhosilva/agent-orchestrator/commit/5991146cbb3bc971bddf73295dcf7dbd3e2b74e4))
+
 # [1.0.0-alpha.28](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.27...v1.0.0-alpha.28) (2026-04-04)
 
 
