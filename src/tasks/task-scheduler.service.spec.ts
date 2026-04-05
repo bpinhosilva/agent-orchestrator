@@ -7,6 +7,10 @@ import { AgentEntity } from '../agents/entities/agent.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskComment } from './entities/comment.entity';
 import { StorageService } from '../common/storage.service';
+import {
+  StoragePathHelper,
+  StorageObjectPath,
+} from '../common/storage-path.helper';
 import { TasksService } from './tasks.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -47,8 +51,19 @@ describe('TaskSchedulerService', () => {
   };
 
   const mockStorageService = {
-    saveBase64: jest.fn().mockResolvedValue('test-artifact.png'),
-    delete: jest.fn().mockResolvedValue(true),
+    saveBase64: jest.fn().mockResolvedValue(undefined),
+    delete: jest.fn().mockResolvedValue(undefined),
+  };
+
+  const mockObjectPath: StorageObjectPath = {
+    id: 'test-uuid',
+    originalName: 'generated-image.png',
+    mimeType: 'image/png',
+    filePath: '2024/01/15/tasks/task-id/test-uuid.png',
+  };
+
+  const mockStoragePathHelper = {
+    generate: jest.fn().mockReturnValue(mockObjectPath),
   };
 
   beforeEach(async () => {
@@ -66,6 +81,7 @@ describe('TaskSchedulerService', () => {
         },
         { provide: AgentsService, useValue: mockAgentsService },
         { provide: StorageService, useValue: mockStorageService },
+        { provide: StoragePathHelper, useValue: mockStoragePathHelper },
         { provide: TasksService, useValue: { emitTaskEvent: jest.fn() } },
         {
           provide: ConfigService,

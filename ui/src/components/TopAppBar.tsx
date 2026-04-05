@@ -32,7 +32,11 @@ const TopAppBar = () => {
         <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
           <Bell size={20} aria-hidden="true" />
         </button>
-        <button aria-label="Settings" className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+        <button
+          onClick={() => navigate('/settings')}
+          aria-label="Settings"
+          className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200"
+        >
           <Settings size={20} aria-hidden="true" />
         </button>
         

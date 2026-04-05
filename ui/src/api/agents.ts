@@ -6,6 +6,16 @@ export interface AgentProvider {
   description?: string;
 }
 
+export interface AgentAttributes {
+  creativity?: number;
+  strictness?: number;
+}
+
+export const BALANCED_ATTRIBUTES: AgentAttributes = {
+  creativity: 3.0,
+  strictness: 3.5,
+};
+
 export interface Agent {
   id: string;
   name: string;
@@ -13,6 +23,7 @@ export interface Agent {
   role?: string;
   description?: string;
   systemInstructions?: string;
+  attributes?: AgentAttributes | null;
   provider?: AgentProvider;
   model?: {
     id: string;
@@ -31,6 +42,7 @@ export interface CreateAgentPayload {
   providerId: string;
   modelId: string;
   status?: string;
+  attributes?: AgentAttributes | null;
 }
 
 export interface UpdateAgentPayload {
@@ -42,6 +54,7 @@ export interface UpdateAgentPayload {
   providerId?: string;
   modelId?: string;
   status?: string;
+  attributes?: AgentAttributes | null;
 }
 
 export interface AgentResponse {

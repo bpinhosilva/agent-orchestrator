@@ -20,6 +20,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { getTypeOrmConfig } from './config/typeorm';
 import {
   getRuntimeEnvPath,
@@ -83,6 +84,7 @@ const shouldServeStaticUi = isEnvEnabled('SERVE_STATIC_UI', true);
     ProjectsModule,
     UsersModule,
     AuthModule,
+    SystemSettingsModule,
   ],
   controllers: [AppController],
   providers: [

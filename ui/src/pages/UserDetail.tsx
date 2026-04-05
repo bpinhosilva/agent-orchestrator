@@ -102,8 +102,8 @@ const UserDetail: React.FC = () => {
       setLastName(u.last_name);
       setEmail(u.email);
       setRole(u.role || 'user');
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch user data');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch user data');
     } finally {
       setLoading(false);
     }
@@ -125,8 +125,8 @@ const UserDetail: React.FC = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       await fetchData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save user changes');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save user changes');
     } finally {
       setIsSaving(false);
     }
@@ -141,8 +141,8 @@ const UserDetail: React.FC = () => {
         await projectsApi.addMember(projectId, id);
       }
       await fetchData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update project membership');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update project membership');
     }
   };
 

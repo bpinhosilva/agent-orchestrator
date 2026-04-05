@@ -9,6 +9,10 @@ import { AgentsService } from '../agents/agents.service';
 import { TaskComment, CommentAuthorType } from './entities/comment.entity';
 import { AgentEntity } from '../agents/entities/agent.entity';
 import { StorageService } from '../common/storage.service';
+import {
+  StoragePathHelper,
+  StorageContext,
+} from '../common/storage-path.helper';
 import { TasksService } from './tasks.service';
 
 @Injectable()
@@ -25,6 +29,7 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
     private readonly commentRepository: Repository<TaskComment>,
     private readonly agentsService: AgentsService,
     private readonly storageService: StorageService,
+    private readonly storagePathHelper: StoragePathHelper,
     private readonly tasksService: TasksService,
     private readonly configService: ConfigService,
   ) {
@@ -286,12 +291,18 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
               ? response.image.split('base64,')[1]
               : response.image;
 
-            const artifact = await this.storageService.saveBase64(
+            const objectPath = this.storagePathHelper.generate({
+              context: StorageContext.TASKS,
+              contextId: task.id,
+              mimeType: 'image/png',
+              originalName: 'generated-image.png',
+            });
+            await this.storageService.saveBase64(
               base64Data,
-              'image/png', // Default to png for now
-              'generated-image.png',
+              objectPath.mimeType,
+              objectPath.filePath,
             );
-            artifacts.push(artifact);
+            artifacts.push(objectPath);
           }
         } catch (error) {
           this.logger.error(

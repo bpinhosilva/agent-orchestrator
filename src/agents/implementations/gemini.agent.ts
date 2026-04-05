@@ -5,8 +5,9 @@ import { Task } from '../../tasks/entities/task.entity';
 import { Project } from '../../projects/entities/project.entity';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_MODEL_BY_PROVIDER } from '../default-provider-models';
-
 import { RegisterAgent } from '../registry/agent.registry';
+import { buildPersonalitySection } from '../personality.util';
+import type { AgentAttributes } from '../dto/agent-attributes.dto';
 
 @Injectable({ scope: Scope.TRANSIENT })
 @RegisterAgent('google')
@@ -20,6 +21,7 @@ export class GeminiAgent implements Agent {
   private provider: string = 'google';
   private model: string;
   private enableGrounding: boolean = true;
+  private attributes?: AgentAttributes | null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -75,6 +77,8 @@ export class GeminiAgent implements Agent {
     if (config['model']) this.model = config['model'] as string;
     if (config['enableGrounding'] !== undefined)
       this.enableGrounding = !!config['enableGrounding'];
+    if ('attributes' in config)
+      this.attributes = config['attributes'] as AgentAttributes | null;
   }
 
   async processText(input: string): Promise<AgentResponse> {
@@ -102,6 +106,7 @@ export class GeminiAgent implements Agent {
             this.systemInstructions
               ? `Instructions:\n${this.systemInstructions}`
               : '',
+            buildPersonalitySection(this.attributes),
           ]
             .filter(Boolean)
             .join('\n'),

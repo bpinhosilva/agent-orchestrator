@@ -12,10 +12,11 @@ import {
   Shield,
   Sparkles,
 } from 'lucide-react';
-import { agentsApi } from '../api/agents';
+import { agentsApi, BALANCED_ATTRIBUTES } from '../api/agents';
 import { providersApi, type Provider } from '../api/providers';
 import type { Model } from '../api/models';
 import MarkdownField from './MarkdownField';
+import PersonalityMatrix from './PersonalityMatrix';
 import { useNotification } from '../hooks/useNotification';
 import {
   DEFAULT_AGENT_INSTRUCTIONS,
@@ -43,6 +44,7 @@ const createAgentDefaults: CreateAgentFormValues = {
   providerId: '',
   modelId: '',
   instructions: DEFAULT_AGENT_INSTRUCTIONS,
+  attributes: { ...BALANCED_ATTRIBUTES },
 };
 
 const steps = [
@@ -191,6 +193,7 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
         providerId: values.providerId,
         modelId: values.modelId,
         status: 'active',
+        attributes: values.attributes,
       });
 
       return values;
@@ -577,35 +580,16 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
                   <h3 className="text-lg font-bold font-headline text-white">Intelligence Tuning</h3>
                 </div>
 
-                <div className="space-y-8">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">
-                    Personality Matrix
-                  </label>
-
-                  {[
-                    { label: 'Precision', min: '0.00', max: '1.00', value: 0.72, color: 'accent-secondary' },
-                    { label: 'Lement', min: '0.00', max: '1.00', value: 0.45, color: 'accent-primary' },
-                    { label: 'Casual', min: '0.00', max: '1.00', value: 0.9, color: 'accent-tertiary' },
-                  ].map((slider) => (
-                    <div key={slider.label} className="space-y-3">
-                      <div className="flex justify-between items-center text-[10px] font-bold tracking-tighter uppercase">
-                        <span className="text-on-surface-variant/50">
-                          {slider.label} ({slider.min})
-                        </span>
-                        <span className="text-white font-mono text-xs">{slider.value.toFixed(2)}</span>
-                        <span className="text-on-surface-variant/50">Creativity ({slider.max})</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        defaultValue={slider.value * 100}
-                        className={`w-full h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer ${slider.color}`}
-                        aria-label={`${slider.label} tuning slider`}
-                      />
-                    </div>
-                  ))}
-                </div>
+                <Controller
+                  control={control}
+                  name="attributes"
+                  render={({ field }) => (
+                    <PersonalityMatrix
+                      value={field.value ?? { ...BALANCED_ATTRIBUTES }}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
               </section>
 
               <section className="space-y-8">

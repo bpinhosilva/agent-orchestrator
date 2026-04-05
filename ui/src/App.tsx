@@ -11,6 +11,7 @@ const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const Scheduler = lazy(() => import('./pages/Scheduler'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Users = lazy(() => import('./pages/Users'));
+const Settings = lazy(() => import('./pages/Settings'));
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -164,6 +165,16 @@ function App() {
                                   <Users />
                                 </AppErrorBoundary>
                               }
+                            />
+                            <Route
+                              path="/settings"
+                              element={
+                                <AppErrorBoundary title="Unable to render settings">
+                                  <ProtectedRoute roles={['admin']}>
+                                    <Settings />
+                                  </ProtectedRoute>
+                                </AppErrorBoundary>
+                                }
                             />
                             <Route
                               path="/users/:id"

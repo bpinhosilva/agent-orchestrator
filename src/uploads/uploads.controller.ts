@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { StorageService } from '../common/storage.service';
+import { ParseFilePathPipe } from './parse-filepath.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,52 +16,61 @@ import * as path from 'path';
 export class UploadsController {
   constructor(private readonly storageService: StorageService) {}
 
-  @Get(':filename')
+  @Get('*filepath')
   getFile(
-    @Param('filename') filename: string,
+    @Param('filepath', ParseFilePathPipe) rawPath: string,
     @Res({ passthrough: true }) res: Response,
   ): StreamableFile {
-    // Sanitize filename to prevent path traversal attacks
-    const safeFilename = path.basename(filename);
-    const fullPath = path.join(
-      this.storageService.getArtifactsPath(),
-      safeFilename,
-    );
+    const bucketPath = this.storageService.getBucketPath('artifacts');
+    const resolvedBucketPath = path.resolve(bucketPath);
 
-    // Verify the resolved path is within the artifacts directory
-    const artifactsPath = this.storageService.getArtifactsPath();
-    const resolvedPath = path.resolve(fullPath);
-    const resolvedArtifactsPath = path.resolve(artifactsPath);
-
-    if (
-      !resolvedPath.startsWith(resolvedArtifactsPath + path.sep) &&
-      resolvedPath !== resolvedArtifactsPath
-    ) {
-      throw new NotFoundException(`File ${filename} not found`);
+    // Step 1 – nominal containment check (handles `..` and absolute paths)
+    const nominalPath = path.resolve(bucketPath, rawPath);
+    if (!nominalPath.startsWith(resolvedBucketPath + path.sep)) {
+      throw new NotFoundException(`File not found`);
     }
 
-    if (!fs.existsSync(fullPath)) {
-      throw new NotFoundException(`File ${filename} not found`);
+    if (!fs.existsSync(nominalPath)) {
+      throw new NotFoundException(`File not found`);
     }
 
-    const file = fs.createReadStream(fullPath);
+    // Step 2 – symlink containment check: resolve the real path on disk
+    // (fs.realpathSync follows symlinks; a symlink pointing outside the
+    // bucket would pass step 1 but fail here)
+    let realPath: string;
+    try {
+      realPath = fs.realpathSync(nominalPath);
+    } catch {
+      throw new NotFoundException(`File not found`);
+    }
 
-    // Optional: set content type
-    const ext = path.extname(filename).toLowerCase();
+    if (!realPath.startsWith(resolvedBucketPath + path.sep)) {
+      throw new NotFoundException(`File not found`);
+    }
+
     const mimeTypes: Record<string, string> = {
       '.png': 'image/png',
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
       '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
       '.pdf': 'application/pdf',
+      '.txt': 'text/plain',
+      '.csv': 'text/csv',
+      '.md': 'text/markdown',
+      '.json': 'application/json',
     };
 
-    if (mimeTypes[ext]) {
-      res.set({
-        'Content-Type': mimeTypes[ext],
-      });
-    }
+    const ext = path.extname(rawPath).toLowerCase();
+    const contentType = mimeTypes[ext] ?? 'application/octet-stream';
 
-    return new StreamableFile(file);
+    // nosniff prevents browsers from second-guessing the declared content-type
+    res.set({
+      'Content-Type': contentType,
+      'X-Content-Type-Options': 'nosniff',
+    });
+
+    return new StreamableFile(fs.createReadStream(realPath));
   }
 }

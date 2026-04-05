@@ -14,6 +14,7 @@ import {
   DEFAULT_AGENT_EMOJI,
   type AgentEmojiValue,
 } from '../agent-emoji.constants';
+import { type AgentAttributes } from '../dto/agent-attributes.dto';
 
 @Entity('agents')
 export class AgentEntity {
@@ -37,6 +38,9 @@ export class AgentEntity {
 
   @Column({ type: 'text', default: DEFAULT_AGENT_EMOJI })
   emoji: AgentEmojiValue;
+
+  @Column({ type: 'simple-json', nullable: true })
+  attributes: AgentAttributes | null;
 
   @Index()
   @ManyToOne(() => Provider, {

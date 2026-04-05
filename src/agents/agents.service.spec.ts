@@ -187,6 +187,65 @@ describe('AgentsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('should create an agent with attributes', async () => {
+      const agentWithAttributes = {
+        ...mockAgent,
+        attributes: { creativity: 3.0, strictness: 3.5 },
+      } as unknown as AgentEntity;
+
+      mockManager.create.mockReturnValue(agentWithAttributes);
+      mockManager.save.mockResolvedValue(agentWithAttributes);
+      mockManager.findOne.mockResolvedValue(agentWithAttributes);
+
+      const createDto = {
+        name: mockAgent.name,
+        modelId: 'model-123',
+        providerId: 'provider-123',
+        attributes: { creativity: 3.0, strictness: 3.5 },
+      };
+
+      const result = await service.create(createDto);
+
+      expect(result.attributes).toEqual({ creativity: 3.0, strictness: 3.5 });
+    });
+
+    it('should update an agent with attributes overriding the full column', async () => {
+      const updatedAgent = {
+        ...mockAgent,
+        attributes: { creativity: 4.5, strictness: 2.0 },
+      } as unknown as AgentEntity;
+
+      mockManager.update.mockResolvedValue({ affected: 1 });
+      mockManager.findOne.mockResolvedValue(updatedAgent);
+
+      const result = await service.update('uuid-123', {
+        attributes: { creativity: 4.5, strictness: 2.0 },
+      });
+
+      expect(result.attributes).toEqual({ creativity: 4.5, strictness: 2.0 });
+    });
+
+    it('should create an agent with null attributes when not provided', async () => {
+      const agentNoAttributes = {
+        ...mockAgent,
+        attributes: null,
+      } as unknown as AgentEntity;
+
+      mockManager.create.mockReturnValue(agentNoAttributes);
+      mockManager.save.mockResolvedValue(agentNoAttributes);
+      mockManager.findOne.mockResolvedValue(agentNoAttributes);
+
+      const createDto = {
+        name: mockAgent.name,
+        modelId: 'model-123',
+        providerId: 'provider-123',
+      };
+
+      const result = await service.create(createDto);
+
+      expect(result.attributes).toBeNull();
+    });
+
     it('should delete an agent', async () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockAgent);
       jest.spyOn(repository, 'remove').mockResolvedValue(mockAgent);

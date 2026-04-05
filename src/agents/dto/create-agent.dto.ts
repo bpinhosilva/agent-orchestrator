@@ -5,11 +5,14 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   AGENT_EMOJI_VALUES,
   type AgentEmojiValue,
 } from '../agent-emoji.constants';
+import { AgentAttributesDto } from './agent-attributes.dto';
 
 export class CreateAgentDto {
   @IsString()
@@ -49,4 +52,9 @@ export class CreateAgentDto {
   @IsUUID()
   @IsNotEmpty()
   providerId: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AgentAttributesDto)
+  attributes?: AgentAttributesDto;
 }

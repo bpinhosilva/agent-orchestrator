@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { X, Edit2, ChevronDown, Check, Copy, Loader2 } from 'lucide-react';
 import { useNotification } from '../hooks/useNotification';
 import MarkdownField from './MarkdownField';
-import { agentsApi, type Agent } from '../api/agents';
+import { agentsApi, type Agent, type AgentAttributes, BALANCED_ATTRIBUTES } from '../api/agents';
 import { type Model } from '../api/models';
 import { providersApi, type Provider } from '../api/providers';
 import AgentEmojiPickerModal from './AgentEmojiPickerModal';
+import PersonalityMatrix from './PersonalityMatrix';
 import {
   getAgentEmojiOption,
   normalizeAgentEmoji,
@@ -41,6 +42,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
   const [selectedModelId, setSelectedModelId] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState<AgentEmojiValue>('🧠');
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [attributes, setAttributes] = useState<AgentAttributes>({ ...BALANCED_ATTRIBUTES });
 
   // Populate form when agent changes or drawer opens
   useEffect(() => {
@@ -53,6 +55,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
       setSelectedEmoji(normalizeAgentEmoji(agent.emoji));
       const providerId = agent.provider?.id ?? agent.model?.provider?.id ?? '';
       setSelectedProviderId(providerId);
+      setAttributes(agent.attributes ?? { ...BALANCED_ATTRIBUTES });
     }
   }, [isOpen, agent]);
 
@@ -119,6 +122,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
         systemInstructions,
         providerId: selectedProviderId || undefined,
         modelId: selectedModelId || undefined,
+        attributes,
       });
       onUpdated?.();
       onClose();
@@ -316,38 +320,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
         </section>
 
         {/* Personality Matrix */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">
-              Personality Matrix
-            </label>
-            <span className="text-[10px] text-tertiary px-2 py-0.5 rounded bg-tertiary/10">
-              AI Optimized
-            </span>
-          </div>
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Creativity</span>
-                <span className="text-primary font-mono font-bold">0.42</span>
-              </div>
-              <input
-                type="range"
-                className="w-full accent-primary h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Strictness</span>
-                <span className="text-secondary font-mono font-bold">0.85</span>
-              </div>
-              <input
-                type="range"
-                className="w-full accent-secondary h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer"
-              />
-            </div>
-          </div>
-        </section>
+        <PersonalityMatrix value={attributes} onChange={setAttributes} />
 
         {/* System Instructions */}
         <MarkdownField

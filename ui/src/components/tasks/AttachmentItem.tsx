@@ -11,8 +11,14 @@ interface AttachmentItemProps {
 const AttachmentItem: React.FC<AttachmentItemProps> = ({ name, size, type, filePath }) => {
   const isImage = ['png', 'jpg', 'jpeg', 'svg', 'gif'].includes(type.toLowerCase());
   // The backend uses api/v1 global prefix and uploads/artifacts as the controller path.
-  // We use a relative path starting with /api/v1 to hit the Vite proxy correctly.
-  const artifactUrl = filePath.startsWith('http') ? filePath : `/api/v1/${filePath}`;
+  // Legacy records store the full public path (uploads/artifacts/uuid.ext);
+  // new records store only the bucket-relative path (YYYY/MM/DD/id/uuid.ext).
+  const buildArtifactUrl = (fp: string): string => {
+    if (fp.startsWith('http')) return fp;
+    if (fp.startsWith('uploads/')) return `/api/v1/${fp}`;
+    return `/api/v1/uploads/artifacts/${fp}`;
+  };
+  const artifactUrl = buildArtifactUrl(filePath);
 
   return (
     <div 

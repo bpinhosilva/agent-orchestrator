@@ -5,8 +5,9 @@ import { Task } from '../../tasks/entities/task.entity';
 import { Project } from '../../projects/entities/project.entity';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_MODEL_BY_PROVIDER } from '../default-provider-models';
-
 import { RegisterAgent } from '../registry/agent.registry';
+import { buildPersonalitySection } from '../personality.util';
+import type { AgentAttributes } from '../dto/agent-attributes.dto';
 
 @Injectable({ scope: Scope.TRANSIENT })
 @RegisterAgent('anthropic')
@@ -18,6 +19,7 @@ export class ClaudeAgent implements Agent {
   private role?: string;
   private provider: string = 'anthropic';
   private model: string;
+  private attributes?: AgentAttributes | null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -70,6 +72,8 @@ export class ClaudeAgent implements Agent {
     if (config['role']) this.role = config['role'] as string;
     if (config['provider']) this.provider = config['provider'] as string;
     if (config['model']) this.model = config['model'] as string;
+    if ('attributes' in config)
+      this.attributes = config['attributes'] as AgentAttributes | null;
   }
 
   private buildSystemPrompt(): string {
@@ -80,6 +84,7 @@ export class ClaudeAgent implements Agent {
       this.systemInstructions
         ? `Instructions:\n${this.systemInstructions}`
         : '',
+      buildPersonalitySection(this.attributes),
     ]
       .filter(Boolean)
       .join('\n');

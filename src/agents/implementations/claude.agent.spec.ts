@@ -1,8 +1,9 @@
 import { ClaudeAgent } from './claude.agent';
 import { ConfigService } from '@nestjs/config';
+import { query as mockQuery } from '@anthropic-ai/claude-agent-sdk';
 
-jest.mock('@anthropic-ai/claude-agent-sdk', () => {
-  const mockAsyncIterable = async function* () {
+const makeAsyncIterable = () =>
+  (async function* () {
     await Promise.resolve();
     yield {
       type: 'result',
@@ -17,12 +18,11 @@ jest.mock('@anthropic-ai/claude-agent-sdk', () => {
         cache_read_input_tokens: 0,
       },
     };
-  };
+  })();
 
-  return {
-    query: jest.fn().mockReturnValue(mockAsyncIterable()),
-  };
-});
+jest.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  query: jest.fn(),
+}));
 
 describe('ClaudeAgent', () => {
   let agent: ClaudeAgent;
@@ -33,6 +33,7 @@ describe('ClaudeAgent', () => {
       get: jest.fn().mockReturnValue('test_key'),
     } as unknown as jest.Mocked<ConfigService>;
     agent = new ClaudeAgent(mockConfigService);
+    (mockQuery as jest.Mock).mockReturnValue(makeAsyncIterable());
   });
 
   it('should throw an error if API key is not set during processText', async () => {
@@ -44,6 +45,7 @@ describe('ClaudeAgent', () => {
 
   it('should generate content with claude-sonnet-4-5', async () => {
     agent = new ClaudeAgent(mockConfigService, 'claude-sonnet-4-5');
+    (mockQuery as jest.Mock).mockReturnValue(makeAsyncIterable());
     const response = await agent.processText('test query');
     expect(response.content).toBe('mocked claude response');
     expect(response.metadata?.model).toBe('claude-sonnet-4-5');
@@ -66,5 +68,46 @@ describe('ClaudeAgent', () => {
 
   it('should report provider as Anthropic', () => {
     expect(agent.getProvider()).toBe('anthropic');
+  });
+
+  it('should accept attributes via updateConfig', () => {
+    agent.updateConfig({
+      attributes: { creativity: 4.0, strictness: 3.5 },
+    });
+    expect(agent).toBeDefined();
+  });
+
+  it('should include personality matrix in system prompt when attributes set', async () => {
+    agent.updateConfig({
+      name: 'CreativeAgent',
+      attributes: { creativity: 4.5, strictness: 1.5 },
+    });
+
+    await agent.processText('test');
+
+    const calls = (mockQuery as jest.Mock).mock.calls as {
+      options: { systemPrompt: string };
+    }[][];
+    const lastCall = calls[calls.length - 1][0];
+    const systemPrompt: string = lastCall.options.systemPrompt;
+    expect(systemPrompt).toContain('[PERSONALITY MATRIX]');
+    expect(systemPrompt).toContain('4.50/5');
+    expect(systemPrompt).toContain('1.50/5');
+    expect(systemPrompt).toContain('Inventive');
+    expect(systemPrompt).toContain('Flexible');
+  });
+
+  it('should not include personality matrix section when no attributes set', async () => {
+    const freshAgent = new ClaudeAgent(mockConfigService);
+    (mockQuery as jest.Mock).mockReturnValue(makeAsyncIterable());
+
+    await freshAgent.processText('test');
+
+    const calls = (mockQuery as jest.Mock).mock.calls as {
+      options: { systemPrompt: string };
+    }[][];
+    const lastCall = calls[calls.length - 1][0];
+    const systemPrompt: string = lastCall.options.systemPrompt;
+    expect(systemPrompt).not.toContain('[PERSONALITY MATRIX]');
   });
 });

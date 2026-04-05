@@ -79,6 +79,19 @@ export const createTaskSchema = z.object({
   projectId: z.string().trim().min(1, 'Target project is required'),
 });
 
+const attributeValue = z
+  .number()
+  .min(1, 'Must be at least 1')
+  .max(5, 'Must be at most 5')
+  .refine((v) => Math.round(v * 100) === v * 100, {
+    message: 'Maximum 2 decimal places',
+  });
+
+export const agentAttributesSchema = z.object({
+  creativity: attributeValue.optional(),
+  strictness: attributeValue.optional(),
+});
+
 export const createAgentSchema = z.object({
   name: z
     .string()
@@ -97,6 +110,7 @@ export const createAgentSchema = z.object({
   providerId: z.string().trim().min(1, 'Provider is required'),
   modelId: z.string().trim().min(1, 'Model is required'),
   instructions: z.string().max(1000, 'System instructions must be 1000 characters or fewer'),
+  attributes: agentAttributesSchema.optional(),
 });
 
 export type TaskDetailFormValues = {
@@ -124,4 +138,8 @@ export type CreateAgentFormValues = {
   providerId: string;
   modelId: string;
   instructions: string;
+  attributes?: {
+    creativity?: number;
+    strictness?: number;
+  };
 };

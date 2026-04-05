@@ -84,6 +84,7 @@ export class AgentsService implements OnModuleInit {
         role: agentEntity.role,
         provider: providerName,
         model: agentEntity.model?.name,
+        attributes: agentEntity.attributes,
       });
 
       this.agentInstances.set(agentEntity.id, instance);

@@ -1,118 +1,61 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-
-const ALLOWED_MIME_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml',
-  'application/pdf',
-  'text/plain',
-  'text/csv',
-  'text/markdown',
-  'application/json',
-]);
-
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-@Injectable()
-export class StorageService {
-  private readonly logger = new Logger(StorageService.name);
-  private readonly baseDir: string;
-
-  constructor() {
-    this.baseDir =
-      process.env.AGENT_ORCHESTRATOR_HOME ||
-      path.join(process.cwd(), '.agent-orchestrator');
-    this.ensureDir(this.baseDir);
-    this.ensureDir(path.join(this.baseDir, 'artifacts'));
-  }
-
-  private ensureDir(dir: string) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      this.logger.log(`Created directory: ${dir}`);
-    }
-  }
-
-  getArtifactsPath(): string {
-    return path.join(this.baseDir, 'artifacts');
-  }
-
-  getFullPath(relativePath: string): string {
-    const filename = path.basename(relativePath);
-    return path.join(this.getArtifactsPath(), filename);
-  }
-
-  async saveBase64(
-    base64: string,
-    mimeType: string,
-    originalName: string,
-  ): Promise<{
-    id: string;
-    originalName: string;
-    mimeType: string;
-    filePath: string;
-  }> {
-    this.validateMimeType(mimeType);
-    const buffer = Buffer.from(base64, 'base64');
-    this.validateFileSize(buffer.length);
-    return this.saveBuffer(buffer, mimeType, originalName);
-  }
-
-  async saveBuffer(
+/**
+ * Abstract storage service used as the NestJS DI token.
+ * Implementations handle different storage backends (filesystem, S3, …).
+ *
+ * **Path ownership model**: callers are responsible for generating the
+ * `filePath` (via {@link StoragePathHelper}) before calling `save` or
+ * `saveBase64`.  The storage service only persists bytes; it does not produce
+ * filenames or directory structures.
+ */
+export abstract class StorageService {
+  /**
+   * Persist `buffer` at the given `filePath` inside `bucket`.
+   *
+   * @param buffer   Raw bytes to write.
+   * @param mimeType MIME type used for validation (e.g. `"image/png"`).
+   * @param filePath Bucket-relative posix path produced by
+   *                 {@link StoragePathHelper.generate} (e.g.
+   *                 `"2024/01/15/tasks/task-id/uuid.png"`).
+   * @param bucket   Storage bucket / top-level folder (defaults to
+   *                 implementation-specific default).
+   */
+  abstract save(
     buffer: Buffer,
     mimeType: string,
-    originalName: string,
-  ): Promise<{
-    id: string;
-    originalName: string;
-    mimeType: string;
-    filePath: string;
-  }> {
-    this.validateMimeType(mimeType);
-    this.validateFileSize(buffer.length);
+    filePath: string,
+    bucket?: string,
+  ): Promise<void>;
 
-    const id = crypto.randomUUID();
-    const extension = mimeType.split('/')[1] || 'bin';
-    const filename = `${id}.${extension}`;
-    const filePath = path.join(this.getArtifactsPath(), filename);
+  /**
+   * Decode a base64 string and delegate to {@link save}.
+   *
+   * @param base64   Base64-encoded content.
+   * @param mimeType MIME type used for validation.
+   * @param filePath Bucket-relative posix path (see {@link save}).
+   * @param bucket   Storage bucket / top-level folder.
+   */
+  abstract saveBase64(
+    base64: string,
+    mimeType: string,
+    filePath: string,
+    bucket?: string,
+  ): Promise<void>;
 
-    await fs.promises.writeFile(filePath, buffer);
-    this.logger.debug(`Saved artifact to: ${filePath}`);
+  /**
+   * Delete the file at `relativePath` inside `bucket`.
+   * `relativePath` is the value previously supplied to (or returned from) save.
+   */
+  abstract delete(relativePath: string, bucket?: string): Promise<void>;
 
-    return {
-      id,
-      originalName,
-      mimeType,
-      filePath: `uploads/artifacts/${filename}`, // Publicly accessible path via UploadsController
-    };
-  }
+  /**
+   * Resolve `relativePath` (relative to `bucket`) to the backend-specific
+   * full address (filesystem path for FS, pre-signed URL for S3, …).
+   */
+  abstract getFullPath(relativePath: string, bucket?: string): string;
 
-  async delete(relativePath: string): Promise<void> {
-    const fullPath = this.getFullPath(relativePath);
-    if (fs.existsSync(fullPath)) {
-      await fs.promises.unlink(fullPath);
-      this.logger.debug(`Deleted artifact file: ${fullPath}`);
-    }
-  }
-
-  private validateMimeType(mimeType: string): void {
-    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-      throw new BadRequestException(
-        `File type '${mimeType}' is not allowed. Allowed types: ${[...ALLOWED_MIME_TYPES].join(', ')}`,
-      );
-    }
-  }
-
-  private validateFileSize(sizeInBytes: number): void {
-    if (sizeInBytes > MAX_FILE_SIZE_BYTES) {
-      throw new BadRequestException(
-        `File size (${Math.round(sizeInBytes / 1024 / 1024)}MB) exceeds the maximum allowed size of ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
-      );
-    }
-  }
+  /**
+   * Return the backend-specific root address for `bucket`
+   * (absolute directory for FS, bucket URL for S3, …).
+   */
+  abstract getBucketPath(bucket: string): string;
 }
