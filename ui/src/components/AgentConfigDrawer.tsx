@@ -5,6 +5,12 @@ import MarkdownField from './MarkdownField';
 import { agentsApi, type Agent } from '../api/agents';
 import { type Model } from '../api/models';
 import { providersApi, type Provider } from '../api/providers';
+import AgentEmojiPickerModal from './AgentEmojiPickerModal';
+import {
+  getAgentEmojiOption,
+  normalizeAgentEmoji,
+  type AgentEmojiValue,
+} from '../lib/agentEmojis';
 
 interface AgentConfigDrawerProps {
   isOpen: boolean;
@@ -33,6 +39,8 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
   const [selectedProviderId, setSelectedProviderId] = useState('');
   const [availableModels, setAvailableModels] = useState<Model[]>([]);
   const [selectedModelId, setSelectedModelId] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState<AgentEmojiValue>('🧠');
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   // Populate form when agent changes or drawer opens
   useEffect(() => {
@@ -42,6 +50,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
       setDescription(agent.description || '');
       setSystemInstructions(agent.systemInstructions || '');
       setSelectedModelId(agent.model?.id || '');
+      setSelectedEmoji(normalizeAgentEmoji(agent.emoji));
       const providerId = agent.provider?.id ?? agent.model?.provider?.id ?? '';
       setSelectedProviderId(providerId);
     }
@@ -104,6 +113,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
       setSaving(true);
       await agentsApi.update(agent.id, {
         name,
+        emoji: selectedEmoji,
         role,
         description,
         systemInstructions,
@@ -124,11 +134,11 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !isEmojiPickerOpen) onClose();
     };
     if (isOpen) window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+  }, [isEmojiPickerOpen, isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -155,13 +165,29 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
         {/* Identity Section */}
         <section className="space-y-4">
           <div className="flex items-center gap-4">
-            <div className="relative w-20 h-20 rounded-2xl bg-surface-container-high ring-1 ring-outline-variant/50 flex items-center justify-center overflow-hidden">
-              <span className="text-4xl text-secondary">🧠</span>
-              <button className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+            <button
+              type="button"
+              onClick={() => setIsEmojiPickerOpen(true)}
+              className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-surface-container-high ring-1 ring-outline-variant/50 transition-all hover:ring-primary/40"
+              aria-label="Change agent emoji"
+            >
+              <span className="text-4xl text-secondary">{selectedEmoji}</span>
+              <span className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity hover:opacity-100 text-white">
                 <Edit2 size={16} />
-              </button>
-            </div>
+              </span>
+            </button>
             <div className="flex-1 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">
+                  Emoji Signature
+                </label>
+                <p className="text-xs font-semibold text-on-surface">
+                  {getAgentEmojiOption(selectedEmoji).label}
+                </p>
+                <p className="text-[11px] text-on-surface-variant/70">
+                  {getAgentEmojiOption(selectedEmoji).hint}
+                </p>
+              </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold uppercase tracking-tight text-on-surface-variant/60">
                   Agent Name
@@ -358,6 +384,15 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
           Reset
         </button>
       </div>
+      <AgentEmojiPickerModal
+        isOpen={isEmojiPickerOpen}
+        selectedEmoji={selectedEmoji}
+        currentEmoji={normalizeAgentEmoji(agent?.emoji)}
+        isSaving={saving}
+        onSelect={setSelectedEmoji}
+        onClose={() => setIsEmojiPickerOpen(false)}
+        onConfirm={() => setIsEmojiPickerOpen(false)}
+      />
     </div>
   );
 };

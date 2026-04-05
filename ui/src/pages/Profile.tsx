@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   User,
   ShieldCheck,
@@ -19,7 +20,11 @@ import { useAuth } from '../contexts/AuthContextInstance';
 import { authApi } from '../api/auth';
 import { useProject } from '../hooks/useProject';
 import { usersApi } from '../api/users';
-import { projectsApi } from '../api/projects';
+import {
+  projectsApi,
+  ProjectStatus,
+  type ProjectStatus as ProjectLifecycleStatus,
+} from '../api/projects';
 import CreateProjectModal from '../components/CreateProjectModal';
 import type { UpdateProfilePayload } from '../api/auth';
 import AvatarPickerModal from '../components/AvatarPickerModal';
@@ -88,7 +93,10 @@ function InputField({
 }) {
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <label htmlFor={id} className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.15em]">
+      <label
+        htmlFor={id}
+        className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.15em]"
+      >
         {label}
       </label>
       <div className="relative">
@@ -107,7 +115,9 @@ function InputField({
           }`}
         />
         {suffix && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">{suffix}</div>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            {suffix}
+          </div>
         )}
       </div>
       {error && <p className="text-[11px] text-error mt-0.5">{error}</p>}
@@ -156,20 +166,23 @@ function PasswordField({
 }
 
 function ProjectCard({
+  projectId,
   title,
   description,
   status,
   icon,
   iconColor,
 }: {
+  projectId: string;
   title: string;
   description: string;
-  status: 'active' | 'archived';
+  status: ProjectLifecycleStatus;
   icon: React.ReactNode;
   iconColor: string;
 }) {
   return (
-    <div
+    <Link
+      to={`/projects/${projectId}`}
       className={`bg-surface-container-low p-5 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-colors cursor-pointer ${
         status === 'archived' ? 'opacity-70' : ''
       }`}
@@ -183,12 +196,16 @@ function ProjectCard({
               : 'bg-surface-container-highest text-on-surface-variant'
           }`}
         >
-          {status}
+          {status.replace('_', ' ')}
         </span>
       </div>
-      <h3 className="font-headline font-bold text-on-surface text-sm">{title}</h3>
-      <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{description}</p>
-    </div>
+      <h3 className="font-headline font-bold text-on-surface text-sm">
+        {title}
+      </h3>
+      <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+        {description}
+      </p>
+    </Link>
   );
 }
 
@@ -198,6 +215,13 @@ const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const { projects, refreshProjects } = useProject();
   const isAdmin = user?.role === 'admin';
+  const hasActiveProject = projects.some(
+    (project) => project.status === ProjectStatus.ACTIVE,
+  );
+  const canCreateProject = isAdmin && !hasActiveProject;
+  const createProjectBlockedReason = !isAdmin
+    ? 'Only admins can create projects.'
+    : 'Only one active project is allowed at a time. Move the active project out of active status before creating a new one.';
 
   /* ── personal info ── */
   const [name, setName] = useState('');
@@ -217,7 +241,9 @@ const Profile: React.FC = () => {
 
   /* ── field-level validation errors ── */
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [pwdFieldErrors, setPwdFieldErrors] = useState<Record<string, string>>({});
+  const [pwdFieldErrors, setPwdFieldErrors] = useState<Record<string, string>>(
+    {},
+  );
 
   /* ── ui state ── */
   const [isSaving, setIsSaving] = useState(false);
@@ -234,8 +260,9 @@ const Profile: React.FC = () => {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [assigningProjectId, setAssigningProjectId] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] =
-    useState<AvatarPresetKey>(DEFAULT_AVATAR_PRESET);
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarPresetKey>(
+    DEFAULT_AVATAR_PRESET,
+  );
 
   /* ── validation (mirrors backend DTOs) ── */
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -278,7 +305,10 @@ const Profile: React.FC = () => {
   /* ── save personal info + role ── */
   const handleSaveInfo = async () => {
     const errs = validateInfo();
-    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      return;
+    }
     setFieldErrors({});
     setIsSaving(true);
     setSaveError('');
@@ -290,7 +320,8 @@ const Profile: React.FC = () => {
       if (email !== (user?.email ?? '')) payload.email = email;
 
       const ops: Promise<unknown>[] = [];
-      if (Object.keys(payload).length > 0) ops.push(authApi.updateProfile(payload));
+      if (Object.keys(payload).length > 0)
+        ops.push(authApi.updateProfile(payload));
       if (isAdmin && user?.id && selectedRole !== user?.role) {
         ops.push(usersApi.updateRole(user.id, selectedRole));
       }
@@ -302,7 +333,9 @@ const Profile: React.FC = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save changes');
+      setSaveError(
+        err instanceof Error ? err.message : 'Failed to save changes',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -311,7 +344,10 @@ const Profile: React.FC = () => {
   /* ── change password ── */
   const handleChangePassword = async () => {
     const errs = validatePassword();
-    if (Object.keys(errs).length > 0) { setPwdFieldErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setPwdFieldErrors(errs);
+      return;
+    }
     setPwdFieldErrors({});
     setPwdError('');
     setPwdSuccess(false);
@@ -323,7 +359,9 @@ const Profile: React.FC = () => {
       setPwdSuccess(true);
       setTimeout(() => setPwdSuccess(false), 4000);
     } catch (err: unknown) {
-      setPwdError(err instanceof Error ? err.message : 'Failed to update password');
+      setPwdError(
+        err instanceof Error ? err.message : 'Failed to update password',
+      );
     } finally {
       setIsChangingPwd(false);
     }
@@ -364,7 +402,9 @@ const Profile: React.FC = () => {
     }
   };
 
-  const displayName = user ? `${user.name ?? ''} ${user.last_name ?? ''}`.trim() : 'Agent';
+  const displayName = user
+    ? `${user.name ?? ''} ${user.last_name ?? ''}`.trim()
+    : 'Agent';
   const roleLabel = user?.role ?? 'user';
   const roleDisplay = roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1);
 
@@ -404,7 +444,9 @@ const Profile: React.FC = () => {
             <span className="bg-secondary/10 text-secondary border border-secondary/20 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-[0_0_12px_rgba(78,222,163,0.1)]">
               {roleDisplay}
             </span>
-            <span className="text-on-surface-variant text-sm font-body">{user?.email}</span>
+            <span className="text-on-surface-variant text-sm font-body">
+              {user?.email}
+            </span>
           </div>
         </div>
 
@@ -422,7 +464,9 @@ const Profile: React.FC = () => {
             }}
             className="px-5 py-2 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high border border-outline-variant/20 transition-colors text-sm"
           >
-            <span className="flex items-center gap-1.5"><X size={15} /> Cancel</span>
+            <span className="flex items-center gap-1.5">
+              <X size={15} /> Cancel
+            </span>
           </button>
           <button
             id="profile-save-btn"
@@ -454,19 +498,35 @@ const Profile: React.FC = () => {
 
       {/* ── Bento grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
         {/* ── Left column ── */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-
           {/* Personal Information */}
           <section className="glass-panel ghost-border p-7 rounded-2xl shadow-[0_24px_48px_rgba(173,198,255,0.05)]">
             <div className="flex items-center gap-3 mb-7">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary"><User size={18} /></div>
-              <h2 className="font-headline text-base font-bold text-on-surface">Personal Information</h2>
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <User size={18} />
+              </div>
+              <h2 className="font-headline text-base font-bold text-on-surface">
+                Personal Information
+              </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-              <InputField label="First Name" id="profile-first-name" value={name} onChange={setName} placeholder="Your first name" error={fieldErrors.name} />
-              <InputField label="Last Name" id="profile-last-name" value={lastName} onChange={setLastName} placeholder="Your last name" error={fieldErrors.lastName} />
+              <InputField
+                label="First Name"
+                id="profile-first-name"
+                value={name}
+                onChange={setName}
+                placeholder="Your first name"
+                error={fieldErrors.name}
+              />
+              <InputField
+                label="Last Name"
+                id="profile-last-name"
+                value={lastName}
+                onChange={setLastName}
+                placeholder="Your last name"
+                error={fieldErrors.lastName}
+              />
               <InputField
                 label="Email Address"
                 id="profile-email"
@@ -483,8 +543,12 @@ const Profile: React.FC = () => {
           {/* Role & Clearance */}
           <section className="glass-panel ghost-border p-7 rounded-2xl shadow-[0_24px_48px_rgba(173,198,255,0.05)]">
             <div className="flex items-center gap-3 mb-7">
-              <div className="p-2 rounded-lg bg-secondary/10 text-secondary"><ShieldCheck size={18} /></div>
-              <h2 className="font-headline text-base font-bold text-on-surface">Role &amp; Clearance</h2>
+              <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
+                <ShieldCheck size={18} />
+              </div>
+              <h2 className="font-headline text-base font-bold text-on-surface">
+                Role &amp; Clearance
+              </h2>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-5">
               {/* Current role */}
@@ -502,7 +566,10 @@ const Profile: React.FC = () => {
               {/* Role selector — admin only */}
               {isAdmin && (
                 <div className="flex flex-col gap-1.5 sm:w-48 flex-shrink-0">
-                  <label htmlFor="profile-role-select" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.15em]">
+                  <label
+                    htmlFor="profile-role-select"
+                    className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.15em]"
+                  >
                     Update Role
                   </label>
                   <div className="relative">
@@ -515,7 +582,10 @@ const Profile: React.FC = () => {
                       <option value="admin">Admin</option>
                       <option value="user">Member</option>
                     </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" />
+                    <ChevronDown
+                      size={14}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
+                    />
                   </div>
                 </div>
               )}
@@ -526,18 +596,31 @@ const Profile: React.FC = () => {
           <section className="glass-panel ghost-border p-7 rounded-2xl shadow-[0_24px_48px_rgba(173,198,255,0.05)]">
             <div className="flex justify-between items-center mb-7">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-tertiary/10 text-tertiary"><FolderKanban size={18} /></div>
-                <h2 className="font-headline text-base font-bold text-on-surface">Project Assignments</h2>
+                <div className="p-2 rounded-lg bg-tertiary/10 text-tertiary">
+                  <FolderKanban size={18} />
+                </div>
+                <h2 className="font-headline text-base font-bold text-on-surface">
+                  Project Assignments
+                </h2>
               </div>
               {isAdmin && (
                 <button
-                  onClick={() => setShowCreateProject(true)}
-                  className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                  onClick={() => canCreateProject && setShowCreateProject(true)}
+                  disabled={!canCreateProject}
+                  title={
+                    !canCreateProject ? createProjectBlockedReason : undefined
+                  }
+                  className="text-xs font-bold text-primary flex items-center gap-1 hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
                 >
                   <PlusCircle size={14} /> Create Project
                 </button>
               )}
             </div>
+            {isAdmin && hasActiveProject && (
+              <p className="mb-5 text-xs text-on-surface-variant">
+                {createProjectBlockedReason}
+              </p>
+            )}
 
             {/* Assign to existing project — admin only */}
             {isAdmin && projects.length > 0 && (
@@ -553,10 +636,15 @@ const Profile: React.FC = () => {
                       >
                         <option value="">Select a project…</option>
                         {projects.map((p) => (
-                          <option key={p.id} value={p.id}>{p.title}</option>
+                          <option key={p.id} value={p.id}>
+                            {p.title}
+                          </option>
                         ))}
                       </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" />
+                      <ChevronDown
+                        size={14}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
+                      />
                     </div>
                     <button
                       onClick={handleAssignProject}
@@ -566,7 +654,10 @@ const Profile: React.FC = () => {
                       {isAssigning ? '…' : 'Assign'}
                     </button>
                     <button
-                      onClick={() => { setShowAssignProject(false); setAssigningProjectId(''); }}
+                      onClick={() => {
+                        setShowAssignProject(false);
+                        setAssigningProjectId('');
+                      }}
                       className="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
                     >
                       <X size={14} />
@@ -588,43 +679,74 @@ const Profile: React.FC = () => {
                 {projects.slice(0, 4).map((project, i) => (
                   <ProjectCard
                     key={project.id}
+                    projectId={project.id}
                     title={project.title}
-                    description={project.description ?? 'No description provided.'}
-                    status={project.status === 'archived' ? 'archived' : 'active'}
-                    icon={i === 0 ? <Rocket size={18} /> : i === 1 ? <FolderKanban size={18} /> : <Box size={18} />}
+                    description={
+                      project.description ?? 'No description provided.'
+                    }
+                    status={project.status}
+                    icon={
+                      i === 0 ? (
+                        <Rocket size={18} />
+                      ) : i === 1 ? (
+                        <FolderKanban size={18} />
+                      ) : (
+                        <Box size={18} />
+                      )
+                    }
                     iconColor={
-                      i === 0 ? 'bg-primary/10 text-primary'
-                      : i === 1 ? 'bg-tertiary/10 text-tertiary'
-                      : 'bg-on-surface-variant/10 text-on-surface-variant'
+                      i === 0
+                        ? 'bg-primary/10 text-primary'
+                        : i === 1
+                          ? 'bg-tertiary/10 text-tertiary'
+                          : 'bg-on-surface-variant/10 text-on-surface-variant'
                     }
                   />
                 ))}
-                {isAdmin && (
+                {isAdmin && canCreateProject && (
                   <div
                     onClick={() => setShowCreateProject(true)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && setShowCreateProject(true)}
+                    onKeyDown={(e) =>
+                      e.key === 'Enter' && setShowCreateProject(true)
+                    }
                     className="bg-surface-container-low p-5 rounded-xl border-2 border-dashed border-outline-variant/20 flex flex-col items-center justify-center gap-2 hover:border-primary/40 transition-all cursor-pointer min-h-[140px]"
                   >
                     <PlusCircle size={24} className="text-primary/40" />
-                    <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wide">New Project</span>
+                    <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wide">
+                      New Project
+                    </span>
                   </div>
                 )}
               </div>
             ) : (
               <div
-                onClick={isAdmin ? () => setShowCreateProject(true) : undefined}
-                role={isAdmin ? 'button' : undefined}
-                tabIndex={isAdmin ? 0 : undefined}
-                onKeyDown={isAdmin ? (e) => e.key === 'Enter' && setShowCreateProject(true) : undefined}
+                onClick={
+                  canCreateProject
+                    ? () => setShowCreateProject(true)
+                    : undefined
+                }
+                role={canCreateProject ? 'button' : undefined}
+                tabIndex={canCreateProject ? 0 : undefined}
+                onKeyDown={
+                  canCreateProject
+                    ? (e) => e.key === 'Enter' && setShowCreateProject(true)
+                    : undefined
+                }
                 className={`bg-surface-container-low p-5 rounded-xl border-2 border-dashed border-outline-variant/20 flex flex-col items-center justify-center gap-2 hover:border-primary/40 transition-all min-h-[140px] ${
-                  isAdmin ? 'cursor-pointer' : 'cursor-default opacity-60'
+                  canCreateProject
+                    ? 'cursor-pointer'
+                    : 'cursor-default opacity-60'
                 }`}
               >
                 <PlusCircle size={24} className="text-primary/40" />
                 <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wide">
-                  {isAdmin ? 'Create First Project' : 'No Projects Assigned'}
+                  {canCreateProject
+                    ? 'Create First Project'
+                    : isAdmin
+                      ? 'Active Project Exists'
+                      : 'No Projects Assigned'}
                 </span>
               </div>
             )}
@@ -633,12 +755,15 @@ const Profile: React.FC = () => {
 
         {/* ── Right column ── */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-
           {/* Security */}
           <section className="glass-panel ghost-border p-7 rounded-2xl shadow-[0_24px_48px_rgba(173,198,255,0.05)]">
             <div className="flex items-center gap-3 mb-7">
-              <div className="p-2 rounded-lg bg-tertiary/10 text-tertiary"><ShieldCheck size={18} /></div>
-              <h2 className="font-headline text-base font-bold text-on-surface">Security</h2>
+              <div className="p-2 rounded-lg bg-tertiary/10 text-tertiary">
+                <ShieldCheck size={18} />
+              </div>
+              <h2 className="font-headline text-base font-bold text-on-surface">
+                Security
+              </h2>
             </div>
 
             {pwdSuccess && (
@@ -653,8 +778,22 @@ const Profile: React.FC = () => {
             )}
 
             <div className="space-y-4">
-              <PasswordField label="New Password" id="profile-new-pwd" value={newPwd} onChange={setNewPwd} placeholder="Min. 8 characters" error={pwdFieldErrors.newPwd} />
-              <PasswordField label="Confirm New Password" id="profile-confirm-pwd" value={confirmPwd} onChange={setConfirmPwd} placeholder="Repeat new password" error={pwdFieldErrors.confirmPwd} />
+              <PasswordField
+                label="New Password"
+                id="profile-new-pwd"
+                value={newPwd}
+                onChange={setNewPwd}
+                placeholder="Min. 8 characters"
+                error={pwdFieldErrors.newPwd}
+              />
+              <PasswordField
+                label="Confirm New Password"
+                id="profile-confirm-pwd"
+                value={confirmPwd}
+                onChange={setConfirmPwd}
+                placeholder="Repeat new password"
+                error={pwdFieldErrors.confirmPwd}
+              />
               <button
                 id="profile-update-creds-btn"
                 onClick={handleChangePassword}
@@ -672,21 +811,36 @@ const Profile: React.FC = () => {
             <div className="mt-7 pt-6 border-t border-outline-variant/20 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-on-surface">Two-Factor Auth</p>
-                  <p className="text-[10px] text-on-surface-variant">TOTP-based second factor</p>
+                  <p className="text-sm font-medium text-on-surface">
+                    Two-Factor Auth
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant">
+                    TOTP-based second factor
+                  </p>
                 </div>
-                <Toggle id="profile-2fa-toggle" enabled={twoFactor} onToggle={() => setTwoFactor((v) => !v)} />
+                <Toggle
+                  id="profile-2fa-toggle"
+                  enabled={twoFactor}
+                  onToggle={() => setTwoFactor((v) => !v)}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-on-surface">Biometric Access</p>
-                  <p className="text-[10px] text-on-surface-variant">WebAuthn / passkey</p>
+                  <p className="text-sm font-medium text-on-surface">
+                    Biometric Access
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant">
+                    WebAuthn / passkey
+                  </p>
                 </div>
-                <Toggle id="profile-biometric-toggle" enabled={biometric} onToggle={() => setBiometric((v) => !v)} />
+                <Toggle
+                  id="profile-biometric-toggle"
+                  enabled={biometric}
+                  onToggle={() => setBiometric((v) => !v)}
+                />
               </div>
             </div>
           </section>
-
         </div>
       </div>
 
@@ -698,6 +852,8 @@ const Profile: React.FC = () => {
           await refreshProjects();
           setShowCreateProject(false);
         }}
+        canCreate={canCreateProject}
+        blockedReason={createProjectBlockedReason}
       />
       <AvatarPickerModal
         isOpen={showAvatarPicker}

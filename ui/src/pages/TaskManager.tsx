@@ -49,6 +49,7 @@ const TaskManager: React.FC = () => {
         priority: t.priority as ComponentTask['priority'],
         agent: {
           name: t.assignee?.name || 'Unassigned',
+          emoji: t.assignee?.emoji,
           colorClass: 'bg-surface-container-highest border-outline-variant/30'
         },
         isActive: t.status === 'in-progress',
@@ -94,6 +95,7 @@ const TaskManager: React.FC = () => {
       priority: updatedTaskData.priority as ComponentTask['priority'],
       agent: {
         name: updatedTaskData.assignee?.name || 'Unassigned',
+        emoji: updatedTaskData.assignee?.emoji,
         colorClass: 'bg-surface-container-highest border-outline-variant/30'
       },
       isActive: updatedTaskData.status === 'in-progress',

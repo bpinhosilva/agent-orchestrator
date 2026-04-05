@@ -112,6 +112,7 @@ const AgentFleet = () => {
               <AgentCard 
                 id={agent.id}
                 name={agent.name}
+                emoji={agent.emoji}
                 expertise={agent.role || 'General Assistant'}
                 model={agent.model?.name || 'Unknown'}
                 status={agent.status || 'active'}

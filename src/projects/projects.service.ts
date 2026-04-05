@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { AgentEntity } from '../agents/entities/agent.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Not, Repository } from 'typeorm';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AddMemberDto } from './dto/add-member.dto';
@@ -33,6 +33,8 @@ export class ProjectsService {
     user: User,
   ): Promise<Project> {
     return this.projectsRepository.manager.transaction(async (manager) => {
+      await this.ensureSingleActiveProject(manager);
+
       const project = manager.create(Project, {
         title: createProjectDto.title,
         description: createProjectDto.description,
@@ -54,15 +56,22 @@ export class ProjectsService {
     });
   }
 
-  async findAll(user: User): Promise<Project[]> {
+  async findAll(user: User, userId?: string, all = false): Promise<Project[]> {
     if (user.role === UserRole.ADMIN) {
-      return this.projectsRepository.find();
+      if (all && !userId) {
+        return this.projectsRepository.find();
+      }
+      const targetUserId = userId || user.id;
+      return this.projectsRepository
+        .createQueryBuilder('project')
+        .innerJoin('project.members', 'pm')
+        .where('pm.user = :userId', { userId: targetUserId })
+        .getMany();
     }
     return this.projectsRepository
       .createQueryBuilder('project')
-      .innerJoin('project.members', 'pm', 'pm.userId = :userId', {
-        userId: user.id,
-      })
+      .innerJoin('project.members', 'pm')
+      .where('pm.user = :userId', { userId: user.id })
       .getMany();
   }
 
@@ -75,9 +84,13 @@ export class ProjectsService {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
     if (user.role !== UserRole.ADMIN) {
-      const isMember = project.members.some((m) => m.user.id === user.id);
+      const isMember = (project.members || []).some(
+        (m) => (m.user?.id || m.user) === user.id,
+      );
       if (!isMember) {
-        throw new ForbiddenException('Access denied');
+        throw new ForbiddenException(
+          `Access denied (user ${user.id} not in project ${id})`,
+        );
       }
     }
     return project;
@@ -107,6 +120,12 @@ export class ProjectsService {
         project.title = updateProjectDto.title;
       if (updateProjectDto.description !== undefined)
         project.description = updateProjectDto.description;
+      if (
+        updateProjectDto.status === ProjectStatus.ACTIVE &&
+        project.status !== ProjectStatus.ACTIVE
+      ) {
+        await this.ensureSingleActiveProject(manager, id);
+      }
       if (updateProjectDto.status !== undefined)
         project.status = updateProjectDto.status;
       if (updateProjectDto.ownerAgentId !== undefined) {
@@ -226,5 +245,23 @@ export class ProjectsService {
   async getMembers(projectId: string, user: User): Promise<ProjectMember[]> {
     const project = await this.findOne(projectId, user);
     return project.members;
+  }
+
+  private async ensureSingleActiveProject(
+    manager: EntityManager,
+    excludedProjectId?: string,
+  ): Promise<void> {
+    const activeProjectsCount = await manager.count(Project, {
+      where: {
+        status: ProjectStatus.ACTIVE,
+        ...(excludedProjectId ? { id: Not(excludedProjectId) } : {}),
+      },
+    });
+
+    if (activeProjectsCount > 0) {
+      throw new ConflictException(
+        'Only one active project is allowed at a time',
+      );
+    }
   }
 }

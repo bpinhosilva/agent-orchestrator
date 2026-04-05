@@ -9,6 +9,7 @@ export interface AgentProvider {
 export interface Agent {
   id: string;
   name: string;
+  emoji?: string;
   role?: string;
   description?: string;
   systemInstructions?: string;
@@ -23,6 +24,7 @@ export interface Agent {
 
 export interface CreateAgentPayload {
   name: string;
+  emoji?: string;
   role?: string;
   description?: string;
   systemInstructions?: string;
@@ -33,6 +35,7 @@ export interface CreateAgentPayload {
 
 export interface UpdateAgentPayload {
   name?: string;
+  emoji?: string;
   role?: string;
   description?: string;
   systemInstructions?: string;
@@ -55,4 +58,3 @@ export const agentsApi = {
   delete: (id: string) => client.delete(`/agents/${id}`),
   probe: (agentId: string, input: string) => client.post<AgentResponse>('/agents/probe', { agentId, input }),
 };
-

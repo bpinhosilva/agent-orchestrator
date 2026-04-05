@@ -7,6 +7,7 @@ import {
   Box,
   ChevronDown,
   Code,
+  Edit2,
   Layers,
   Shield,
   Sparkles,
@@ -21,6 +22,12 @@ import {
   createAgentSchema,
   type CreateAgentFormValues,
 } from '../lib/taskFormSchemas';
+import AgentEmojiPickerModal from './AgentEmojiPickerModal';
+import {
+  DEFAULT_AGENT_EMOJI,
+  getAgentEmojiOption,
+  normalizeAgentEmoji,
+} from '../lib/agentEmojis';
 
 interface CreateAgentModalProps {
   isOpen: boolean;
@@ -32,6 +39,7 @@ const createAgentDefaults: CreateAgentFormValues = {
   name: '',
   role: '',
   description: '',
+  emoji: DEFAULT_AGENT_EMOJI,
   providerId: '',
   modelId: '',
   instructions: DEFAULT_AGENT_INSTRUCTIONS,
@@ -47,6 +55,7 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
   const queryClient = useQueryClient();
   const { notifyApiError, notifyError, notifySuccess } = useNotification();
   const [activeStep, setActiveStep] = useState(1);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const modalTitleId = useId();
   const modalDescriptionId = useId();
   const nameErrorId = useId();
@@ -71,6 +80,7 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
 
   const providerId = useWatch({ control, name: 'providerId' });
   const modelId = useWatch({ control, name: 'modelId' });
+  const selectedEmoji = useWatch({ control, name: 'emoji' });
 
   const providersQuery = useQuery({
     queryKey: ['providers'],
@@ -174,6 +184,7 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
     mutationFn: async (values: CreateAgentFormValues) => {
       await agentsApi.create({
         name: values.name,
+        emoji: values.emoji,
         role: values.role,
         description: values.description,
         systemInstructions: values.instructions,
@@ -327,6 +338,32 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
                   <div className="w-1 bg-secondary h-6 rounded-full" />
                   <h3 className="text-lg font-bold font-headline text-white">Basic Configuration</h3>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEmojiPickerOpen(true)}
+                  className="group flex w-full items-center justify-between rounded-[24px] border border-outline-variant/10 bg-surface-container-highest/20 p-5 text-left transition-all hover:border-primary/30 hover:bg-surface-container-highest/35"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-[20px] border border-primary/20 bg-surface-container-high text-5xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                      <span aria-hidden="true">{normalizeAgentEmoji(selectedEmoji)}</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.32em] text-primary/80">
+                        Emoji signature
+                      </p>
+                      <h4 className="mt-2 font-headline text-xl font-black text-white">
+                        {getAgentEmojiOption(selectedEmoji).label}
+                      </h4>
+                      <p className="mt-1 text-sm text-on-surface-variant">
+                        {getAgentEmojiOption(selectedEmoji).hint}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-high text-on-surface-variant transition-colors group-hover:text-on-surface">
+                    <Edit2 size={16} aria-hidden="true" />
+                  </span>
+                </button>
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -632,6 +669,20 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
             </div>
           </div>
         </motion.div>
+        <AgentEmojiPickerModal
+          isOpen={isEmojiPickerOpen}
+          selectedEmoji={normalizeAgentEmoji(selectedEmoji)}
+          currentEmoji={DEFAULT_AGENT_EMOJI}
+          isSaving={loading}
+          onSelect={(emoji) =>
+            setValue('emoji', emoji, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+          onClose={() => setIsEmojiPickerOpen(false)}
+          onConfirm={() => setIsEmojiPickerOpen(false)}
+        />
       </div>
     </AnimatePresence>
   );

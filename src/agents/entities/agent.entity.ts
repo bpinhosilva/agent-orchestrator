@@ -10,6 +10,10 @@ import {
 } from 'typeorm';
 import { Model } from '../../models/entities/model.entity';
 import { Provider } from '../../providers/entities/provider.entity';
+import {
+  DEFAULT_AGENT_EMOJI,
+  type AgentEmojiValue,
+} from '../agent-emoji.constants';
 
 @Entity('agents')
 export class AgentEntity {
@@ -30,6 +34,9 @@ export class AgentEntity {
 
   @Column({ type: 'text', nullable: true })
   status: string | null;
+
+  @Column({ type: 'text', default: DEFAULT_AGENT_EMOJI })
+  emoji: AgentEmojiValue;
 
   @Index()
   @ManyToOne(() => Provider, {

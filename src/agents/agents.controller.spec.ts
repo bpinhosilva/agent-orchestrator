@@ -55,6 +55,7 @@ describe('AgentsController', () => {
       name: 'Agent Smith',
       description: 'Test Description',
       systemInstructions: 'Test Instructions',
+      emoji: '🧠',
       model: { id: 'model-123', name: 'gpt-4' },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -65,6 +66,7 @@ describe('AgentsController', () => {
         name: 'Agent Smith',
         description: 'Test Description',
         systemInstructions: 'Test Instructions',
+        emoji: '🧠',
         modelId: 'model-123',
         providerId: 'provider-123',
       };
@@ -83,7 +85,7 @@ describe('AgentsController', () => {
     });
 
     it('should update an agent', async () => {
-      const dto: UpdateAgentDto = { name: 'Updated Agent' };
+      const dto: UpdateAgentDto = { name: 'Updated Agent', emoji: '🤖' };
       jest.spyOn(service, 'update').mockResolvedValue({ ...mockAgent, ...dto });
       expect(await controller.update('uuid-123', dto)).toEqual({
         ...mockAgent,

@@ -39,7 +39,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       iconBg: 'bg-error/10',
       iconColor: 'text-error',
       buttonBg: 'bg-error hover:bg-error/90',
-      buttonText: 'text-white',
+      buttonText: 'text-on-error',
       ring: 'ring-error/20',
     },
     primary: {

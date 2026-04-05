@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Check, Clock, MessageSquare, Paperclip } from 'lucide-react';
 import type { Task } from './types';
 import { cn } from '../../lib/cn';
-import InitialsAvatar from '../InitialsAvatar';
+import { normalizeAgentEmoji } from '../../lib/agentEmojis';
 
 interface TaskCardProps {
   task: Task;
@@ -171,19 +171,15 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({ task, isOverlay }) => {
               showActiveDetails && 'border-primary/30',
             )}
           >
-            {task.agent.avatar ? (
-              <img
-                src={task.agent.avatar}
-                alt={`${task.agent.name} avatar`}
-                className={cn('h-5 w-5 rounded-sm object-cover', isDone && 'grayscale')}
-              />
-            ) : (
-              <InitialsAvatar
-                name={task.agent.name}
-                size={20}
-                className={cn('rounded-sm text-[8px]', isDone && 'grayscale')}
-              />
-            )}
+            <span
+              className={cn(
+                'flex h-5 w-5 items-center justify-center rounded-sm text-sm',
+                isDone && 'grayscale',
+              )}
+              aria-label={`${task.agent.name} emoji`}
+            >
+              {normalizeAgentEmoji(task.agent.emoji)}
+            </span>
           </div>
           <span
             className={cn(

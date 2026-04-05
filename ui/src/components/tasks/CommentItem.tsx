@@ -2,11 +2,12 @@ import React from 'react';
 import { CommentAuthorType } from '../../api/comments';
 import type { TaskComment } from '../../api/comments';
 import AttachmentItem from './AttachmentItem';
-import { Bot, User, Trash2 } from 'lucide-react';
+import { User, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { normalizeAgentEmoji } from '../../lib/agentEmojis';
 
 dayjs.extend(relativeTime);
 
@@ -19,6 +20,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onDelete }) => {
   const isAgent = comment.authorType === CommentAuthorType.AGENT;
   const authorName = isAgent ? comment.authorAgent?.name : comment.authorUser?.username;
   const avatarUrl = isAgent ? comment.authorAgent?.avatarUrl : comment.authorUser?.avatarUrl;
+  const agentEmoji = isAgent ? normalizeAgentEmoji(comment.authorAgent?.emoji) : null;
 
   return (
     <div className="flex gap-4 group">
@@ -28,10 +30,14 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onDelete }) => {
           ? 'bg-tertiary/10 border-tertiary/20 text-tertiary shadow-[0_0_15px_rgba(221,183,255,0.1)]' 
           : 'bg-primary/10 border-primary/20 text-primary shadow-[0_0_15px_rgba(173,198,255,0.1)]'
       }`}>
-        {avatarUrl ? (
+        {isAgent ? (
+          <span className="text-2xl" aria-label={`${authorName} emoji`}>
+            {agentEmoji}
+          </span>
+        ) : avatarUrl ? (
           <img src={avatarUrl} alt={authorName} className="h-full w-full object-cover p-1" />
         ) : (
-          isAgent ? <Bot size={20} /> : <User size={20} />
+          <User size={20} />
         )}
       </div>
 

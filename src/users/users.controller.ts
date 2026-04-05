@@ -1,9 +1,18 @@
-import { Controller, Get, Patch, Param, Delete, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Delete,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from './entities/user.entity';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
 
 @ApiTags('users')
 @Roles(UserRole.ADMIN)
@@ -12,8 +21,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async findAll() {
-    return this.usersService.serializeUsers(await this.usersService.findAll());
+  async findAll(@Query() query: ListUsersQueryDto) {
+    const result = await this.usersService.findAll(query);
+
+    return {
+      ...result,
+      items: this.usersService.serializeUsers(result.items),
+    };
   }
 
   @Get(':id')

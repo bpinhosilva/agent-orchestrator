@@ -1,5 +1,6 @@
 import client from './client';
 import type { Agent } from './agents';
+import type { PaginatedResponse } from './pagination';
 
 export const TaskStatus = {
   BACKLOG: 'backlog',
@@ -30,13 +31,6 @@ export interface Task {
   projectId: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
 }
 
 export interface CreateTaskDto {

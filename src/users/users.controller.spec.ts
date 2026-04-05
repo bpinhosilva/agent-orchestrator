@@ -42,14 +42,40 @@ describe('UsersController', () => {
   });
 
   describe('findAll', () => {
-    it('should find all users', async () => {
-      mockUsersService.findAll.mockResolvedValue([
+    it('should return a paginated user response', async () => {
+      mockUsersService.findAll.mockResolvedValue({
+        items: [{ id: '1', avatar: 'avatar-01' }],
+        total: 1,
+        page: 1,
+        limit: 15,
+      });
+
+      const result = await controller.findAll({
+        page: 1,
+        limit: 15,
+        search: 'test',
+      });
+
+      expect(result).toEqual({
+        items: [
+          {
+            id: '1',
+            avatar: 'avatar-01',
+            avatarUrl: '/avatar-presets/avatar-01.svg',
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 15,
+      });
+      expect(mockUsersService.findAll).toHaveBeenCalledWith({
+        page: 1,
+        limit: 15,
+        search: 'test',
+      });
+      expect(mockUsersService.serializeUsers).toHaveBeenCalledWith([
         { id: '1', avatar: 'avatar-01' },
       ]);
-      const result = await controller.findAll();
-      expect(result).toHaveLength(1);
-      expect(mockUsersService.findAll).toHaveBeenCalled();
-      expect(mockUsersService.serializeUsers).toHaveBeenCalled();
     });
   });
 

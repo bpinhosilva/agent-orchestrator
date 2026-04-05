@@ -1,11 +1,15 @@
 import {
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
-  IsIn,
   MaxLength,
 } from 'class-validator';
+import {
+  AGENT_EMOJI_VALUES,
+  type AgentEmojiValue,
+} from '../agent-emoji.constants';
 
 export class CreateAgentDto {
   @IsString()
@@ -36,6 +40,11 @@ export class CreateAgentDto {
   @IsOptional()
   @IsIn(['active', 'inactive'])
   status?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(AGENT_EMOJI_VALUES)
+  emoji?: AgentEmojiValue;
 
   @IsUUID()
   @IsNotEmpty()

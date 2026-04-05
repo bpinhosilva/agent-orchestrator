@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { Project, ProjectStatus } from './entities/project.entity';
 import { ProjectMember } from './entities/project-member.entity';
@@ -22,6 +26,7 @@ describe('ProjectsService', () => {
       save: jest.fn(),
       findOne: jest.fn(),
       remove: jest.fn(),
+      count: jest.fn(),
     },
   };
 
@@ -97,6 +102,7 @@ describe('ProjectsService', () => {
       mockProjectRepository.manager.create
         .mockReturnValueOnce(projectObj)
         .mockReturnValueOnce(membershipObj);
+      mockProjectRepository.manager.count = jest.fn().mockResolvedValue(0);
       mockProjectRepository.manager.save
         .mockResolvedValueOnce(savedProject)
         .mockResolvedValueOnce({ id: 'pm-1', ...membershipObj });
@@ -106,19 +112,72 @@ describe('ProjectsService', () => {
       expect(mockProjectRepository.manager.create).toHaveBeenCalledTimes(2);
       expect(mockProjectRepository.manager.save).toHaveBeenCalledTimes(2);
     });
+
+    it('should reject creation when another project is active', async () => {
+      mockProjectRepository.manager.count = jest.fn().mockResolvedValue(1);
+
+      await expect(
+        service.create(
+          {
+            title: 'Blocked',
+            description: 'D',
+            status: ProjectStatus.PLANNING,
+          },
+          mockUser,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
   });
 
   describe('findAll', () => {
-    it('should return all projects for admin user', async () => {
-      mockProjectRepository.find.mockResolvedValue([{ id: '1' }]);
+    it('should return only member projects for admin user by default', async () => {
+      const mockQueryBuilder = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([{ id: '1' }]),
+      };
+      mockProjectRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
       const result = await service.findAll(mockAdmin);
       expect(result).toHaveLength(1);
+      expect(mockProjectRepository.createQueryBuilder).toHaveBeenCalledWith(
+        'project',
+      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pm.user = :userId', {
+        userId: mockAdmin.id,
+      });
+    });
+
+    it('should return all projects for admin user when all=true', async () => {
+      mockProjectRepository.find.mockResolvedValue([{ id: '1' }, { id: '2' }]);
+      const result = await service.findAll(mockAdmin, undefined, true);
+      expect(result).toHaveLength(2);
       expect(mockProjectRepository.find).toHaveBeenCalled();
+    });
+
+    it('should return projects for specific user when userId is provided (admin)', async () => {
+      const mockQueryBuilder = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([{ id: '3' }]),
+      };
+      mockProjectRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      const result = await service.findAll(mockAdmin, 'user-id-99');
+      expect(result).toHaveLength(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pm.user = :userId', {
+        userId: 'user-id-99',
+      });
     });
 
     it('should return only member projects for regular user', async () => {
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([{ id: '1' }]),
       };
       mockProjectRepository.createQueryBuilder.mockReturnValue(
@@ -130,8 +189,9 @@ describe('ProjectsService', () => {
       expect(mockProjectRepository.createQueryBuilder).toHaveBeenCalledWith(
         'project',
       );
-      expect(mockQueryBuilder.innerJoin).toHaveBeenCalled();
-      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pm.user = :userId', {
+        userId: mockUser.id,
+      });
     });
   });
 
@@ -173,6 +233,7 @@ describe('ProjectsService', () => {
         members: [{ user: { id: 'user-1' }, role: 'owner' }],
       };
       mockProjectRepository.manager.findOne.mockResolvedValue(project);
+      mockProjectRepository.manager.count = jest.fn().mockResolvedValue(0);
       mockProjectRepository.manager.save.mockResolvedValue({
         ...project,
         title: 'New',
@@ -181,6 +242,22 @@ describe('ProjectsService', () => {
       const result = await service.update('1', { title: 'New' }, mockUser);
       expect(result.title).toEqual('New');
       expect(mockProjectRepository.manager.save).toHaveBeenCalled();
+    });
+
+    it('should reject activating a project when another active project exists', async () => {
+      const project = {
+        id: '1',
+        title: 'Old',
+        status: ProjectStatus.PLANNING,
+        members: [{ user: { id: 'user-1' }, role: 'owner' }],
+      };
+
+      mockProjectRepository.manager.findOne.mockResolvedValue(project);
+      mockProjectRepository.manager.count = jest.fn().mockResolvedValue(1);
+
+      await expect(
+        service.update('1', { status: ProjectStatus.ACTIVE }, mockUser),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should throw NotFoundException if project not found', async () => {

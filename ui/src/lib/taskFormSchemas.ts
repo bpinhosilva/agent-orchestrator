@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TaskPriority, TaskStatus } from '../api/tasks';
+import { AGENT_EMOJI_VALUES } from './agentEmojis';
 
 export const TASK_TEMPLATE = `# Background
 
@@ -90,6 +91,9 @@ export const createAgentSchema = z.object({
     .min(1, 'Primary role is required')
     .max(80, 'Primary role must be 80 characters or fewer'),
   description: z.string().max(1000, 'Description must be 1000 characters or fewer'),
+  emoji: z.enum(AGENT_EMOJI_VALUES, {
+    error: 'Select a valid emoji signature',
+  }),
   providerId: z.string().trim().min(1, 'Provider is required'),
   modelId: z.string().trim().min(1, 'Model is required'),
   instructions: z.string().max(1000, 'System instructions must be 1000 characters or fewer'),
@@ -116,6 +120,7 @@ export type CreateAgentFormValues = {
   name: string;
   role: string;
   description: string;
+  emoji: (typeof AGENT_EMOJI_VALUES)[number];
   providerId: string;
   modelId: string;
   instructions: string;

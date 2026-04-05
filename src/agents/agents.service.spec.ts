@@ -100,6 +100,7 @@ describe('AgentsService', () => {
       description: 'Test Description',
       systemInstructions: 'Test Instructions',
       role: 'Test Role',
+      emoji: '🧠',
       model: { id: 'model-123', name: 'gpt-4' },
       provider: { id: 'provider-123', name: 'google' },
       createdAt: new Date(),
@@ -132,6 +133,7 @@ describe('AgentsService', () => {
         description: mockAgent.description,
         systemInstructions: 'Test Instructions',
         role: 'Test Role',
+        emoji: '🧠',
         modelId: 'model-123',
         providerId: 'provider-123',
       };
@@ -165,7 +167,10 @@ describe('AgentsService', () => {
       mockManager.update.mockResolvedValue({ affected: 1 });
       mockManager.findOne.mockResolvedValue(mockAgent);
 
-      const result = await service.update('uuid-123', { name: 'Updated' });
+      const result = await service.update('uuid-123', {
+        name: 'Updated',
+        emoji: '🤖',
+      });
       expect(result).toEqual(mockAgent);
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(moduleRef.resolve).toHaveBeenCalled();

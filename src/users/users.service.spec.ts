@@ -13,6 +13,7 @@ describe('UsersService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -51,10 +52,52 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all users', async () => {
-      mockUserRepository.find.mockResolvedValue([{ id: '1' }]);
-      const result = await service.findAll();
-      expect(result).toHaveLength(1);
+    it('should return a paginated list of users with search support', async () => {
+      const andWhere = jest.fn();
+      const orderBy = jest.fn();
+      const addOrderBy = jest.fn();
+      const skip = jest.fn();
+      const take = jest.fn();
+      const getManyAndCount = jest.fn();
+
+      const queryBuilder = {
+        andWhere,
+        orderBy,
+        addOrderBy,
+        skip,
+        take,
+        getManyAndCount,
+      };
+
+      orderBy.mockReturnValue(queryBuilder);
+      addOrderBy.mockReturnValue(queryBuilder);
+      skip.mockReturnValue(queryBuilder);
+      take.mockReturnValue(queryBuilder);
+      andWhere.mockReturnValue(queryBuilder);
+      getManyAndCount.mockResolvedValue([[{ id: '1' }], 1]);
+      mockUserRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+      const result = await service.findAll({
+        page: 0,
+        limit: 999,
+        search: 'Te_st%',
+      });
+
+      expect(result).toEqual({
+        items: [{ id: '1' }],
+        total: 1,
+        page: 1,
+        limit: 100,
+      });
+      expect(mockUserRepository.createQueryBuilder).toHaveBeenCalledWith(
+        'user',
+      );
+      expect(orderBy).toHaveBeenCalledWith('user.createdAt', 'DESC');
+      expect(addOrderBy).toHaveBeenCalledWith('user.id', 'DESC');
+      expect(skip).toHaveBeenCalledWith(0);
+      expect(take).toHaveBeenCalledWith(100);
+      expect(andWhere).toHaveBeenCalledTimes(1);
+      expect(getManyAndCount).toHaveBeenCalled();
     });
   });
 

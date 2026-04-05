@@ -39,7 +39,11 @@ export class RolesGuard implements CanActivate {
     }
 
     if (!requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new ForbiddenException(
+        `Insufficient permissions. Role '${
+          user.role
+        }' not found in allowed roles: [${requiredRoles.join(', ')}]`,
+      );
     }
 
     return true;

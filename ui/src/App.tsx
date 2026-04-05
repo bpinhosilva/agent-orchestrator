@@ -4,11 +4,13 @@ import Shell from './layout/Shell';
 
 const AgentFleet = lazy(() => import('./components/AgentFleet'));
 const Providers = lazy(() => import('./pages/Providers'));
+const UserDetail = lazy(() => import('./pages/UserDetail'));
 const TaskManager = lazy(() => import('./pages/TaskManager'));
 const TaskDetail = lazy(() => import('./pages/TaskDetail'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const Scheduler = lazy(() => import('./pages/Scheduler'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Users = lazy(() => import('./pages/Users'));
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -19,7 +21,13 @@ import AppErrorBoundary from './components/AppErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({
+  children,
+  roles,
+}: {
+  children: React.ReactNode;
+  roles?: string[];
+}) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -32,6 +40,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (roles && !roles.includes(user.role || '')) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -142,6 +154,24 @@ function App() {
                               element={
                                 <AppErrorBoundary title="Unable to render profile">
                                   <Profile />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/users"
+                              element={
+                                <AppErrorBoundary title="Unable to render users">
+                                  <Users />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/users/:id"
+                              element={
+                                <AppErrorBoundary title="Unable to render user details">
+                                  <ProtectedRoute roles={['admin']}>
+                                    <UserDetail />
+                                  </ProtectedRoute>
                                 </AppErrorBoundary>
                               }
                             />

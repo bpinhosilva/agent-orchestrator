@@ -32,7 +32,8 @@ export type UpdateProjectDto = Partial<CreateProjectDto>;
 
 export const projectsApi = {
   create: (data: CreateProjectDto) => client.post<Project>('/projects', data),
-  findAll: () => client.get<Project[]>('/projects'),
+  findAll: (userId?: string, all = false) =>
+    client.get<Project[]>('/projects', { params: { userId, all } }),
   findOne: (id: string) => client.get<Project>(`/projects/${id}`),
   update: (id: string, data: UpdateProjectDto) =>
     client.patch<Project>(`/projects/${id}`, data),

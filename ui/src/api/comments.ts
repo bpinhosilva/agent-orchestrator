@@ -19,6 +19,7 @@ export interface TaskComment {
   authorAgent?: {
     id: string;
     name: string;
+    emoji?: string;
     avatarUrl?: string;
   };
   artifacts?: {

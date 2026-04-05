@@ -71,7 +71,31 @@ describe('ProjectsController', () => {
       ]);
       const result = await controller.findAll(mockUser);
       expect(result).toHaveLength(1);
-      expect(mockProjectsService.findAll).toHaveBeenCalledWith(mockUser);
+      expect(mockProjectsService.findAll).toHaveBeenCalledWith(
+        mockUser,
+        undefined,
+        false,
+      );
+    });
+
+    it('should pass userId and all=true to service', async () => {
+      mockProjectsService.findAll.mockResolvedValue([]);
+      await controller.findAll(mockUser, 'test-user', 'true');
+      expect(mockProjectsService.findAll).toHaveBeenCalledWith(
+        mockUser,
+        'test-user',
+        true,
+      );
+    });
+
+    it('should pass all=false when query is not "true"', async () => {
+      mockProjectsService.findAll.mockResolvedValue([]);
+      await controller.findAll(mockUser, undefined, 'false');
+      expect(mockProjectsService.findAll).toHaveBeenCalledWith(
+        mockUser,
+        undefined,
+        false,
+      );
     });
   });
 

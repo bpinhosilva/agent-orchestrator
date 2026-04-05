@@ -4,6 +4,7 @@ import { MoreVertical, Brain, Sparkles, Activity, Settings, Terminal, Trash2, XC
 interface AgentCardProps {
   id: string;
   name: string;
+  emoji?: string;
   expertise: string;
   model: string;
   status: 'active' | 'idle' | 'updating' | 'inactive';
@@ -18,6 +19,7 @@ interface AgentCardProps {
 const AgentCard: React.FC<AgentCardProps> = ({ 
   id,
   name, 
+  emoji,
   expertise, 
   model, 
   status, 
@@ -84,8 +86,8 @@ const AgentCard: React.FC<AgentCardProps> = ({
       </div>
 
       <div className="flex gap-5">
-        <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center ring-1 ring-outline-variant/30 group-hover:ring-primary/50 transition-all">
-          <config.icon className={`text-3xl ${config.color}`} size={32} />
+        <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center ring-1 ring-outline-variant/30 group-hover:ring-primary/50 transition-all text-3xl">
+          <span aria-hidden="true">{emoji ?? '🧠'}</span>
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-bold font-headline text-white">{name}</h3>

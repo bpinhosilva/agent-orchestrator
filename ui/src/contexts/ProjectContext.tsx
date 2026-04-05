@@ -31,11 +31,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       return null;
     }
 
-    return (
-      projects.find((project) => project.id === preferredActiveProjectId) ??
-      projects[0] ??
-      null
+    const preferred = projects.find(
+      (project) => project.id === preferredActiveProjectId,
     );
+
+    return preferred ?? projects[0] ?? null;
   }, [preferredActiveProjectId, projects]);
 
   const refreshProjects = useCallback(async () => {
