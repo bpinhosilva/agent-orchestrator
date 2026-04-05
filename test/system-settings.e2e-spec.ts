@@ -2,15 +2,6 @@ import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as bcrypt from 'bcrypt';
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import cookieParser from 'cookie-parser';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
-import { DataSource } from 'typeorm';
-import { User, UserRole } from '../src/users/entities/user.entity';
-import { SystemSettingsData } from '../src/system-settings/system-settings.service';
 
 const testHome = path.join(
   os.tmpdir(),
@@ -25,6 +16,16 @@ process.env.GEMINI_API_KEY = 'test_key';
 process.env.JWT_SECRET = 'test_secret_test_secret_test_secret_12345';
 process.env.AGENT_ORCHESTRATOR_HOME = testHome;
 process.env.NODE_ENV = 'test';
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+import { DataSource } from 'typeorm';
+import { User, UserRole } from '../src/users/entities/user.entity';
+import { SystemSettingsData } from '../src/system-settings/system-settings.service';
 
 describe('SystemSettings (e2e)', () => {
   let app: INestApplication<App>;
