@@ -1,3 +1,12 @@
+# [1.0.0-alpha.30](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.29...v1.0.0-alpha.30) (2026-04-05)
+
+
+### Features
+
+* add UsersPage component with user management features and tests ([bb46646](https://github.com/bpinhosilva/agent-orchestrator/commit/bb466468849b01dd30bc228e3c0375b6aea874e8))
+* integrate Personality Matrix component, refactor storage service ([2aa80d3](https://github.com/bpinhosilva/agent-orchestrator/commit/2aa80d3b64cd6431ba0113182dcb5d871075fcfd))
+* integrate wait-on for improved dev workflow ([af26318](https://github.com/bpinhosilva/agent-orchestrator/commit/af2631820f5fc95b7b85c9f6ec52157b7df74264))
+
 # [1.0.0-alpha.29](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.28...v1.0.0-alpha.29) (2026-04-04)
 
 
