@@ -37,7 +37,7 @@
     "dev:api": "nest start --watch",
     "dev:ui": "npm --prefix ui run dev",
     "predev": "fuser -k 3000/tcp || true",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
+    "dev": "concurrently \"npm run dev:api\" \"wait-on tcp:127.0.0.1:3000 && npm run dev:ui\"",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -139,7 +139,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "wait-on": "^9.0.4"
   },
   "overrides": {
     "path-to-regexp": "^8.4.0",
