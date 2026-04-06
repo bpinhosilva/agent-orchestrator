@@ -21,9 +21,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   const notifyApiError = useCallback((error: unknown, customTitle?: string) => {
-    const err = error as { response?: { data?: { message?: string }, statusText?: string }, message?: string };
+    const err = error as { response?: { data?: { message?: string; errors?: string[] }, statusText?: string }, message?: string };
     const errorData = err.response?.data;
-    const message = errorData?.message || err.message || 'An unexpected error occurred';
+    const errors = errorData?.errors;
+    const message = errors?.length
+      ? errors.join('\n')
+      : errorData?.message || err.message || 'An unexpected error occurred';
     const title = customTitle || err.response?.statusText || 'Backend Error';
     setState({ isOpen: true, type: 'error', title, message });
   }, []);

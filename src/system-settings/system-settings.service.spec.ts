@@ -39,7 +39,9 @@ describe('SystemSettingsService', () => {
       mockRepository.findOne.mockResolvedValue(null);
       const result = await service.getSettings();
       expect(result.data).toBeDefined();
-      expect((result.data as { scheduler?: unknown }).scheduler).toBeDefined();
+      expect(
+        (result.data as { taskScheduler?: unknown }).taskScheduler,
+      ).toBeDefined();
       expect(mockRepository.findOne).toHaveBeenCalled();
     });
 

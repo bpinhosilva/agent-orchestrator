@@ -17,6 +17,7 @@ import {
   ExecStatus,
 } from './entities/recurrent-task-exec.entity';
 import { AgentsService } from '../agents/agents.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 @Injectable()
 export class RecurrentTaskSchedulerService
@@ -28,6 +29,9 @@ export class RecurrentTaskSchedulerService
     { execId: string; startTime: number }
   >();
   private syncInterval: NodeJS.Timeout | null = null;
+  private pollIntervalInMs = 15000;
+  private executionTimeout = 120000;
+  private maxActiveTasks = 5;
 
   constructor(
     @InjectRepository(RecurrentTask)
@@ -36,15 +40,13 @@ export class RecurrentTaskSchedulerService
     private readonly execRepository: Repository<RecurrentTaskExec>,
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly agentsService: AgentsService,
+    private readonly systemSettingsService: SystemSettingsService,
   ) {}
 
   async onApplicationBootstrap() {
     this.logger.log('Initializing Recurrent Task Scheduler...');
-    // Sync cron jobs periodically (e.g., every 15 seconds) to handle DB changes
-    this.syncInterval = setInterval(() => {
-      void this.registerActiveTasks();
-    }, 15000);
     await this.registerActiveTasks();
+    this.scheduleSyncInterval();
   }
 
   onModuleDestroy() {
@@ -52,6 +54,13 @@ export class RecurrentTaskSchedulerService
       clearInterval(this.syncInterval);
       this.syncInterval = null;
     }
+  }
+
+  private scheduleSyncInterval() {
+    if (this.syncInterval) clearInterval(this.syncInterval);
+    this.syncInterval = setInterval(() => {
+      void this.registerActiveTasks();
+    }, this.pollIntervalInMs);
   }
 
   public unregisterTasks(taskId: string) {
@@ -67,6 +76,28 @@ export class RecurrentTaskSchedulerService
   }
 
   private async registerActiveTasks() {
+    const prevInterval = this.pollIntervalInMs;
+    try {
+      const settings = await this.systemSettingsService.getSettings();
+      this.pollIntervalInMs =
+        settings.data.recurrentTasksScheduler.pollIntervalInMs;
+      this.executionTimeout =
+        settings.data.recurrentTasksScheduler.executionTimeout;
+      this.maxActiveTasks =
+        settings.data.recurrentTasksScheduler.maxActiveTasks;
+    } catch (error) {
+      this.logger.warn(
+        `Could not refresh settings, using current values (pollIntervalInMs=${this.pollIntervalInMs}, executionTimeout=${this.executionTimeout}, maxActiveTasks=${this.maxActiveTasks}). Error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    if (this.pollIntervalInMs !== prevInterval && this.syncInterval !== null) {
+      this.logger.log(
+        `Poll interval changed from ${prevInterval}ms to ${this.pollIntervalInMs}ms. Rescheduling.`,
+      );
+      this.scheduleSyncInterval();
+    }
+
     const activeTasks = await this.recurrentTaskRepository.find({
       where: { status: RecurrentTaskStatus.ACTIVE },
       relations: ['assignee'],
@@ -123,12 +154,20 @@ export class RecurrentTaskSchedulerService
   }
 
   async executeTask(taskId: string) {
+    if (this.runningTasks.size >= this.maxActiveTasks) {
+      this.logger.debug(
+        `Max active tasks (${this.maxActiveTasks}) reached. Skipping ${taskId}.`,
+      );
+      return;
+    }
+
     const running = this.runningTasks.get(taskId);
     if (running) {
       const elapsed = Date.now() - running.startTime;
-      if (elapsed > 120000) {
-        // 2 minutes
-        this.logger.warn(`Task ${taskId} running for > 2 mins. Canceling.`);
+      if (elapsed > this.executionTimeout) {
+        this.logger.warn(
+          `Task ${taskId} running for > ${this.executionTimeout}ms. Canceling.`,
+        );
         await this.execRepository.update(running.execId, {
           status: ExecStatus.CANCELED,
           result: 'Canceled due to timeout (> 2 mins)',

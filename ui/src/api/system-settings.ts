@@ -3,25 +3,14 @@ import client from './client';
 export interface SystemSettings {
   id?: string;
   data: {
-    scheduler: {
-      pollInterval: number;
-      watchdogTimeout: number;
-      queueFlushFrequency: number;
-      heartbeatPeriod: number;
-      retryBackoffMultiplier: string;
-      maxExecutionWindow: number;
+    taskScheduler: {
+      pollIntervalInMs: number;
+      maxTaskPerExecution: number;
     };
-    cluster: {
-      broadcastFrequency: number;
-      defaultLlmProvider: string;
-      systemAliasId: string;
-    };
-    persistence: {
-      retentionDays: number;
-    };
-    ui: {
-      darkModeEnabled: boolean;
-      primaryHexAccent: string;
+    recurrentTasksScheduler: {
+      pollIntervalInMs: number;
+      executionTimeout: number;
+      maxActiveTasks: number;
     };
   };
 }

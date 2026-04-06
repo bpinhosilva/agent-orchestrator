@@ -27,7 +27,7 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { DataSource } from 'typeorm';
 import { User, UserRole } from '../src/users/entities/user.entity';
-import { SystemSettingsData } from '../src/system-settings/system-settings.service';
+import { SystemSettingsData } from '../src/system-settings/entities/system-settings.entity';
 
 describe('SystemSettings (e2e)', () => {
   let app: INestApplication<App>;
@@ -119,9 +119,17 @@ describe('SystemSettings (e2e)', () => {
       expect(response.body).toBeDefined();
       const body = response.body as { data: SystemSettingsData };
       expect(body.data).toBeDefined();
-      // Check for some expected default sections
-      expect(body.data).toHaveProperty('scheduler');
-      expect(body.data).toHaveProperty('cluster');
+      expect(body.data).toHaveProperty('taskScheduler');
+      expect(body.data).toHaveProperty('recurrentTasksScheduler');
+      expect(body.data.taskScheduler).toMatchObject({
+        pollIntervalInMs: 20000,
+        maxTaskPerExecution: 5,
+      });
+      expect(body.data.recurrentTasksScheduler).toMatchObject({
+        pollIntervalInMs: 15000,
+        executionTimeout: 120000,
+        maxActiveTasks: 5,
+      });
     });
   });
 
@@ -135,8 +143,12 @@ describe('SystemSettings (e2e)', () => {
         .expect(200);
 
       const newData = {
-        scheduler: { pollInterval: 1000 },
-        cluster: { provider: 'Claude' },
+        taskScheduler: { pollIntervalInMs: 30000, maxTaskPerExecution: 10 },
+        recurrentTasksScheduler: {
+          pollIntervalInMs: 20000,
+          executionTimeout: 90000,
+          maxActiveTasks: 3,
+        },
       };
 
       const response = await agent
@@ -145,14 +157,20 @@ describe('SystemSettings (e2e)', () => {
         .expect(200);
 
       const body = response.body as { data: SystemSettingsData };
-      expect(body.data).toEqual(expect.objectContaining(newData));
+      expect(body.data.taskScheduler).toMatchObject(newData.taskScheduler);
+      expect(body.data.recurrentTasksScheduler).toMatchObject(
+        newData.recurrentTasksScheduler,
+      );
 
       // Verify persistence
       const getResponse = await agent
         .get('/api/v1/system-settings')
         .expect(200);
       const getBody = getResponse.body as { data: SystemSettingsData };
-      expect(getBody.data).toEqual(expect.objectContaining(newData));
+      expect(getBody.data.taskScheduler).toMatchObject(newData.taskScheduler);
+      expect(getBody.data.recurrentTasksScheduler).toMatchObject(
+        newData.recurrentTasksScheduler,
+      );
     });
 
     it('should return 403 if regular user tries to update', async () => {

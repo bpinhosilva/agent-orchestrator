@@ -13,6 +13,7 @@ import {
 } from '../common/storage-path.helper';
 import { TasksService } from './tasks.service';
 import { ConfigService } from '@nestjs/config';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 describe('TaskSchedulerService', () => {
   let service: TaskSchedulerService;
@@ -66,6 +67,17 @@ describe('TaskSchedulerService', () => {
     generate: jest.fn().mockReturnValue(mockObjectPath),
   };
 
+  const mockSystemSettingsService = {
+    getSettings: jest.fn().mockResolvedValue({
+      data: {
+        taskScheduler: {
+          pollIntervalInMs: 20000,
+          maxTaskPerExecution: 5,
+        },
+      },
+    }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -86,6 +98,10 @@ describe('TaskSchedulerService', () => {
         {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue(true) },
+        },
+        {
+          provide: SystemSettingsService,
+          useValue: mockSystemSettingsService,
         },
       ],
     }).compile();

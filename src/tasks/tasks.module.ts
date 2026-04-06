@@ -17,6 +17,7 @@ import { RecurrentTaskExec } from './entities/recurrent-task-exec.entity';
 import { RecurrentTasksController } from './recurrent-tasks.controller';
 import { RecurrentTasksService } from './recurrent-tasks.service';
 import { RecurrentTaskSchedulerService } from './recurrent-task-scheduler.service';
+import { SystemSettingsModule } from '../system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { RecurrentTaskSchedulerService } from './recurrent-task-scheduler.servic
     ]),
     AgentsModule,
     ProjectsModule,
+    SystemSettingsModule,
   ],
   controllers: [TasksController, CommentsController, RecurrentTasksController],
   providers: [

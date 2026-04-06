@@ -1,7 +1,11 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { Project, ProjectStatus } from '../projects/entities/project.entity';
 import { Task, TaskStatus } from './entities/task.entity';
@@ -14,11 +18,17 @@ import {
   StorageContext,
 } from '../common/storage-path.helper';
 import { TasksService } from './tasks.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 @Injectable()
-export class TaskSchedulerService implements OnApplicationBootstrap {
+export class TaskSchedulerService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(TaskSchedulerService.name);
   private readonly schedulerEnabled: boolean;
+  private pollIntervalInMs = 20000;
+  private maxTaskPerExecution = 5;
+  private intervalRef: NodeJS.Timeout | null = null;
 
   constructor(
     @InjectRepository(Project)
@@ -32,6 +42,7 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
     private readonly storagePathHelper: StoragePathHelper,
     private readonly tasksService: TasksService,
     private readonly configService: ConfigService,
+    private readonly systemSettingsService: SystemSettingsService,
   ) {
     this.schedulerEnabled =
       this.configService.get<boolean>('SCHEDULER_ENABLED') !== false;
@@ -44,13 +55,47 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
       );
       return;
     }
-    this.logger.log('Task Scheduler initialized. First run starting...');
+
+    this.logger.log('Task Scheduler initializing. First run starting...');
     await this.handleTaskScheduling();
+    this.scheduleInterval();
   }
 
-  @Cron('*/45 * * * * *')
+  onModuleDestroy() {
+    if (this.intervalRef) {
+      clearInterval(this.intervalRef);
+      this.intervalRef = null;
+    }
+  }
+
+  private scheduleInterval() {
+    if (this.intervalRef) clearInterval(this.intervalRef);
+    this.intervalRef = setInterval(() => {
+      void this.handleTaskScheduling();
+    }, this.pollIntervalInMs);
+  }
+
   async handleTaskScheduling() {
     if (!this.schedulerEnabled) return;
+
+    const prevInterval = this.pollIntervalInMs;
+    try {
+      const settings = await this.systemSettingsService.getSettings();
+      this.pollIntervalInMs = settings.data.taskScheduler.pollIntervalInMs;
+      this.maxTaskPerExecution =
+        settings.data.taskScheduler.maxTaskPerExecution;
+    } catch (error) {
+      this.logger.warn(
+        `Could not refresh settings, using current values (pollIntervalInMs=${this.pollIntervalInMs}, maxTaskPerExecution=${this.maxTaskPerExecution}). Error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    if (this.pollIntervalInMs !== prevInterval && this.intervalRef !== null) {
+      this.logger.log(
+        `Poll interval changed from ${prevInterval}ms to ${this.pollIntervalInMs}ms. Rescheduling.`,
+      );
+      this.scheduleInterval();
+    }
 
     this.logger.debug('Running Task Scheduler job...');
 
@@ -90,9 +135,8 @@ export class TaskSchedulerService implements OnApplicationBootstrap {
     // 9) continue doing the jobs until there's no more tasks for the project (after grabbing from database).
     let hasMoreTasks = true;
     let iterationCount = 0;
-    const MAX_TASKS_PER_RUN = 50; // Safety limit to prevent infinite loops in a single scheduler run
 
-    while (hasMoreTasks && iterationCount < MAX_TASKS_PER_RUN) {
+    while (hasMoreTasks && iterationCount < this.maxTaskPerExecution) {
       // 4) starting querying tasks for that specific project that are in backlog status orded by priority asc (the lesser the higher the priority)
       const tasks = await this.taskRepository.find({
         where: {
