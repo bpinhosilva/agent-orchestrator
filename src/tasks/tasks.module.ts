@@ -40,5 +40,6 @@ import { RecurrentTaskSchedulerService } from './recurrent-task-scheduler.servic
     RecurrentTasksService,
     RecurrentTaskSchedulerService,
   ],
+  exports: [TasksService],
 })
 export class TasksModule {}

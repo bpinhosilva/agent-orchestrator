@@ -14,6 +14,8 @@ if (!fs.existsSync(testHome)) {
 
 process.env.GEMINI_API_KEY = 'test_key';
 process.env.JWT_SECRET = 'test_secret_test_secret_test_secret_12345';
+process.env.JWT_REFRESH_SECRET =
+  'test_refresh_secret_test_refresh_secret_12345';
 process.env.AGENT_ORCHESTRATOR_HOME = testHome;
 process.env.NODE_ENV = 'test';
 

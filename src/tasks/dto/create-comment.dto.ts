@@ -25,12 +25,4 @@ export class CreateCommentDto {
   @IsUUID()
   @IsOptional()
   authorAgentId?: string;
-
-  @IsOptional()
-  artifacts?: {
-    id?: string;
-    originalName: string;
-    mimeType: string;
-    filePath: string;
-  }[];
 }

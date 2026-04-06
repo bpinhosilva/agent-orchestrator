@@ -170,7 +170,7 @@ export class RecurrentTaskSchedulerService
 
       const response = await this.agentsService.probe(
         task.assignee.id,
-        `Recurrent Task: ${task.title}. Description: ${task.description}`,
+        `### Recurrent Task Execution\n\n[CONTEXT]\nTitle: ${task.title}\nDescription: ${task.description}\n[/CONTEXT]\n\nPlease perform the task described above.`,
       );
 
       const latencyMs = Date.now() - this.runningTasks.get(taskId)!.startTime;

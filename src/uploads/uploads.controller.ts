@@ -5,22 +5,32 @@ import {
   Res,
   NotFoundException,
   StreamableFile,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { StorageService } from '../common/storage.service';
 import { ParseFilePathPipe } from './parse-filepath.pipe';
 import * as fs from 'fs';
 import * as path from 'path';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User, UserRole } from '../users/entities/user.entity';
+import { ProjectsService } from '../projects/projects.service';
+import { TasksService } from '../tasks/tasks.service';
 
 @Controller('uploads/artifacts')
 export class UploadsController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly projectsService: ProjectsService,
+    private readonly tasksService: TasksService,
+  ) {}
 
   @Get('*filepath')
-  getFile(
+  async getFile(
     @Param('filepath', ParseFilePathPipe) rawPath: string,
     @Res({ passthrough: true }) res: Response,
-  ): StreamableFile {
+    @CurrentUser() user: User,
+  ): Promise<StreamableFile> {
     const bucketPath = this.storageService.getBucketPath('artifacts');
     const resolvedBucketPath = path.resolve(bucketPath);
 
@@ -30,13 +40,34 @@ export class UploadsController {
       throw new NotFoundException(`File not found`);
     }
 
+    // Step 2 - Authorization check based on path structure
+    // Path: YYYY/MM/DD/tasks/{taskId}/{uuid}.{ext}
+    const segments = rawPath.split(/[/\\]/);
+    if (user.role !== UserRole.ADMIN && segments.length >= 5) {
+      const context = segments[3];
+      const contextId = segments[4];
+
+      if (context === 'tasks') {
+        try {
+          const task = await this.tasksService.findOne(contextId);
+          const projectId = task.project?.id || task.projectId;
+          if (projectId) {
+            await this.projectsService.findOne(projectId, user);
+          }
+        } catch (error) {
+          if (error instanceof NotFoundException) {
+            throw new NotFoundException(`File not found`);
+          }
+          throw new ForbiddenException(`Access denied to artifact`);
+        }
+      }
+    }
+
     if (!fs.existsSync(nominalPath)) {
       throw new NotFoundException(`File not found`);
     }
 
-    // Step 2 – symlink containment check: resolve the real path on disk
-    // (fs.realpathSync follows symlinks; a symlink pointing outside the
-    // bucket would pass step 1 but fail here)
+    // Step 3 – symlink containment check: resolve the real path on disk
     let realPath: string;
     try {
       realPath = fs.realpathSync(nominalPath);

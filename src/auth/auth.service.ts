@@ -65,7 +65,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       expiresIn: this.refreshTokenExpiresIn,
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       algorithm: 'HS256',
     });
 
@@ -90,7 +90,7 @@ export class AuthService {
       // Verify JWT signature
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
         algorithms: ['HS256'],
       });
 
@@ -263,7 +263,7 @@ export class AuthService {
       // Verify JWT to extract user ID
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
         algorithms: ['HS256'],
       });
 

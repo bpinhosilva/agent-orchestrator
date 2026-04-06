@@ -668,6 +668,7 @@ function buildEnvContent(
   geminiKey: string,
   anthropicKey: string,
   jwtSecret: string,
+  jwtRefreshSecret: string,
 ): string {
   const envValues: Record<string, string> = {
     ...currentEnv,
@@ -678,6 +679,7 @@ function buildEnvContent(
     CHECK_PENDING_MIGRATIONS_ON_STARTUP:
       currentEnv.CHECK_PENDING_MIGRATIONS_ON_STARTUP || 'true',
     JWT_SECRET: jwtSecret,
+    JWT_REFRESH_SECRET: jwtRefreshSecret,
   };
 
   if (databaseUrl) {
@@ -869,6 +871,11 @@ async function handleSetup(options: SetupCommandOptions): Promise<void> {
       ? crypto.randomBytes(32).toString('hex')
       : currentEnv.JWT_SECRET;
 
+  const jwtRefreshSecret =
+    options.regenerateJwtSecret || !currentEnv.JWT_REFRESH_SECRET
+      ? crypto.randomBytes(32).toString('hex')
+      : currentEnv.JWT_REFRESH_SECRET;
+
   console.log('Generating configuration...');
   const envContent = buildEnvContent(
     currentEnv,
@@ -877,6 +884,7 @@ async function handleSetup(options: SetupCommandOptions): Promise<void> {
     geminiKey,
     anthropicKey,
     jwtSecret,
+    jwtRefreshSecret,
   );
   writePrivateFile(ENV_PATH, envContent);
   console.log(`Configuration saved to ${ENV_PATH} with mode 600.`);

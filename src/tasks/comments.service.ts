@@ -4,7 +4,6 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { TaskComment, CommentAuthorType } from './entities/comment.entity';
@@ -85,11 +84,6 @@ export class CommentsService {
         authorType,
         authorUser,
         authorAgent,
-        artifacts:
-          createCommentDto.artifacts?.map((artifact) => ({
-            id: artifact.id || crypto.randomUUID(),
-            ...artifact,
-          })) || null,
       });
 
       const savedComment = await manager.save(comment);
@@ -178,14 +172,6 @@ export class CommentsService {
 
       if (updateCommentDto.content !== undefined) {
         comment.content = updateCommentDto.content;
-      }
-
-      if (updateCommentDto.artifacts !== undefined) {
-        comment.artifacts =
-          updateCommentDto.artifacts?.map((artifact) => ({
-            id: artifact.id || crypto.randomUUID(),
-            ...artifact,
-          })) || null;
       }
 
       return manager.save(comment);

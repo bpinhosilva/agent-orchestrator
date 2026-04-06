@@ -28,7 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { email: string; sub: string }) {
+  async validate(payload: { email: string; sub: string; type?: string }) {
+    if (payload.type === 'refresh') {
+      throw new UnauthorizedException('Invalid token type');
+    }
     const user = await this.authService.validateUser(payload.sub);
     if (!user) {
       throw new UnauthorizedException();

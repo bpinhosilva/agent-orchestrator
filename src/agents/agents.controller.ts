@@ -49,6 +49,7 @@ export class AgentsController {
     return this.agentsService.remove(id);
   }
 
+  @Roles(UserRole.ADMIN)
   @Post('process')
   @HttpCode(HttpStatus.OK)
   async processText(
@@ -60,6 +61,7 @@ export class AgentsController {
     );
   }
 
+  @Roles(UserRole.ADMIN)
   @Post('probe')
   @HttpCode(HttpStatus.OK)
   async probe(@Body() requestDto: AgentRequestDto): Promise<AgentResponse> {

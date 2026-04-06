@@ -13,6 +13,8 @@ if (!fs.existsSync(testHome)) {
 
 process.env.GEMINI_API_KEY = 'test_key';
 process.env.JWT_SECRET = 'test_secret_test_secret_test_secret_12345';
+process.env.JWT_REFRESH_SECRET =
+  'test_refresh_secret_test_refresh_secret_12345';
 process.env.AGENT_ORCHESTRATOR_HOME = testHome;
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -80,7 +82,7 @@ describe('AppController (e2e)', () => {
       email: 'test@test.com',
       name: 'Test User',
       last_name: 'Tester',
-      role: UserRole.USER,
+      role: UserRole.ADMIN,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
