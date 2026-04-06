@@ -1,3 +1,10 @@
+# [1.0.0-alpha.31](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.30...v1.0.0-alpha.31) (2026-04-06)
+
+
+### Features
+
+* add environment variable setup and JWT refresh secret handling ([c9dfd05](https://github.com/bpinhosilva/agent-orchestrator/commit/c9dfd05070dfc4bc0e34e3853d0efe85d84d404a))
+
 # [1.0.0-alpha.30](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.29...v1.0.0-alpha.30) (2026-04-05)
 
 
