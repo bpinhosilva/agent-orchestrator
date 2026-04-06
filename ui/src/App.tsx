@@ -134,6 +134,7 @@ function App() {
                                 </AppErrorBoundary>
                               }
                             />
+                            {/* 
                             <Route
                               path="/flow"
                               element={
@@ -141,10 +142,10 @@ function App() {
                                   <div className="text-on-surface-variant font-mono">FLOW_BUILDER_CANVAS</div>
                                 </AppErrorBoundary>
                               }
-                            />
+                            /> 
+                            */}
                             <Route
-                              path="/scheduler"
-                              element={
+                              path="/scheduler"                              element={
                                 <AppErrorBoundary title="Unable to render scheduler">
                                   <Scheduler />
                                 </AppErrorBoundary>

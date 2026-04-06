@@ -5,7 +5,6 @@ import {
   LogOut,
   LayoutDashboard,
   Calendar,
-  Network,
   Bot,
   Server,
   Layout,
@@ -27,7 +26,7 @@ const Sidebar = () => {
     { icon: LayoutDashboard, label: 'Task Manager', path: '/' },
     { icon: Calendar, label: 'Scheduler', path: '/scheduler' },
     { icon: Bot, label: 'Agents', path: '/agents' },
-    { icon: Network, label: 'Flow Builder', path: '/flow' },
+    // { icon: Network, label: 'Flow Builder', path: '/flow' },
     { icon: Server, label: 'Providers', path: '/providers' },
   ];
 
