@@ -1,3 +1,10 @@
+# [1.0.0-alpha.32](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.31...v1.0.0-alpha.32) (2026-04-06)
+
+
+### Features
+
+* enhance task scheduling with dynamic settings and improved error handling ([cbb5097](https://github.com/bpinhosilva/agent-orchestrator/commit/cbb50979f8e79e6cdc581ed29fa0933f82c3e4ee))
+
 # [1.0.0-alpha.31](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.30...v1.0.0-alpha.31) (2026-04-06)
 
 
