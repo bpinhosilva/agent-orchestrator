@@ -1,3 +1,10 @@
+# [1.0.0-alpha.33](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.32...v1.0.0-alpha.33) (2026-04-06)
+
+
+### Features
+
+* **cli:** refactor project, split into multiple components ([f18903b](https://github.com/bpinhosilva/agent-orchestrator/commit/f18903be0b1b09a1e651918d081d96267bfe2bc6))
+
 # [1.0.0-alpha.32](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.31...v1.0.0-alpha.32) (2026-04-06)
 
 
