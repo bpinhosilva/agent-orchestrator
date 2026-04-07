@@ -133,6 +133,7 @@ describe('ProjectsService', () => {
     it('should return only member projects for admin user by default', async () => {
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([{ id: '1' }]),
       };
@@ -160,6 +161,7 @@ describe('ProjectsService', () => {
     it('should return projects for specific user when userId is provided (admin)', async () => {
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([{ id: '3' }]),
       };
@@ -177,6 +179,7 @@ describe('ProjectsService', () => {
     it('should return only member projects for regular user', async () => {
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([{ id: '1' }]),
       };

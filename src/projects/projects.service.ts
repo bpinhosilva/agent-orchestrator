@@ -65,12 +65,14 @@ export class ProjectsService {
       return this.projectsRepository
         .createQueryBuilder('project')
         .innerJoin('project.members', 'pm')
+        .leftJoinAndSelect('project.ownerAgent', 'ownerAgent')
         .where('pm.user = :userId', { userId: targetUserId })
         .getMany();
     }
     return this.projectsRepository
       .createQueryBuilder('project')
       .innerJoin('project.members', 'pm')
+      .leftJoinAndSelect('project.ownerAgent', 'ownerAgent')
       .where('pm.user = :userId', { userId: user.id })
       .getMany();
   }

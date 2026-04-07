@@ -52,9 +52,12 @@ function generateSecret(): string {
 }
 
 function main() {
+  const ENV_EXAMPLE_FILE = path.resolve(__dirname, '../.env.example');
   const existingContent = fs.existsSync(ENV_FILE)
     ? fs.readFileSync(ENV_FILE, 'utf-8')
-    : '';
+    : fs.existsSync(ENV_EXAMPLE_FILE)
+      ? fs.readFileSync(ENV_EXAMPLE_FILE, 'utf-8')
+      : '';
 
   const envMap = parseEnvFile(existingContent);
   const updates = new Map<string, string>();

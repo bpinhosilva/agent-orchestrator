@@ -29,7 +29,7 @@ export function registerRunCommand(program: Command): void {
     .action(() => {
       try {
         assertBuildExists();
-        const existingProcess = findManagedProcess();
+        const existingProcess = findManagedProcess(); // TODO: pass default args if needed
         if (existingProcess) {
           console.log(
             `Orchestrator is already running.\n${formatProcessSummary(existingProcess)}`,

@@ -9,7 +9,7 @@ export function registerStopCommand(program: Command): void {
     )
     .action(() => {
       try {
-        const runningProcess = findManagedProcess();
+        const runningProcess = findManagedProcess(); // TODO: pass default args if needed
         if (!runningProcess) {
           console.log('Orchestrator is not running.');
           return;

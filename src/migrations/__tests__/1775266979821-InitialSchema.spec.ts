@@ -14,6 +14,19 @@ describe('normalizeMigrationSqlForDriver', () => {
     );
   });
 
+  it('removes explicit unique constraint names on temporary table creates for postgres', () => {
+    const sql =
+      `CREATE TABLE "temporary_agents" (` +
+      `"id" varchar PRIMARY KEY NOT NULL, ` +
+      `CONSTRAINT "UQ_1ea6b2ce044724d3254d19ab922" UNIQUE ("name"))`;
+
+    expect(normalizeMigrationSqlForDriver('postgres', sql)).toBe(
+      `CREATE TABLE "temporary_agents" (` +
+        `"id" varchar PRIMARY KEY NOT NULL, ` +
+        `UNIQUE ("name"))`,
+    );
+  });
+
   it('leaves sqlite SQL unchanged', () => {
     const sql =
       `CREATE TABLE "users" (` +

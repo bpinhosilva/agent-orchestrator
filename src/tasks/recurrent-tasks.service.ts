@@ -12,6 +12,7 @@ import {
 } from './entities/recurrent-task.entity';
 import { CreateRecurrentTaskDto } from './dto/create-recurrent-task.dto';
 import { UpdateRecurrentTaskDto } from './dto/update-recurrent-task.dto';
+import { RecurrentTaskExec } from './entities/recurrent-task-exec.entity';
 import { AgentEntity } from '../agents/entities/agent.entity';
 import { Project } from '../projects/entities/project.entity';
 
@@ -25,6 +26,8 @@ export class RecurrentTasksService {
   constructor(
     @InjectRepository(RecurrentTask)
     private readonly repository: Repository<RecurrentTask>,
+    @InjectRepository(RecurrentTaskExec)
+    private readonly execRepository: Repository<RecurrentTaskExec>,
     @Inject(forwardRef(() => RecurrentTaskSchedulerService))
     private readonly schedulerService: RecurrentTaskSchedulerService,
   ) {}
@@ -64,7 +67,7 @@ export class RecurrentTasksService {
         'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e.recurrentTaskId = task.id ORDER BY e.updatedAt DESC LIMIT 1)',
       )
       .where('task.projectId = :projectId', { projectId })
-      .orderBy('task.createdAt', 'DESC')
+      .orderBy('task.updatedAt', 'DESC')
       .getMany();
 
     return tasks.map((task) => ({
@@ -173,5 +176,29 @@ export class RecurrentTasksService {
     });
 
     this.schedulerService.unregisterTasks(id);
+  }
+
+  async findExecutions(
+    taskId: string,
+    projectId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: RecurrentTaskExec[]; total: number }> {
+    const task = await this.repository.findOne({
+      where: { id: taskId, project: { id: projectId } },
+    });
+
+    if (!task) {
+      throw new NotFoundException(`Recurrent task ${taskId} not found`);
+    }
+
+    const [data, total] = await this.execRepository.findAndCount({
+      where: { recurrentTask: { id: taskId } },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
   }
 }

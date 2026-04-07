@@ -141,6 +141,7 @@ agent-orchestrator run
 agent-orchestrator status
 agent-orchestrator logs
 agent-orchestrator stop
+agent-orchestrator restart
 agent-orchestrator migrate
 ```
 
@@ -173,10 +174,11 @@ agent-orchestrator migrate
 | `auth/` | Authentication, JWT, refresh tokens, guards, decorators |
 | `users/` | User management and system roles |
 | `projects/` | Projects and project membership |
-| `tasks/` | Tasks, scheduling, orchestration, comments |
+| `tasks/` | Tasks, scheduling (including recurrent tasks), orchestration, comments |
 | `providers/` | Provider configuration |
 | `models/` | AI model definitions and configuration |
 | `uploads/` | File upload handling |
+| `system-settings/` | System configuration (polling intervals, etc.) |
 | `common/` | Shared services and filters |
 | `config/` | Runtime paths, env validation, TypeORM config |
 | `database/` | Migration state and startup migration checks |
@@ -262,6 +264,7 @@ Do not treat project membership as a substitute for system role checks; both are
 ### Important environment variables
 
 - `JWT_SECRET` (required, min 32 chars)
+- `JWT_REFRESH_SECRET` (required, min 32 chars)
 - `DATABASE_URL`
 - `DB_TYPE` (`postgres` or `sqlite`)
 - `PORT`

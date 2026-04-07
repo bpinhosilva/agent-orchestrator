@@ -20,10 +20,12 @@ import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
 import { useNotification } from '../hooks/useNotification';
 import { useProject } from '../hooks/useProject';
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Scheduler: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
   const { notifySuccess, notifyApiError } = useNotification();
+  const navigate = useNavigate();
   
   const [tasks, setTasks] = useState<RecurrentTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -258,7 +260,7 @@ const Scheduler: React.FC = () => {
                   <div>
                     <h5 
                       className="text-xl font-headline font-black text-white mb-2 group-hover:text-primary transition-colors tracking-tight cursor-pointer"
-                      onClick={() => openEditModal(task)}
+                      onClick={() => navigate(`/scheduler/tasks/${task.id}/executions`)}
                     >
                       {task.title}
                     </h5>

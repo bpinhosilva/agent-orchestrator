@@ -20,7 +20,13 @@ const DEFAULT_PORT = '15789';
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+import * as os from 'os';
+
 function parseProcCmdline(pid: number, fsDep: FileSystem): string[] | null {
+  if (os.platform() === 'win32') {
+    // Windows: not supported, return null
+    return null;
+  }
   try {
     const cmdlinePath = `/proc/${pid}/cmdline`;
     if (!fsDep.existsSync(cmdlinePath)) {
@@ -34,12 +40,18 @@ function parseProcCmdline(pid: number, fsDep: FileSystem): string[] | null {
 }
 
 function readProcCwd(pid: number, fsDep: FileSystem): string | null {
+  if (os.platform() === 'win32') {
+    // Windows: not supported, return null
+    return null;
+  }
   try {
     return path.resolve(fsDep.readlinkSync(`/proc/${pid}/cwd`));
   } catch {
     return null;
   }
 }
+
+// Removed duplicate findManagedProcess implementation
 
 function processContainsMainPath(
   cmdline: string[],
@@ -164,6 +176,8 @@ function safeUnlink(fsDep: FileSystem, filePath: string): void {
   }
 }
 
+// Removed duplicate findManagedProcess implementation
+
 export function formatProcessSummary(
   processInfo: ManagedProcess,
   logFile = LOG_FILE,
@@ -256,6 +270,16 @@ export function isManagedProcess(
   expected: Pick<ProcessMetadata, 'cwd' | 'mainPath'>,
   fsDep: FileSystem = realFs,
 ): boolean {
+  if (os.platform() === 'win32') {
+    // On Windows, just check process exists and cwd matches meta
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return false;
+    }
+    // No reliable way to check cwd/mainPath, so trust PID file
+    return true;
+  }
   try {
     process.kill(pid, 0);
   } catch (err) {

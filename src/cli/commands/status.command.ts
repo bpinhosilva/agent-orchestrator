@@ -7,7 +7,7 @@ export function registerStatusCommand(program: Command): void {
     .description('Show the currently running orchestrator process, if any')
     .action(() => {
       try {
-        const runningProcess = findManagedProcess();
+        const runningProcess = findManagedProcess(); // TODO: pass default args if needed
         if (!runningProcess) {
           console.log('Orchestrator is not running.');
           return;

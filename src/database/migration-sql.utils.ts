@@ -8,7 +8,17 @@ export function normalizeMigrationSqlForDriver(
     return sql;
   }
 
-  return sql
-    .replace(/DEFAULT\s+\(datetime\('now'\)\)/g, 'DEFAULT CURRENT_TIMESTAMP')
+  let normalizedSql = sql
+    .replaceAll("(datetime('now'))", 'CURRENT_TIMESTAMP')
+    .replaceAll("datetime('now')", 'CURRENT_TIMESTAMP')
     .replace(/\bdatetime\b/g, 'timestamp');
+
+  if (normalizedSql.includes('CREATE TABLE "temporary_')) {
+    normalizedSql = normalizedSql.replace(
+      /CONSTRAINT\s+"UQ_[^"]+"\s+UNIQUE/g,
+      'UNIQUE',
+    );
+  }
+
+  return normalizedSql;
 }

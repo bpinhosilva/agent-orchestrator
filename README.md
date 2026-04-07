@@ -63,6 +63,7 @@ Choose the path that matches how you want to use the project:
 npm install -g @bpinhosilva/agent-orchestrator
 agent-orchestrator setup
 agent-orchestrator run
+agent-orchestrator restart
 agent-orchestrator status
 ```
 
@@ -100,6 +101,7 @@ Example `.env`:
 ```bash
 # Required
 JWT_SECRET="replace-with-a-secret-at-least-32-characters-long"
+JWT_REFRESH_SECRET="replace-with-another-secret-at-least-32-characters-long"
 
 # Provider keys (optional until you want to execute agents)
 GEMINI_API_KEY=""
@@ -176,9 +178,11 @@ npm run start:dev
 ### Packaged/runtime mode
 
 ```bash
+agent-orchestrator setup
 agent-orchestrator run
 agent-orchestrator status
 agent-orchestrator logs --lines 50
+agent-orchestrator restart
 agent-orchestrator stop
 ```
 

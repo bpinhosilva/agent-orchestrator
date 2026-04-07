@@ -8,7 +8,10 @@ import { ConfigService } from '@nestjs/config';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { checkPendingMigrations } from './database/migration-state';
+import {
+  checkPendingMigrations,
+  runMigrations,
+} from './database/migration-state';
 import { getDefaultPort } from './config/port.defaults';
 import { isEnvEnabled, loadRuntimeEnv } from './config/runtime-paths';
 
@@ -24,6 +27,15 @@ async function ensureDatabaseIsReadyForStartup() {
   const { hasPending } = await checkPendingMigrations();
 
   if (!hasPending) {
+    return;
+  }
+
+  const nodeEnv = process.env.NODE_ENV || 'development';
+
+  if (nodeEnv === 'development') {
+    logger.log('Pending migrations detected. Running migrations...');
+    await runMigrations();
+    logger.log('Migrations completed successfully.');
     return;
   }
 

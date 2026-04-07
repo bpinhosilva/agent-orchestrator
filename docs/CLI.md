@@ -34,6 +34,7 @@ The published package includes the backend build and the UI bundle required by `
 | --- | --- |
 | `setup` | Create or update the runtime `.env`, configure providers, optionally run migrations, and optionally create an admin user |
 | `run` | Start the orchestrator server in detached mode after verifying the packaged build exists |
+| `restart` | Restart the orchestrator server (smart: stop if running, then start) |
 | `status` | Show the currently running orchestrator process |
 | `logs` | Print the most recent orchestrator log lines |
 | `stop` | Stop the detached orchestrator process after verifying it is the expected runtime |
@@ -46,6 +47,7 @@ The published package includes the backend build and the UI bundle required by `
 ```bash
 agent-orchestrator setup
 agent-orchestrator run
+agent-orchestrator restart
 agent-orchestrator status
 ```
 
@@ -63,10 +65,11 @@ agent-orchestrator setup \
   --skip-admin-setup
 ```
 
-### Logs and shutdown
+### Logs, restart, and shutdown
 
 ```bash
 agent-orchestrator logs --lines 100
+agent-orchestrator restart
 agent-orchestrator stop
 ```
 

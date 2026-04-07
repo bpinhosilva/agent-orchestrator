@@ -21,7 +21,7 @@ async function getMigrationContext(
     await dataSource.query(
       isSqliteDriver(dataSource.options.type)
         ? "SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('migrations', 'sqlite_sequence')"
-        : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name != 'migrations'",
+        : "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name NOT IN ('migrations')",
     );
 
   return {

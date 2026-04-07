@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Scheduler from '../Scheduler';
+import { MemoryRouter } from 'react-router-dom';
 import { recurrentTasksApi, RecurrentTaskStatus } from '../../api/recurrent-tasks';
 import { TaskPriority } from '../../api/tasks';
 import { useProject } from '../../hooks/useProject';
@@ -124,7 +125,7 @@ describe('Scheduler', () => {
       ],
     } as Awaited<ReturnType<typeof recurrentTasksApi.findAll>>);
 
-    render(<Scheduler />);
+    render(<MemoryRouter><Scheduler /></MemoryRouter>);
 
     await waitFor(() => {
       expect(recurrentTasksApi.findAll).toHaveBeenCalledWith('project-1');

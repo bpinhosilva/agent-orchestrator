@@ -12,6 +12,7 @@ const Scheduler = lazy(() => import('./pages/Scheduler'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Users = lazy(() => import('./pages/Users'));
 const Settings = lazy(() => import('./pages/Settings'));
+const TaskExecutions = lazy(() => import('./pages/TaskExecutions'));
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -145,9 +146,18 @@ function App() {
                             /> 
                             */}
                             <Route
-                              path="/scheduler"                              element={
+                              path="/scheduler"
+                              element={
                                 <AppErrorBoundary title="Unable to render scheduler">
                                   <Scheduler />
+                                </AppErrorBoundary>
+                              }
+                            />
+                            <Route
+                              path="/scheduler/tasks/:taskId/executions"
+                              element={
+                                <AppErrorBoundary title="Unable to render task executions">
+                                  <TaskExecutions />
                                 </AppErrorBoundary>
                               }
                             />

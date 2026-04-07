@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { RecurrentTasksService } from './recurrent-tasks.service';
 import { CreateRecurrentTaskDto } from './dto/create-recurrent-task.dto';
@@ -71,5 +72,17 @@ export class RecurrentTasksController {
   ) {
     await this.projectsService.findOne(projectId, user);
     return this.service.remove(id, projectId);
+  }
+
+  @Get(':id/executions')
+  async findExecutions(
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @CurrentUser() user: User,
+  ) {
+    await this.projectsService.findOne(projectId, user);
+    return this.service.findExecutions(id, projectId, page, limit);
   }
 }

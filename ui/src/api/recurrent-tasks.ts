@@ -10,6 +10,24 @@ export const RecurrentTaskStatus = {
 
 export type RecurrentTaskStatus = typeof RecurrentTaskStatus[keyof typeof RecurrentTaskStatus];
 
+export const ExecStatus = {
+  RUNNING: 'running',
+  SUCCESS: 'success',
+  FAILURE: 'failure',
+  CANCELED: 'canceled',
+} as const;
+
+export type ExecStatus = typeof ExecStatus[keyof typeof ExecStatus];
+
+export interface RecurrentTaskExec {
+  id: string;
+  status: ExecStatus;
+  result: string;
+  latencyMs: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface RecurrentTask {
   id: string;
   title: string;
@@ -49,4 +67,9 @@ export const recurrentTasksApi = {
     ),
   delete: (projectId: string, id: string) =>
     client.delete(`/projects/${projectId}/recurrent-tasks/${id}`),
+  findExecutions: (projectId: string, id: string, page = 1, limit = 10) =>
+    client.get<{ data: RecurrentTaskExec[]; total: number }>(
+      `/projects/${projectId}/recurrent-tasks/${id}/executions`,
+      { params: { page, limit } },
+    ),
 };
