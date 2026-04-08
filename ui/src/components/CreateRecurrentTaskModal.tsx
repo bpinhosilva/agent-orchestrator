@@ -20,6 +20,7 @@ import { agentsApi, type Agent } from '../api/agents';
 import { recurrentTasksApi, type RecurrentTask, RecurrentTaskStatus } from '../api/recurrent-tasks';
 import { TaskPriority } from '../api/tasks';
 import { useNotification } from '../hooks/useNotification';
+import MarkdownField from './MarkdownField';
 
 interface CreateRecurrentTaskModalProps {
   projectId: string;
@@ -233,16 +234,14 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                       onChange={(e) => setTitle(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-on-surface-variant px-1">Description</label>
-                    <textarea
-                      className="w-full bg-surface-container-lowest border-none rounded-lg p-3 text-on-surface placeholder:text-outline-variant focus:ring-1 focus:ring-tertiary transition-all"
-                      placeholder="Briefly describe the objective of this task..."
-                      rows={2}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    ></textarea>
-                  </div>
+                  <MarkdownField
+                    label="Description"
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="Briefly describe the objective of this task... You can use markdown for formatting."
+                    height="h-32"
+                    helperText="Supports GitHub Flavored Markdown"
+                  />
                 </div>
               </section>
 

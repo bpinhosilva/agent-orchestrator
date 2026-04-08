@@ -1,7 +1,8 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TaskExecutions from '../TaskExecutions';
 import { recurrentTasksApi, RecurrentTaskStatus, ExecStatus } from '../../api/recurrent-tasks';
+import { TaskPriority } from '../../api/tasks';
 import { useProject } from '../../hooks/useProject';
 import { useNotification } from '../../hooks/useNotification';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -82,6 +83,7 @@ vi.mock('../../api/recurrent-tasks', () => ({
   recurrentTasksApi: {
     findOne: vi.fn(),
     findExecutions: vi.fn(),
+    update: vi.fn(),
   },
   RecurrentTaskStatus: {
     ACTIVE: 'active',
@@ -93,6 +95,15 @@ vi.mock('../../api/recurrent-tasks', () => ({
     SUCCESS: 'success',
     FAILURE: 'failure',
     CANCELED: 'canceled',
+  },
+}));
+
+vi.mock('../../api/tasks', () => ({
+  TaskPriority: {
+    CRITICAL: 0,
+    HIGH: 1,
+    MEDIUM: 2,
+    LOW: 3,
   },
 }));
 
@@ -131,14 +142,19 @@ describe('TaskExecutions', () => {
       data: {
         id: 'task-1',
         title: 'Daily Market Sweep',
+        description: 'Automated market scanning protocol',
         status: RecurrentTaskStatus.ACTIVE,
-        priority: 'high',
+        priority: TaskPriority.HIGH,
         cronExpression: '0 0 * * *',
-        assignee: { name: 'Fin-Oracle v2.4' },
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
-    } as unknown as { data: { id: string; title: string; status: string; priority: string; cronExpression: string; assignee: { name: string }; createdAt: string; updatedAt: string } });
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
 
     vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
       data: {
@@ -149,11 +165,16 @@ describe('TaskExecutions', () => {
             createdAt: new Date().toISOString(),
             latencyMs: 248000, // 4m 08s
             result: '[Node-7] Signal validated: Bullish sweep complete...',
+            updatedAt: new Date().toISOString(),
           },
         ],
         total: 1,
       },
-    } as unknown as { data: { data: { id: string; status: string; createdAt: string; latencyMs: number; result: string }[]; total: number } });
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
 
     render(
       <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
@@ -190,5 +211,164 @@ describe('TaskExecutions', () => {
     );
 
     expect(screen.getByText(/INITIALIZING DATA GRID/i)).toBeInTheDocument();
+  });
+
+  it('opens the Edit Task modal when clicked', async () => {
+    vi.mocked(recurrentTasksApi.findOne).mockResolvedValue({
+      data: {
+        id: 'task-1',
+        title: 'Daily Market Sweep',
+        description: 'Automated market scanning protocol',
+        status: RecurrentTaskStatus.ACTIVE,
+        priority: TaskPriority.HIGH,
+        cronExpression: '0 0 * * *',
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
+      data: { data: [], total: 0 },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
+        <Routes>
+          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
+    });
+
+    const editButton = screen.getByText(/Edit Task/i);
+    fireEvent.click(editButton);
+
+    expect(await screen.findByText(/Update Protocol/i)).toBeInTheDocument();
+  });
+
+  it('handles Activate Now flow correctly', async () => {
+    const notifySuccess = vi.fn();
+    vi.mocked(useNotification).mockReturnValue({
+      notifySuccess,
+      notifyError: vi.fn(),
+      notifyInfo: vi.fn(),
+      notifyApiError: vi.fn(),
+      closeNotification: vi.fn(),
+      state: { isOpen: false, type: 'info', title: '', message: '' },
+    });
+
+    vi.mocked(recurrentTasksApi.findOne).mockResolvedValue({
+      data: {
+        id: 'task-1',
+        title: 'Daily Market Sweep',
+        description: 'Automated market scanning protocol',
+        status: RecurrentTaskStatus.PAUSED,
+        priority: TaskPriority.HIGH,
+        cronExpression: '0 0 * * *',
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
+      data: { data: [], total: 0 },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    vi.mocked(recurrentTasksApi.update).mockResolvedValue({} as any);
+
+    render(
+      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
+        <Routes>
+          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
+    });
+
+    const activateButton = screen.getByText(/Activate Now/i);
+    expect(activateButton).not.toBeDisabled();
+    fireEvent.click(activateButton);
+
+    expect(await screen.findByText(/Activate Protocol/i)).toBeInTheDocument();
+    
+    const confirmButton = screen.getByText(/Confirm Activation/i);
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(recurrentTasksApi.update).toHaveBeenCalledWith('project-1', 'task-1', {
+        status: RecurrentTaskStatus.ACTIVE,
+      });
+      expect(notifySuccess).toHaveBeenCalledWith(
+        'Protocol Activated',
+        expect.stringContaining('Daily Market Sweep')
+      );
+    });
+  });
+
+  it('disables Activate Now button when task is already active', async () => {
+    vi.mocked(recurrentTasksApi.findOne).mockResolvedValue({
+      data: {
+        id: 'task-1',
+        title: 'Daily Market Sweep',
+        description: 'Automated market scanning protocol',
+        status: RecurrentTaskStatus.ACTIVE,
+        priority: TaskPriority.HIGH,
+        cronExpression: '0 0 * * *',
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
+      data: { data: [], total: 0 },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
+        <Routes>
+          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
+    });
+
+    const activateButton = screen.getByText(/Activate Now/i);
+    expect(activateButton).toBeDisabled();
   });
 });

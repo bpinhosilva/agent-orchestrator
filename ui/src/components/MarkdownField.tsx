@@ -38,6 +38,7 @@ const MarkdownField: React.FC<MarkdownFieldProps> = ({
         )}
         <div className="flex items-center gap-1 bg-surface-container-high/50 p-1 rounded-lg ring-1 ring-outline-variant/10">
           <button
+            type="button"
             onClick={() => setMode('write')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black tracking-widest uppercase transition-all ${
               mode === 'write' 
@@ -49,6 +50,7 @@ const MarkdownField: React.FC<MarkdownFieldProps> = ({
             Write
           </button>
           <button
+            type="button"
             onClick={() => setMode('preview')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black tracking-widest uppercase transition-all ${
               mode === 'preview' 

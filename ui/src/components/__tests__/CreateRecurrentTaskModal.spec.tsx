@@ -242,4 +242,29 @@ describe('CreateRecurrentTaskModal', () => {
       expect(screen.getByText(/Invalid cron format/i)).toBeInTheDocument();
     });
   });
+
+  it('toggles markdown preview', async () => {
+    render(
+      <CreateRecurrentTaskModal
+        projectId="project-1"
+        isOpen={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    const descriptionInput = screen.getByPlaceholderText(/Briefly describe the objective/i);
+    fireEvent.change(descriptionInput, { target: { value: '# Hello Markdown' } });
+
+    const previewButton = screen.getByRole('button', { name: /^Preview$/i });
+    fireEvent.click(previewButton);
+
+    expect(screen.getByText('Hello Markdown')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Briefly describe the objective/i)).not.toBeInTheDocument();
+
+    const writeButton = screen.getByRole('button', { name: /^Write$/i });
+    fireEvent.click(writeButton);
+
+    expect(screen.getByPlaceholderText(/Briefly describe the objective/i)).toHaveValue('# Hello Markdown');
+  });
 });

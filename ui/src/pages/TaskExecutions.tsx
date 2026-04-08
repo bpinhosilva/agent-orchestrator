@@ -22,19 +22,25 @@ import {
   RecurrentTaskStatus,
   ExecStatus 
 } from '../api/recurrent-tasks';
+import { TaskPriority } from '../api/tasks';
 import { useProject } from '../hooks/useProject';
 import { useNotification } from '../hooks/useNotification';
+import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const TaskExecutions: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const { activeProject, loading: projectLoading } = useProject();
-  const { notifyApiError } = useNotification();
+  const { notifyApiError, notifySuccess } = useNotification();
 
   const [task, setTask] = useState<RecurrentTask | null>(null);
   const [executions, setExecutions] = useState<RecurrentTaskExec[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isExecuteConfirmOpen, setIsExecuteConfirmOpen] = useState(false);
+  const [executing, setExecuting] = useState(false);
   const limit = 10;
 
   const fetchData = useCallback(async () => {
@@ -59,6 +65,27 @@ const TaskExecutions: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleConfirmExecute = async () => {
+    if (!activeProject || !task) return;
+
+    try {
+      setExecuting(true);
+      await recurrentTasksApi.update(activeProject.id, task.id, {
+        status: RecurrentTaskStatus.ACTIVE,
+      });
+      notifySuccess(
+        'Protocol Activated',
+        `Operation "${task.title}" has been successfully re-activated.`
+      );
+      fetchData();
+    } catch (error) {
+      notifyApiError(error, 'Failed to activate protocol status');
+    } finally {
+      setExecuting(false);
+      setIsExecuteConfirmOpen(false);
+    }
+  };
 
   const formatDuration = (ms: number) => {
     if (!ms) return '0s';
@@ -117,11 +144,22 @@ const TaskExecutions: React.FC = () => {
           </div>
           
           <div className="flex gap-4">
-            <button className="bg-surface-container-high text-on-surface px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-surface-container-highest transition-all flex items-center gap-2 border border-outline-variant/10 group active:scale-95">
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="bg-surface-container-high text-on-surface px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-surface-container-highest transition-all flex items-center gap-2 border border-outline-variant/10 group active:scale-95"
+            >
               <Edit size={16} className="text-on-surface-variant group-hover:text-primary transition-colors" /> Edit Task
             </button>
-            <button className="bg-primary text-on-primary px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95">
-              <Play size={16} fill="currentColor" /> Execute Now
+            <button 
+              disabled={task.status === RecurrentTaskStatus.ACTIVE}
+              onClick={() => setIsExecuteConfirmOpen(true)}
+              className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 ${
+                task.status === RecurrentTaskStatus.ACTIVE 
+                  ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed grayscale' 
+                  : 'bg-primary text-on-primary hover:opacity-90'
+              }`}
+            >
+              <Play size={16} fill="currentColor" /> Activate Now
             </button>
           </div>
         </div>
@@ -147,13 +185,12 @@ const TaskExecutions: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs text-on-surface-variant font-medium">Priority</span>
               <span className={`text-xs font-black uppercase tracking-widest ${
-                task.priority === 'high' ? 'text-secondary' : 
-                task.priority === 'medium' ? 'text-primary' : 'text-on-surface-variant'
+                task.priority === TaskPriority.HIGH ? 'text-secondary' : 
+                task.priority === TaskPriority.MEDIUM ? 'text-primary' : 'text-on-surface-variant'
               }`}>{task.priority}</span>
             </div>
-          </div>
-        </div>
-
+            </div>
+            </div>
         {/* Success Rate */}
         <div className="bg-surface-container-low/40 backdrop-blur-xl p-8 rounded-3xl border border-outline-variant/10 shadow-xl relative overflow-hidden group hover:border-secondary/20 transition-all">
           <div className="flex justify-between items-start mb-4">
@@ -338,6 +375,30 @@ const TaskExecutions: React.FC = () => {
           v2.4.0-alpha:execution_manifest_active
         </div>
       </footer>
+
+      {activeProject && task && (
+        <CreateRecurrentTaskModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          projectId={activeProject.id}
+          initialData={task}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        isOpen={isExecuteConfirmOpen}
+        onClose={() => setIsExecuteConfirmOpen(false)}
+        onConfirm={handleConfirmExecute}
+        title="Activate Protocol"
+        message={`Are you sure you want to re-activate the automated orchestration routine "${task.title}"? This will resume the scheduled executions according to the cron definition.`}
+        confirmText="Confirm Activation"
+        variant="primary"
+        loading={executing}
+      />
     </div>
   );
 };
