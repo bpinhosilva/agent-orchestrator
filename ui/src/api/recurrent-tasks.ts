@@ -2,6 +2,13 @@ import client from './client';
 import type { Agent } from './agents';
 import { TaskPriority } from './tasks';
 
+export interface Artifact {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  filePath: string;
+}
+
 export const RecurrentTaskStatus = {
   ACTIVE: 'active',
   PAUSED: 'paused',
@@ -24,6 +31,7 @@ export interface RecurrentTaskExec {
   status: ExecStatus;
   result: string;
   latencyMs: number;
+  artifacts: Artifact[] | null;
   createdAt: string;
   updatedAt: string;
 }

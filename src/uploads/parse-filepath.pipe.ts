@@ -1,23 +1,25 @@
 import { Injectable, NotFoundException, PipeTransform } from '@nestjs/common';
 
-/** Maximum allowed length for a filepath coming from the URL. */
-export const MAX_PATH_LENGTH = 1024;
-
 /**
- * Validates a raw filepath extracted from the URL before any filesystem
- * operations are performed.
+ * Validates a raw filepath string before any filesystem operations.
  *
  * Checks enforced here (cheap, stateless):
- *  - Path length ≤ MAX_PATH_LENGTH  (DoS / OS-limit protection)
- *  - No null bytes                  (can bypass downstream path checks)
+ *  - Path length ≤ maxLength  (DoS / OS-limit protection)
+ *  - No null bytes             (can bypass downstream path checks)
  *
  * Path-traversal and symlink containment checks require I/O and are
  * performed in the handler after this pipe succeeds.
+ *
+ * Note: this pipe expects a pre-extracted string. In Express 5 (path-to-regexp v8),
+ * wildcard params are captured as arrays. UploadsController extracts the filepath
+ * from req.path directly to avoid param coercion issues.
  */
 @Injectable()
 export class ParseFilePathPipe implements PipeTransform<string, string> {
+  private readonly maxLength: number = 1024;
+
   transform(value: string): string {
-    if (value.length > MAX_PATH_LENGTH) {
+    if (!value || value.length > this.maxLength) {
       throw new NotFoundException('File not found');
     }
 

@@ -27,6 +27,7 @@ import { useProject } from '../hooks/useProject';
 import { useNotification } from '../hooks/useNotification';
 import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ExecLogModal from '../components/ExecLogModal';
 
 const TaskExecutions: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -41,6 +42,8 @@ const TaskExecutions: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExecuteConfirmOpen, setIsExecuteConfirmOpen] = useState(false);
   const [executing, setExecuting] = useState(false);
+  const [selectedExec, setSelectedExec] = useState<RecurrentTaskExec | null>(null);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const limit = 10;
 
   const fetchData = useCallback(async () => {
@@ -308,11 +311,13 @@ const TaskExecutions: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-10 py-6 text-right">
-                      <button className="text-[9px] font-black uppercase tracking-[0.2em] text-primary border border-primary/20 px-4 py-2 rounded-xl hover:bg-primary/10 transition-all active:scale-95 group-hover:border-primary/40">
-                        View Log
-                      </button>
-                    </td>
+                      <td className="px-10 py-6 text-right">
+                        <button
+                          onClick={() => { setSelectedExec(exec); setIsLogModalOpen(true); }}
+                          className="text-[9px] font-black uppercase tracking-[0.2em] text-primary border border-primary/20 px-4 py-2 rounded-xl hover:bg-primary/10 transition-all active:scale-95 group-hover:border-primary/40">
+                          View Log
+                        </button>
+                      </td>
                   </tr>
                 ))
               )}
@@ -398,6 +403,12 @@ const TaskExecutions: React.FC = () => {
         confirmText="Confirm Activation"
         variant="primary"
         loading={executing}
+      />
+
+      <ExecLogModal
+        isOpen={isLogModalOpen}
+        onClose={() => { setIsLogModalOpen(false); setSelectedExec(null); }}
+        exec={selectedExec}
       />
     </div>
   );

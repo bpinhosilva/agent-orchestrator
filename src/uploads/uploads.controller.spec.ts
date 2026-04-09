@@ -5,13 +5,21 @@ import { StorageService } from '../common/storage.service';
 import { FileSystemStorageService } from '../common/filesystem-storage.service';
 import * as path from 'path';
 import * as fs from 'fs';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ProjectsService } from '../projects/projects.service';
 import { TasksService } from '../tasks/tasks.service';
+import { ParseFilePathPipe } from './parse-filepath.pipe';
 import { User, UserRole } from '../users/entities/user.entity';
 
 jest.mock('fs');
 jest.mock('fs/promises');
+
+/** Builds a minimal mock Express request for the uploads controller. */
+function mockReq(filePath: string): Request {
+  return {
+    path: `/api/v1/uploads/artifacts/${filePath}`,
+  } as unknown as Request;
+}
 
 describe('UploadsController', () => {
   let controller: UploadsController;
@@ -48,6 +56,7 @@ describe('UploadsController', () => {
           provide: TasksService,
           useValue: mockTasksService,
         },
+        ParseFilePathPipe,
       ],
     }).compile();
 
@@ -70,7 +79,7 @@ describe('UploadsController', () => {
 
       await expect(
         controller.getFile(
-          'non-existent-file.txt',
+          mockReq('non-existent-file.txt'),
           mockResponse,
           mockAdminUser,
         ),
@@ -82,7 +91,7 @@ describe('UploadsController', () => {
 
       await expect(
         controller.getFile(
-          '../../../../etc/passwd',
+          mockReq('../../../../etc/passwd'),
           mockResponse,
           mockAdminUser,
         ),
@@ -93,7 +102,11 @@ describe('UploadsController', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       await expect(
-        controller.getFile('../../../etc/hosts', mockResponse, mockAdminUser),
+        controller.getFile(
+          mockReq('../../../etc/hosts'),
+          mockResponse,
+          mockAdminUser,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -101,7 +114,7 @@ describe('UploadsController', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       await expect(
-        controller.getFile('/etc/passwd', mockResponse, mockAdminUser),
+        controller.getFile(mockReq('/etc/passwd'), mockResponse, mockAdminUser),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -110,7 +123,7 @@ describe('UploadsController', () => {
 
       await expect(
         controller.getFile(
-          '..%2F..%2F..%2Fetc%2Fpasswd',
+          mockReq('..%2F..%2F..%2Fetc%2Fpasswd'),
           mockResponse,
           mockAdminUser,
         ),
@@ -127,7 +140,11 @@ describe('UploadsController', () => {
       (fs.realpathSync as jest.Mock).mockReturnValue('/etc/passwd');
 
       await expect(
-        controller.getFile(hierarchicalPath, mockResponse, mockAdminUser),
+        controller.getFile(
+          mockReq(hierarchicalPath),
+          mockResponse,
+          mockAdminUser,
+        ),
       ).rejects.toThrow(NotFoundException);
 
       expect(fs.realpathSync).toHaveBeenCalledWith(nominalPath);
@@ -143,7 +160,7 @@ describe('UploadsController', () => {
       (fs.createReadStream as jest.Mock).mockReturnValue({});
 
       const result = await controller.getFile(
-        hierarchicalPath,
+        mockReq(hierarchicalPath),
         mockResponse,
         mockAdminUser,
       );
@@ -161,7 +178,7 @@ describe('UploadsController', () => {
       (fs.realpathSync as jest.Mock).mockReturnValue(nominalPath);
       (fs.createReadStream as jest.Mock).mockReturnValue({});
 
-      await controller.getFile(filePath, mockResponse, mockAdminUser);
+      await controller.getFile(mockReq(filePath), mockResponse, mockAdminUser);
 
       expect(setHeaderMock).toHaveBeenCalledWith(
         expect.objectContaining({ 'Content-Type': 'application/pdf' }),
@@ -177,7 +194,7 @@ describe('UploadsController', () => {
       (fs.realpathSync as jest.Mock).mockReturnValue(nominalPath);
       (fs.createReadStream as jest.Mock).mockReturnValue({});
 
-      await controller.getFile(filePath, mockResponse, mockAdminUser);
+      await controller.getFile(mockReq(filePath), mockResponse, mockAdminUser);
 
       expect(setHeaderMock).toHaveBeenCalledWith(
         expect.objectContaining({ 'Content-Type': 'image/png' }),
@@ -193,7 +210,7 @@ describe('UploadsController', () => {
       (fs.realpathSync as jest.Mock).mockReturnValue(nominalPath);
       (fs.createReadStream as jest.Mock).mockReturnValue({});
 
-      await controller.getFile(filePath, mockResponse, mockAdminUser);
+      await controller.getFile(mockReq(filePath), mockResponse, mockAdminUser);
 
       expect(setHeaderMock).toHaveBeenCalledWith(
         expect.objectContaining({ 'X-Content-Type-Options': 'nosniff' }),
@@ -209,7 +226,7 @@ describe('UploadsController', () => {
       (fs.realpathSync as jest.Mock).mockReturnValue(nominalPath);
       (fs.createReadStream as jest.Mock).mockReturnValue({});
 
-      await controller.getFile(filePath, mockResponse, mockAdminUser);
+      await controller.getFile(mockReq(filePath), mockResponse, mockAdminUser);
 
       expect(setHeaderMock).toHaveBeenCalledWith(
         expect.objectContaining({ 'Content-Type': 'application/octet-stream' }),
@@ -226,7 +243,7 @@ describe('UploadsController', () => {
       (fs.createReadStream as jest.Mock).mockReturnValue({});
 
       const result = await controller.getFile(
-        filePath,
+        mockReq(filePath),
         mockResponse,
         mockAdminUser,
       );

@@ -6,27 +6,39 @@ import { Eye, Code as CodeIcon, Sparkles } from 'lucide-react';
 interface MarkdownFieldProps {
   label?: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   placeholder?: string;
   height?: string;
   helperText?: string;
   maxLength?: number;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   initialMode?: 'write' | 'preview';
+  readOnly?: boolean;
 }
 
 const MarkdownField: React.FC<MarkdownFieldProps> = ({ 
   label, 
   value, 
-  onChange, 
+  onChange = () => {}, 
   placeholder, 
   height = 'h-40',
   helperText,
   maxLength,
   onKeyDown,
-  initialMode = 'write'
+  initialMode = 'write',
+  readOnly = false,
 }) => {
   const [mode, setMode] = useState<'write' | 'preview'>(initialMode);
+
+  if (readOnly) {
+    return (
+      <div className="prose prose-invert prose-xs max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {value || ''}
+        </ReactMarkdown>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -91,7 +103,7 @@ const MarkdownField: React.FC<MarkdownFieldProps> = ({
           </div>
         ) : <div />}
         
-        {maxLength > 0 ? (
+        {maxLength != null && maxLength > 0 ? (
           <div className="text-[10px] font-bold text-on-surface-variant/40 lowercase tracking-widest">
             {value.length} / {maxLength}
           </div>

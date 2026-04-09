@@ -166,6 +166,7 @@ describe('TaskExecutions', () => {
             latencyMs: 248000, // 4m 08s
             result: '[Node-7] Signal validated: Bullish sweep complete...',
             updatedAt: new Date().toISOString(),
+            artifacts: null,
           },
         ],
         total: 1,

@@ -1,5 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
-import { MAX_PATH_LENGTH, ParseFilePathPipe } from './parse-filepath.pipe';
+import { ParseFilePathPipe } from './parse-filepath.pipe';
+
+const MAX_PATH_LENGTH = 1024;
 
 describe('ParseFilePathPipe', () => {
   let pipe: ParseFilePathPipe;
@@ -31,7 +33,7 @@ describe('ParseFilePathPipe', () => {
     expect(() => pipe.transform('file\0.txt')).toThrow(NotFoundException);
   });
 
-  it('should throw NotFoundException for a path that is only null bytes', () => {
-    expect(() => pipe.transform('\0\0\0')).toThrow(NotFoundException);
+  it('should throw NotFoundException for an empty string', () => {
+    expect(() => pipe.transform('')).toThrow(NotFoundException);
   });
 });

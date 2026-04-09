@@ -1,13 +1,14 @@
 import {
   Controller,
   Get,
-  Param,
+  Req,
   Res,
   NotFoundException,
   StreamableFile,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { StorageService } from '../common/storage.service';
 import { ParseFilePathPipe } from './parse-filepath.pipe';
 import * as fs from 'fs';
@@ -19,23 +20,37 @@ import { TasksService } from '../tasks/tasks.service';
 
 @Controller('uploads/artifacts')
 export class UploadsController {
+  private readonly logger = new Logger(UploadsController.name);
   constructor(
     private readonly storageService: StorageService,
     private readonly projectsService: ProjectsService,
     private readonly tasksService: TasksService,
+    private readonly parseFilePathPipe: ParseFilePathPipe,
   ) {}
 
   @Get('*filepath')
   async getFile(
-    @Param('filepath', ParseFilePathPipe) rawPath: string,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @CurrentUser() user: User,
   ): Promise<StreamableFile> {
+    // Extract the filepath from the URL directly to avoid Express 5 / NestJS
+    // @Param conversion issues (path-to-regexp v8 returns an array which NestJS
+    // coerces to a comma-joined string via Array.prototype.toString()).
+    const reqPath: string = req.path;
+    const rawPath = reqPath.replace(/^.*\/uploads\/artifacts\//, '');
     const bucketPath = this.storageService.getBucketPath('artifacts');
+
+    // Run stateless security checks from the pipe (length + null bytes)
+    this.parseFilePathPipe.transform(rawPath);
+
     const resolvedBucketPath = path.resolve(bucketPath);
 
     // Step 1 – nominal containment check (handles `..` and absolute paths)
     const nominalPath = path.resolve(bucketPath, rawPath);
+
+    this.logger.debug(`nominalPath: ${nominalPath}`);
+
     if (!nominalPath.startsWith(resolvedBucketPath + path.sep)) {
       throw new NotFoundException(`File not found`);
     }
