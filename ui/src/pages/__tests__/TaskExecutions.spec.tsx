@@ -1,11 +1,14 @@
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { type InternalAxiosRequestConfig } from 'axios';
 import TaskExecutions from '../TaskExecutions';
-import { recurrentTasksApi, RecurrentTaskStatus, ExecStatus } from '../../api/recurrent-tasks';
+import { recurrentTasksApi, RecurrentTaskStatus, ExecStatus, type RecurrentTask } from '../../api/recurrent-tasks';
 import { TaskPriority } from '../../api/tasks';
+import { type Agent } from '../../api/agents';
 import { useProject } from '../../hooks/useProject';
 import { useNotification } from '../../hooks/useNotification';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { type AxiosResponse } from 'axios';
 
 const stripMotionProps = <T extends Record<string, unknown>>(props: T) => {
   const nextProps = { ...props };
@@ -146,14 +149,14 @@ describe('TaskExecutions', () => {
         status: RecurrentTaskStatus.ACTIVE,
         priority: TaskPriority.HIGH,
         cronExpression: '0 0 * * *',
-        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as unknown as Agent,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
@@ -174,7 +177,7 @@ describe('TaskExecutions', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     render(
@@ -223,14 +226,14 @@ describe('TaskExecutions', () => {
         status: RecurrentTaskStatus.ACTIVE,
         priority: TaskPriority.HIGH,
         cronExpression: '0 0 * * *',
-        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as unknown as Agent,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
@@ -238,7 +241,7 @@ describe('TaskExecutions', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     render(
@@ -278,14 +281,14 @@ describe('TaskExecutions', () => {
         status: RecurrentTaskStatus.PAUSED,
         priority: TaskPriority.HIGH,
         cronExpression: '0 0 * * *',
-        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as unknown as Agent,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
@@ -293,10 +296,10 @@ describe('TaskExecutions', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
-    vi.mocked(recurrentTasksApi.update).mockResolvedValue({} as any);
+    vi.mocked(recurrentTasksApi.update).mockResolvedValue({} as unknown as AxiosResponse<RecurrentTask>);
 
     render(
       <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
@@ -339,14 +342,14 @@ describe('TaskExecutions', () => {
         status: RecurrentTaskStatus.ACTIVE,
         priority: TaskPriority.HIGH,
         cronExpression: '0 0 * * *',
-        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as any,
+        assignee: { id: 'agent-1', name: 'Fin-Oracle v2.4' } as unknown as Agent,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     vi.mocked(recurrentTasksApi.findExecutions).mockResolvedValue({
@@ -354,7 +357,7 @@ describe('TaskExecutions', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: {} as any,
+      config: {} as InternalAxiosRequestConfig,
     });
 
     render(

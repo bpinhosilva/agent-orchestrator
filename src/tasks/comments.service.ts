@@ -21,12 +21,6 @@ export class CommentsService {
   constructor(
     @InjectRepository(TaskComment)
     private readonly commentsRepository: Repository<TaskComment>,
-    @InjectRepository(Task)
-    private readonly tasksRepository: Repository<Task>,
-    @InjectRepository(AgentEntity)
-    private readonly agentsRepository: Repository<AgentEntity>,
-    @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
     private readonly storageService: StorageService,
   ) {}
 
