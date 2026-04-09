@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Scheduler from '../Scheduler';
 import { MemoryRouter } from 'react-router-dom';
 import { recurrentTasksApi, RecurrentTaskStatus } from '../../api/recurrent-tasks';
@@ -125,7 +126,11 @@ describe('Scheduler', () => {
       ],
     } as Awaited<ReturnType<typeof recurrentTasksApi.findAll>>);
 
-    render(<MemoryRouter><Scheduler /></MemoryRouter>);
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter><Scheduler /></MemoryRouter>
+      </QueryClientProvider>
+    );
 
     await waitFor(() => {
       expect(recurrentTasksApi.findAll).toHaveBeenCalledWith('project-1');

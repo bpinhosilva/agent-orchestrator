@@ -23,6 +23,12 @@ import AppErrorBoundary from './components/AppErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
+const suspenseFallback = (
+  <div className="flex items-center justify-center p-8 h-full min-h-[50vh]">
+    <div className="w-8 h-8 rounded-full border-4 border-outline-variant/30 border-t-primary animate-spin"></div>
+  </div>
+);
+
 function ProtectedRoute({
   children,
   roles,
@@ -52,12 +58,6 @@ function ProtectedRoute({
 }
 
 function App() {
-  const suspenseFallback = (
-    <div className="flex items-center justify-center p-8 h-full min-h-[50vh]">
-      <div className="w-8 h-8 rounded-full border-4 border-outline-variant/30 border-t-primary animate-spin"></div>
-    </div>
-  );
-
   return (
     <AppErrorBoundary
       title="The app shell crashed"

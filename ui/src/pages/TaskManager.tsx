@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ListPlus, ArrowRight, ShieldAlert, Layout } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TaskBoard from '../components/tasks/TaskBoard';
 import TaskCard from '../components/tasks/TaskCard';
 import TaskStats from '../components/tasks/TaskStats';
@@ -17,92 +18,73 @@ import { tasksApi, TaskStatus, type Task as ApiTask } from '../api/tasks';
 import { cn } from '../lib/cn';
 import type { Task as ComponentTask } from '../components/tasks/types';
 
+function mapApiTaskToComponentTask(task: ApiTask, projectId: string): ComponentTask {
+  return {
+    id: task.id,
+    status: task.status as ComponentTask['status'],
+    code: `#TASK-${task.id.substring(0, 4).toUpperCase()}`,
+    title: task.title,
+    priority: task.priority as ComponentTask['priority'],
+    agent: {
+      name: task.assignee?.name || 'Unassigned',
+      emoji: task.assignee?.emoji,
+      colorClass: 'bg-surface-container-highest border-outline-variant/30',
+    },
+    isActive: task.status === 'in-progress',
+    progress: task.status === 'done' ? 100 : task.status === 'in-progress' ? 50 : 0,
+    projectId,
+    updatedAt: task.updatedAt,
+  };
+}
+
+function sortTasks(a: ComponentTask, b: ComponentTask): number {
+  if (a.status === 'backlog' && b.status === 'backlog') {
+    const diff = (a.priority || 0) - (b.priority || 0);
+    return diff !== 0 ? diff : a.id.localeCompare(b.id);
+  }
+  if (a.status !== 'backlog' && b.status !== 'backlog') {
+    const diff = new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    return diff !== 0 ? diff : a.id.localeCompare(b.id);
+  }
+  return 0;
+}
+
 const TaskManager: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
-  const { notifyApiError, notifyError } = useNotification();
+  const { notifyError } = useNotification();
+  const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [tasks, setTasks] = useState<ComponentTask[]>([]);
-  const [loadingTasks, setLoadingTasks] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const [skipConfirm, setSkipConfirm] = useState(() => {
     return localStorage.getItem('skipArchiveConfirm') === 'true';
   });
   const [checkValue, setCheckValue] = useState(false);
 
-  const fetchTasks = useCallback(async () => {
-    if (!activeProject) return;
-    try {
-      setLoadingTasks(true);
-      // Fetch all tasks for the project (excluding archived in the backend might be better, 
-      // but let's just fetch everything and handle it here so the archive column/logic works if needed).
-      // Actually, requirement 1: "Don't fetch tasks that are archived"
-      const allTasksData = await tasksApi.fetchAll(activeProject.id);
-      
-      const filteredTasks = allTasksData.filter(t => t.status !== 'archived');
+  const queryKey = useMemo(() => ['tasks', activeProject?.id] as const, [activeProject?.id]);
 
-      const mappedTasks: ComponentTask[] = filteredTasks.map((t) => ({
-        id: t.id,
-        status: t.status as ComponentTask['status'],
-        code: `#TASK-${t.id.substring(0, 4).toUpperCase()}`,
-        title: t.title,
-        priority: t.priority as ComponentTask['priority'],
-        agent: {
-          name: t.assignee?.name || 'Unassigned',
-          emoji: t.assignee?.emoji,
-          colorClass: 'bg-surface-container-highest border-outline-variant/30'
-        },
-        isActive: t.status === 'in-progress',
-        progress: t.status === 'done' ? 100 : t.status === 'in-progress' ? 50 : 0,
-        projectId: activeProject.id,
-        updatedAt: t.updatedAt
-      }));
-
-      // Sort tasks based on requirements:
-      // 2. tasks in backlog by priority (lower number = higher priority)
-      // 3. tasks in other columns by latest updatedAt (most recent first)
-      const sortedTasks = [...mappedTasks].sort((a, b) => {
-        if (a.status === 'backlog' && b.status === 'backlog') {
-          return (a.priority || 0) - (b.priority || 0);
-        }
-        if (a.status !== 'backlog' && b.status !== 'backlog') {
-          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
-        }
-        return 0; // Default if in different categories (though they are filtered by column anyway)
-      });
-
-      setTasks(sortedTasks);
-    } catch (error) {
-      console.error('Failed to fetch tasks in TaskManager:', error);
-      notifyApiError(error, 'Fetch Error');
-    } finally {
-      setLoadingTasks(false);
-    }
-  }, [activeProject, notifyApiError]);
+  const { data: serverTasks, isLoading: loadingTasks } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const allTasksData = await tasksApi.fetchAll(activeProject!.id);
+      return allTasksData.filter(t => t.status !== 'archived');
+    },
+    enabled: Boolean(activeProject?.id),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks, refreshKey]);
+    if (!serverTasks) return;
+    const mapped = serverTasks.map(t => mapApiTaskToComponentTask(t, activeProject!.id));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTasks([...mapped].sort(sortTasks));
+  }, [serverTasks, activeProject]);
 
   const handleSseUpdate = useCallback((event: string, updatedTaskData: ApiTask) => {
     if (!activeProject || updatedTaskData.projectId !== activeProject.id) return;
 
-    const mappedTask: ComponentTask = {
-      id: updatedTaskData.id,
-      status: updatedTaskData.status as ComponentTask['status'],
-      code: `#TASK-${updatedTaskData.id.substring(0, 4).toUpperCase()}`,
-      title: updatedTaskData.title,
-      priority: updatedTaskData.priority as ComponentTask['priority'],
-      agent: {
-        name: updatedTaskData.assignee?.name || 'Unassigned',
-        emoji: updatedTaskData.assignee?.emoji,
-        colorClass: 'bg-surface-container-highest border-outline-variant/30'
-      },
-      isActive: updatedTaskData.status === 'in-progress',
-      progress: updatedTaskData.status === 'done' ? 100 : updatedTaskData.status === 'in-progress' ? 50 : 0,
-      projectId: updatedTaskData.projectId,
-      updatedAt: updatedTaskData.updatedAt
-    };
+    const mappedTask = mapApiTaskToComponentTask(updatedTaskData, activeProject.id);
 
     setTasks(prevTasks => {
       if (event === 'deleted' || updatedTaskData.status === 'archived') {
@@ -111,36 +93,18 @@ const TaskManager: React.FC = () => {
       
       const exists = prevTasks.some(t => t.id === updatedTaskData.id);
       if (exists) {
-        return prevTasks.map(t => t.id === updatedTaskData.id ? mappedTask : t).sort((a, b) => {
-          if (a.status === 'backlog' && b.status === 'backlog') {
-            return (a.priority || 0) - (b.priority || 0);
-          }
-          if (a.status !== 'backlog' && b.status !== 'backlog') {
-            return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
-          }
-          return 0;
-        });
+        return prevTasks.map(t => t.id === updatedTaskData.id ? mappedTask : t).sort(sortTasks);
       } else {
-        const newTasks = [mappedTask, ...prevTasks];
-        return newTasks.sort((a, b) => {
-          if (a.status === 'backlog' && b.status === 'backlog') {
-            return (a.priority || 0) - (b.priority || 0);
-          }
-          if (a.status !== 'backlog' && b.status !== 'backlog') {
-            return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
-          }
-          return 0;
-        });
+        return [mappedTask, ...prevTasks].sort(sortTasks);
       }
     });
   }, [activeProject]);
 
   useTaskSSE(activeProject?.id, handleSseUpdate);
 
-  const handleTaskCreated = () => {
-    // Rely on SSE or keep the fallback
-    setRefreshKey(prev => prev + 1);
-  };
+  const handleTaskCreated = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
 
   const handleStatusChange = useCallback(async (taskId: string, newStatus: string) => {
      if (!activeProject) return;
@@ -158,9 +122,9 @@ const TaskManager: React.FC = () => {
      } catch (error) {
        console.error('Failed to update task status:', error);
       notifyError('Status Update Failed', 'Failed to update task status in the neural mesh.');
-      fetchTasks();
+      queryClient.invalidateQueries({ queryKey });
     }
-  }, [activeProject, notifyError, fetchTasks]);
+  }, [activeProject, notifyError, queryClient, queryKey]);
 
   const {
     activeId,

@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { RecurrentTask } from './recurrent-task.entity';
+import { Artifact } from '../../common/interfaces/artifact.interface';
 
 export enum ExecStatus {
   RUNNING = 'running',
@@ -40,6 +41,9 @@ export class RecurrentTaskExec {
 
   @Column('int', { nullable: true })
   latencyMs: number;
+
+  @Column({ type: 'simple-json', nullable: true })
+  artifacts: Artifact[] | null;
 
   @CreateDateColumn()
   createdAt: Date;

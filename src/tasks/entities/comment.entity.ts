@@ -10,6 +10,7 @@ import {
 import { Task } from './task.entity';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 import { User } from '../../users/entities/user.entity';
+import { Artifact } from '../../common/interfaces/artifact.interface';
 
 export enum CommentAuthorType {
   USER = 'user',
@@ -54,14 +55,7 @@ export class TaskComment {
   authorAgent: AgentEntity | null;
 
   @Column({ type: 'simple-json', nullable: true })
-  artifacts:
-    | {
-        id: string;
-        originalName: string;
-        mimeType: string;
-        filePath: string;
-      }[]
-    | null;
+  artifacts: Artifact[] | null;
 
   @CreateDateColumn()
   createdAt: Date;

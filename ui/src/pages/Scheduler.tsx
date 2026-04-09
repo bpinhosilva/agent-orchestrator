@@ -17,60 +17,64 @@ import {
 import { motion } from 'framer-motion';
 import { recurrentTasksApi, type RecurrentTask, RecurrentTaskStatus } from '../api/recurrent-tasks';
 import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useNotification } from '../hooks/useNotification';
 import { useProject } from '../hooks/useProject';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Scheduler: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
   const { notifySuccess, notifyApiError } = useNotification();
   const navigate = useNavigate();
-  
-  const [tasks, setTasks] = useState<RecurrentTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<RecurrentTask | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<RecurrentTask | null>(null);
 
-  const fetchTasks = useCallback(async () => {
-    if (!activeProject) {
-      setTasks([]);
-      setLoading(false);
-      return;
-    }
+  const queryKey = ['recurrent-tasks', activeProject?.id] as const;
 
-    try {
-      setLoading(true);
-      const res = await recurrentTasksApi.findAll(activeProject.id);
-      setTasks(Array.isArray(res.data) ? res.data : []);
-    } catch (error) {
-      notifyApiError(error, 'Error fetching recurrent tasks');
-    } finally {
-      setLoading(false);
-    }
-  }, [activeProject, notifyApiError]);
+  const { data: tasks = [], isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const res = await recurrentTasksApi.findAll(activeProject!.id);
+      return Array.isArray(res.data) ? res.data : [];
+    },
+    enabled: Boolean(activeProject?.id),
+  });
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  const deleteMutation = useMutation({
+    mutationFn: (task: RecurrentTask) =>
+      recurrentTasksApi.delete(activeProject!.id, task.id),
+    onSuccess: (_, task) => {
+      notifySuccess('Protocol Terminated', `The task "${task.title}" has been removed from the fleet.`);
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (error) => notifyApiError(error, 'Error deleting task'),
+  });
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!activeProject) {
-      return;
-    }
-
-    if (!window.confirm(`Are you sure you want to delete the recurrent protocol "${title}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      await recurrentTasksApi.delete(activeProject.id, id);
-      notifySuccess('Protocol Terminated', `The task "${title}" has been removed from the fleet.`);
-      fetchTasks();
-    } catch (error) {
-      notifyApiError(error, 'Error deleting task');
-    }
-  };
+  const toggleStatusMutation = useMutation({
+    mutationFn: (task: RecurrentTask) => {
+      const newStatus =
+        task.status === RecurrentTaskStatus.ACTIVE
+          ? RecurrentTaskStatus.PAUSED
+          : RecurrentTaskStatus.ACTIVE;
+      return recurrentTasksApi
+        .update(activeProject!.id, task.id, { status: newStatus })
+        .then(() => newStatus);
+    },
+    onSuccess: (newStatus, task) => {
+      notifySuccess(
+        `Protocol ${newStatus === RecurrentTaskStatus.ACTIVE ? 'Resumed' : 'Paused'}`,
+        `Operation "${task.title}" has been ${newStatus === RecurrentTaskStatus.ACTIVE ? 're-activated' : 'suspended'}.`,
+      );
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (error) => notifyApiError(error, 'Failed to update protocol status'),
+  });
 
   const openCreateModal = () => {
     setEditingTask(undefined);
@@ -82,27 +86,9 @@ const Scheduler: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleToggleStatus = async (task: RecurrentTask) => {
-    if (!activeProject) {
-      return;
-    }
-
-    const newStatus = task.status === RecurrentTaskStatus.ACTIVE 
-      ? RecurrentTaskStatus.PAUSED 
-      : RecurrentTaskStatus.ACTIVE;
-    
-    try {
-      await recurrentTasksApi.update(activeProject.id, task.id, {
-        status: newStatus,
-      });
-      notifySuccess(
-        `Protocol ${newStatus === RecurrentTaskStatus.ACTIVE ? 'Resumed' : 'Paused'}`, 
-        `Operation "${task.title}" has been ${newStatus === RecurrentTaskStatus.ACTIVE ? 're-activated' : 'suspended'}.`
-      );
-      fetchTasks();
-    } catch (error) {
-      notifyApiError(error, 'Failed to update protocol status');
-    }
+  const handleToggleStatus = (task: RecurrentTask) => {
+    if (toggleStatusMutation.isPending) return;
+    toggleStatusMutation.mutate(task);
   };
 
   const stats = [
@@ -311,8 +297,9 @@ const Scheduler: React.FC = () => {
                     
                     <div className="absolute right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                       <button 
-                        className={`p-3 transition-colors ${task.status === RecurrentTaskStatus.ACTIVE ? 'text-secondary hover:text-secondary/80' : 'text-on-surface-variant hover:text-secondary'}`} 
+                        className={`p-3 transition-colors disabled:opacity-40 ${task.status === RecurrentTaskStatus.ACTIVE ? 'text-secondary hover:text-secondary/80' : 'text-on-surface-variant hover:text-secondary'}`} 
                         title={task.status === RecurrentTaskStatus.ACTIVE ? 'Pause Protocol' : 'Resume Protocol'}
+                        disabled={toggleStatusMutation.isPending}
                         onClick={() => handleToggleStatus(task)}
                       >
                         {task.status === RecurrentTaskStatus.ACTIVE ? <Pause size={20} /> : <Play size={20} />}
@@ -327,7 +314,7 @@ const Scheduler: React.FC = () => {
                       <button 
                         className="p-3 text-on-surface-variant hover:text-error transition-colors" 
                         title="Delete"
-                        onClick={() => handleDelete(task.id, task.title)}
+                        onClick={() => setDeleteTarget(task)}
                       >
                         <Trash2 size={20} />
                       </button>
@@ -411,9 +398,20 @@ const Scheduler: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           setIsModalOpen(false);
-          fetchTasks();
+          queryClient.invalidateQueries({ queryKey });
         }}
         initialData={editingTask}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => !deleteMutation.isPending && setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+        title="Delete Recurrent Protocol?"
+        message={`Are you sure you want to delete the recurrent protocol "${deleteTarget?.title}"? This action cannot be undone.`}
+        confirmText="Delete Protocol"
+        variant="danger"
+        loading={deleteMutation.isPending}
       />
     </div>
   );

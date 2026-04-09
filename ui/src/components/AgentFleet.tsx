@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Grid2X2, List, Plus, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AgentCard from './AgentCard';
@@ -27,7 +27,10 @@ const AgentFleet = () => {
     },
   });
 
-  const invalidateAgents = () => queryClient.invalidateQueries({ queryKey: ['agents'] });
+  const invalidateAgents = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['agents'] }),
+    [queryClient],
+  );
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => agentsApi.delete(id),

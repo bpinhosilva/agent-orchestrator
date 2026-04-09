@@ -91,11 +91,11 @@ const MarkdownField: React.FC<MarkdownFieldProps> = ({
           </div>
         ) : <div />}
         
-        {maxLength && (
+        {maxLength > 0 ? (
           <div className="text-[10px] font-bold text-on-surface-variant/40 lowercase tracking-widest">
             {value.length} / {maxLength}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

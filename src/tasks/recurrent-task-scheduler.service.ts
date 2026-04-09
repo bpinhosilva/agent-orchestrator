@@ -18,6 +18,12 @@ import {
 } from './entities/recurrent-task-exec.entity';
 import { AgentsService } from '../agents/agents.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
+import { StorageService } from '../common/storage.service';
+import {
+  StoragePathHelper,
+  StorageContext,
+} from '../common/storage-path.helper';
+import { Artifact } from '../common/interfaces/artifact.interface';
 
 @Injectable()
 export class RecurrentTaskSchedulerService
@@ -41,6 +47,8 @@ export class RecurrentTaskSchedulerService
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly agentsService: AgentsService,
     private readonly systemSettingsService: SystemSettingsService,
+    private readonly storageService: StorageService,
+    private readonly storagePathHelper: StoragePathHelper,
   ) {}
 
   async onApplicationBootstrap() {
@@ -214,10 +222,43 @@ export class RecurrentTaskSchedulerService
 
       const latencyMs = Date.now() - this.runningTasks.get(taskId)!.startTime;
 
+      const artifacts: Artifact[] = [];
+      if (response.image) {
+        try {
+          const isBase64 =
+            typeof response.image === 'string' &&
+            (response.image.startsWith('data:') || response.image.length > 100);
+
+          if (isBase64) {
+            const base64Data = response.image.includes('base64,')
+              ? response.image.split('base64,')[1]
+              : response.image;
+
+            const objectPath = this.storagePathHelper.generate({
+              context: StorageContext.RECURRENT_TASKS,
+              contextId: savedExec.id,
+              mimeType: 'image/png',
+              originalName: 'generated-image.png',
+            });
+            await this.storageService.saveBase64(
+              base64Data,
+              objectPath.mimeType,
+              objectPath.filePath,
+            );
+            artifacts.push(objectPath);
+          }
+        } catch (error) {
+          this.logger.error(
+            `Failed to save artifact for recurrent task exec ${savedExec.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+
       await this.execRepository.update(savedExec.id, {
         status: ExecStatus.SUCCESS,
         result: response.content,
         latencyMs,
+        artifacts: artifacts.length > 0 ? artifacts : null,
       });
     } catch (error: unknown) {
       const latencyMs = Date.now() - this.runningTasks.get(taskId)!.startTime;

@@ -1,8 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { Agent, AgentResponse } from '../interfaces/agent.interface';
 import { Injectable, Logger, Optional, Scope } from '@nestjs/common';
-import { Task } from '../../tasks/entities/task.entity';
-import { Project } from '../../projects/entities/project.entity';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_MODEL_BY_PROVIDER } from '../default-provider-models';
 import { RegisterAgent } from '../registry/agent.registry';
@@ -191,20 +189,5 @@ export class GeminiAgent implements Agent {
     );
 
     return hasSupportedPrefix && !hasExcludedSuffix;
-  }
-
-  async performTask(task: Task, project: Project): Promise<AgentResponse> {
-    this.logger.debug(
-      `Performing task: ${task.title} for project: ${project.title}`,
-    );
-    const prompt = `
-Task: ${task.title}
-Description: ${task.description}
-Project: ${project.title}
-Project Description: ${project.description}
-
-Please perform the task and provide the output.
-`;
-    return this.processText(prompt);
   }
 }

@@ -16,24 +16,7 @@ interface AgentCardProps {
   onActivate?: (id: string) => void;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ 
-  id,
-  name, 
-  emoji,
-  expertise, 
-  model, 
-  status, 
-  metricLabel, 
-  metricValue,
-  onProbe,
-  onConfigure,
-  onDelete,
-  onActivate
-}) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const statusConfig = {
+const statusConfig = {
     active: {
       color: 'text-secondary',
       bg: 'bg-secondary/10',
@@ -62,7 +45,24 @@ const AgentCard: React.FC<AgentCardProps> = ({
       animate: '',
       icon: XCircle,
     },
-  };
+};
+
+const AgentCard: React.FC<AgentCardProps> = ({
+  id,
+  name,
+  emoji,
+  expertise,
+  model,
+  status,
+  metricLabel,
+  metricValue,
+  onProbe,
+  onConfigure,
+  onDelete,
+  onActivate,
+}) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const config = statusConfig[status];
 

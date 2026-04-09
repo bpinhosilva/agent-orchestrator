@@ -6,6 +6,7 @@ export enum StorageContext {
   TASKS = 'tasks',
   AGENTS = 'agents',
   COMMENTS = 'comments',
+  RECURRENT_TASKS = 'recurrent-tasks',
 }
 
 /** Returned by {@link StoragePathHelper.generate} and persisted by callers. */

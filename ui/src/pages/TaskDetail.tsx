@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import { agentsApi, type Agent } from '../api/agents';
 import { tasksApi, TaskPriority, TaskStatus, type Task } from '../api/tasks';
 import MarkdownField from '../components/MarkdownField';
 import CommentSection from '../components/tasks/CommentSection';
+import ConfirmDialog from '../components/ConfirmDialog';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useNotification } from '../hooks/useNotification';
 import { taskDetailSchema, type TaskDetailFormValues } from '../lib/taskFormSchemas';
@@ -41,6 +42,7 @@ const TaskDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { notifyApiError, notifyError, notifySuccess } = useNotification();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const statusErrorId = useId();
   const titleErrorId = useId();
   const priorityErrorId = useId();
@@ -181,15 +183,8 @@ const TaskDetail = () => {
   );
 
   const handleDelete = () => {
-    if (deleteMutation.isPending) {
-      return;
-    }
-
-    if (!window.confirm('Are you sure you want to decommission this task node?')) {
-      return;
-    }
-
-    deleteMutation.mutate();
+    if (deleteMutation.isPending) return;
+    setIsDeleteConfirmOpen(true);
   };
 
   if (taskQuery.isPending) {
@@ -225,6 +220,7 @@ const TaskDetail = () => {
   const nodeCode = `#NODE-${task.id.substring(0, 4).toUpperCase()}`;
 
   return (
+    <>
     <div className="max-w-7xl mx-auto w-full space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav className="flex items-center space-x-2 text-sm text-on-surface-variant font-medium" aria-label="Task breadcrumb">
@@ -566,6 +562,21 @@ const TaskDetail = () => {
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      isOpen={isDeleteConfirmOpen}
+      onClose={() => setIsDeleteConfirmOpen(false)}
+      onConfirm={() => {
+        setIsDeleteConfirmOpen(false);
+        deleteMutation.mutate();
+      }}
+      title="Decommission Task Node?"
+      message="Are you sure you want to decommission this task node? This action cannot be undone."
+      confirmText="Decommission"
+      variant="danger"
+      loading={deleteMutation.isPending}
+    />
+    </>
   );
 };
 
