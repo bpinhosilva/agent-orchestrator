@@ -1,3 +1,13 @@
+# [1.0.0-alpha.34](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.33...v1.0.0-alpha.34) (2026-04-09)
+
+
+### Features
+
+* enhance file path validation and logging in uploads, add ExecLogModal component ([2d9ca31](https://github.com/bpinhosilva/agent-orchestrator/commit/2d9ca31fd67924958f417d113ec974252858782d))
+* **migrations:** add migration to set default UUIDs for ID columns ([ea9289b](https://github.com/bpinhosilva/agent-orchestrator/commit/ea9289b8623d244737dfb7340a58637c8967edf8))
+* refactor task and comment entities to use Artifact interface for artifacts ([806fde7](https://github.com/bpinhosilva/agent-orchestrator/commit/806fde736b734de0cb3cb9a7a05c5c3eb2d7f171))
+* **ui:** integrate MarkdownField for task description input and enhance TaskExecutions ([d4b91e8](https://github.com/bpinhosilva/agent-orchestrator/commit/d4b91e8b9c392f77a2cab3c0a5bcc641110bced2))
+
 # [1.0.0-alpha.33](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.32...v1.0.0-alpha.33) (2026-04-06)
 
 
