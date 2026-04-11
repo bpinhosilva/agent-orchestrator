@@ -1,3 +1,10 @@
+# [1.0.0-alpha.35](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.34...v1.0.0-alpha.35) (2026-04-11)
+
+
+### Features
+
+* add Spanish release notes and update task priority handling ([42484db](https://github.com/bpinhosilva/agent-orchestrator/commit/42484db728a48eed290c00be180598718ca572a5))
+
 # [1.0.0-alpha.34](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.33...v1.0.0-alpha.34) (2026-04-09)
 
 
