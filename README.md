@@ -13,7 +13,8 @@
 </p>
 
 <p align="center">
-  <a href="docs/i18n/pt-br/README.md">🇧🇷 Português (Brasil)</a>
+  <a href="docs/i18n/pt-br/README.md">🇧🇷 Português (Brasil)</a> &nbsp;&middot;&nbsp;
+  <a href="docs/i18n/es-es/README.md">🇪🇸 Español (España)</a>
 </p>
 
 Agent Orchestrator is an open-source platform for managing AI agents, tasks, and project-scoped automation across multiple model providers. It combines a NestJS API, a React dashboard, a packaged CLI/runtime, and Docker deployment options for both local use and production-style environments.

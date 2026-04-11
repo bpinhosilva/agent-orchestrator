@@ -281,7 +281,7 @@ const ProviderDetail = ({
 
       <div className="ui-helper-text p-8 border-t border-outline-variant/5 bg-surface-container-lowest/20 flex items-center gap-3">
         <Clock size={14} className="text-tertiary" />
-        Model registry updates propagate automatically after provider and model mutations.
+        Model registry updates propagate automatically after provider and model changes.
       </div>
     </div>
   );

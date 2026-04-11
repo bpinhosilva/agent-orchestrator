@@ -21,6 +21,22 @@ export const TaskPriority = {
 
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
 
+export const getTaskPriorityLabel = (priority: TaskPriority | string | number): string => {
+  const p = typeof priority === 'string' ? parseInt(priority, 10) : priority;
+  switch (p) {
+    case TaskPriority.CRITICAL:
+      return 'CRITICAL';
+    case TaskPriority.HIGH:
+      return 'HIGH';
+    case TaskPriority.MEDIUM:
+      return 'MEDIUM';
+    case TaskPriority.LOW:
+      return 'LOW';
+    default:
+      return 'UNKNOWN';
+  }
+};
+
 export interface Task {
   id: string;
   title: string;

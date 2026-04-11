@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ChevronRight, 
   Edit, 
   Play, 
+  Pause,
   Filter, 
   Download, 
   ChevronLeft, 
@@ -15,6 +16,7 @@ import {
   Clock,
   Layout,
 } from 'lucide-react';
+import { CronExpressionParser } from 'cron-parser';
 import { 
   recurrentTasksApi, 
   type RecurrentTask, 
@@ -22,7 +24,7 @@ import {
   RecurrentTaskStatus,
   ExecStatus 
 } from '../api/recurrent-tasks';
-import { TaskPriority } from '../api/tasks';
+import { TaskPriority, getTaskPriorityLabel } from '../api/tasks';
 import { useProject } from '../hooks/useProject';
 import { useNotification } from '../hooks/useNotification';
 import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
@@ -41,6 +43,7 @@ const TaskExecutions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExecuteConfirmOpen, setIsExecuteConfirmOpen] = useState(false);
+  const [isPauseConfirmOpen, setIsPauseConfirmOpen] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [selectedExec, setSelectedExec] = useState<RecurrentTaskExec | null>(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -90,6 +93,27 @@ const TaskExecutions: React.FC = () => {
     }
   };
 
+  const handleConfirmPause = async () => {
+    if (!activeProject || !task) return;
+
+    try {
+      setExecuting(true);
+      await recurrentTasksApi.update(activeProject.id, task.id, {
+        status: RecurrentTaskStatus.PAUSED,
+      });
+      notifySuccess(
+        'Protocol Paused',
+        `Operation "${task.title}" has been paused.`
+      );
+      fetchData();
+    } catch (error) {
+      notifyApiError(error, 'Failed to pause protocol');
+    } finally {
+      setExecuting(false);
+      setIsPauseConfirmOpen(false);
+    }
+  };
+
   const formatDuration = (ms: number) => {
     if (!ms) return '0s';
     const seconds = Math.floor(ms / 1000);
@@ -99,6 +123,76 @@ const TaskExecutions: React.FC = () => {
     }
     return `${seconds}s`;
   };
+
+  // --- Computed Metrics (from current page of executions) ---
+  const completedExecutions = executions.filter(
+    (e) => e.status === ExecStatus.SUCCESS || e.status === ExecStatus.FAILURE
+  );
+  const successCount = executions.filter((e) => e.status === ExecStatus.SUCCESS).length;
+  const successRate = completedExecutions.length > 0
+    ? (successCount / completedExecutions.length) * 100
+    : null;
+
+  const executionsWithLatency = executions.filter((e) => e.latencyMs > 0);
+  const avgLatencyMs = executionsWithLatency.length > 0
+    ? executionsWithLatency.reduce((sum, e) => sum + e.latencyMs, 0) / executionsWithLatency.length
+    : null;
+
+
+
+  const nextRunInfo = useMemo(() => {
+    if (task?.status !== RecurrentTaskStatus.ACTIVE || !task?.cronExpression) return null;
+    try {
+      const interval = CronExpressionParser.parse(task.cronExpression);
+      const next = interval.next().toDate();
+      const now = new Date();
+      const diffMs = next.getTime() - now.getTime();
+      if (diffMs <= 0) return { relative: 'now', absolute: next.toUTCString().split(' ')[4] + ' UTC' };
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHours = Math.floor(diffMin / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      let relative: string;
+      if (diffDays > 0) {
+        relative = `in ${diffDays}d ${diffHours % 24}h`;
+      } else if (diffHours > 0) {
+        relative = `in ${diffHours}h ${diffMin % 60}m`;
+      } else if (diffMin > 0) {
+        relative = `in ${diffMin}m`;
+      } else {
+        relative = `in ${diffSec}s`;
+      }
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const absolute = `${pad(next.getUTCHours())}:${pad(next.getUTCMinutes())}:${pad(next.getUTCSeconds())} UTC`;
+      return { relative, absolute };
+    } catch {
+      return null;
+    }
+  }, [task?.cronExpression, task?.status]);
+
+  // Bar chart: pick the latest 6 executions with latency, sorted oldest→newest for left-to-right time flow
+  const barSlice = executionsWithLatency
+    .slice()
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .slice(-6);
+
+  // Normalize heights using range (min→max) with a 15% floor so bars are always visible
+  // and differences, even small ones, are amplified across the full chart height.
+  const barData: { height: number; label: string }[] = barSlice.length > 0
+    ? (() => {
+        const MIN_HEIGHT = 15;
+        const latencies = barSlice.map((e) => e.latencyMs);
+        const minL = Math.min(...latencies);
+        const maxL = Math.max(...latencies);
+        const range = maxL - minL;
+        return barSlice.map((e) => ({
+          height: range > 0
+            ? MIN_HEIGHT + ((e.latencyMs - minL) / range) * (100 - MIN_HEIGHT)
+            : 60, // all bars identical — flat mid-height
+          label: formatDuration(e.latencyMs),
+        }));
+      })()
+    : [40, 60, 50, 80, 75, 100].map((h) => ({ height: h, label: '' }));
 
   if (projectLoading || (loading && !task)) {
     return (
@@ -153,17 +247,21 @@ const TaskExecutions: React.FC = () => {
             >
               <Edit size={16} className="text-on-surface-variant group-hover:text-primary transition-colors" /> Edit Task
             </button>
-            <button 
-              disabled={task.status === RecurrentTaskStatus.ACTIVE}
-              onClick={() => setIsExecuteConfirmOpen(true)}
-              className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 ${
-                task.status === RecurrentTaskStatus.ACTIVE 
-                  ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed grayscale' 
-                  : 'bg-primary text-on-primary hover:opacity-90'
-              }`}
-            >
-              <Play size={16} fill="currentColor" /> Activate Now
-            </button>
+            {task.status === RecurrentTaskStatus.ACTIVE ? (
+              <button
+                onClick={() => setIsPauseConfirmOpen(true)}
+                className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-surface-container-high text-on-surface-variant hover:bg-error/10 hover:text-error border border-outline-variant/10 hover:border-error/30 shadow-lg active:scale-95"
+              >
+                <Pause size={16} fill="currentColor" /> Pause Task
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsExecuteConfirmOpen(true)}
+                className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-primary text-on-primary hover:opacity-90 shadow-lg shadow-primary/20 active:scale-95"
+              >
+                <Play size={16} fill="currentColor" /> Activate Now
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -188,9 +286,10 @@ const TaskExecutions: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs text-on-surface-variant font-medium">Priority</span>
               <span className={`text-xs font-black uppercase tracking-widest ${
-                task.priority === TaskPriority.HIGH ? 'text-secondary' : 
-                task.priority === TaskPriority.MEDIUM ? 'text-primary' : 'text-on-surface-variant'
-              }`}>{task.priority}</span>
+                String(task.priority) === String(TaskPriority.CRITICAL) ? 'text-error' :
+                String(task.priority) === String(TaskPriority.HIGH) ? 'text-secondary' : 
+                String(task.priority) === String(TaskPriority.MEDIUM) ? 'text-primary' : 'text-on-surface-variant'
+              }`}>{getTaskPriorityLabel(task.priority)}</span>
             </div>
             </div>
             </div>
@@ -201,16 +300,40 @@ const TaskExecutions: React.FC = () => {
             <TrendingUp size={20} className="text-secondary opacity-60 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="flex items-baseline gap-3 mb-8">
-            <span className="text-5xl font-headline font-black text-white">98.4%</span>
-            <span className="text-secondary text-[10px] font-black uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-full">+1.2%</span>
+            {successRate !== null ? (
+              <span className="text-5xl font-headline font-black text-white" data-testid="success-rate">
+                {successRate.toFixed(1)}%
+              </span>
+            ) : (
+              <span className="text-5xl font-headline font-black text-on-surface-variant/30" data-testid="success-rate">
+                —
+              </span>
+            )}
+            {successRate !== null && (
+              <span className="text-secondary text-[10px] font-black uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-full">
+                {completedExecutions.length} exec{completedExecutions.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
-          <div className="h-20 w-full flex items-end gap-1.5 mt-auto">
-            {[40, 60, 50, 80, 75, 100].map((h, i) => (
-              <div 
-                key={i} 
-                className="flex-1 bg-secondary/10 rounded-t-lg border-t border-secondary/30 hover:bg-secondary/20 transition-all cursor-crosshair transform origin-bottom hover:scale-y-110"
-                style={{ height: `${h}%` }}
-              ></div>
+          <div className="h-24 w-full flex items-end gap-1.5 mt-4">
+            {barData.map((bar, i) => (
+              <div
+                key={i}
+                title={bar.label}
+                className="flex-1 relative group/bar flex flex-col items-center justify-end cursor-crosshair"
+                style={{ height: '100%' }}
+              >
+                {/* Tooltip on hover */}
+                {bar.label && (
+                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] font-mono text-secondary opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    {bar.label}
+                  </span>
+                )}
+                <div
+                  className="w-full bg-secondary/15 rounded-t-md border-t-2 border-secondary/40 hover:bg-secondary/30 hover:border-secondary/70 transition-all"
+                  style={{ height: `${bar.height}%` }}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -224,15 +347,19 @@ const TaskExecutions: React.FC = () => {
           <div className="space-y-10">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/30 mb-2">Avg Duration</p>
-              <p className="text-2xl font-black text-white">4m 12s</p>
+              <p className="text-2xl font-black text-white" data-testid="avg-duration">
+                {avgLatencyMs !== null ? formatDuration(avgLatencyMs) : '—'}
+              </p>
             </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/30 mb-2">Next Run</p>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-black text-primary">in 14 hours</span>
-                <span className="text-[9px] font-mono bg-surface-container-highest px-2 py-1 rounded text-on-surface-variant border border-outline-variant/5">00:00:00 UTC</span>
+            {nextRunInfo && (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/30 mb-2">Next Run</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-black text-primary" data-testid="next-run-relative">{nextRunInfo.relative}</span>
+                  <span className="text-[9px] font-mono bg-surface-container-highest px-2 py-1 rounded text-on-surface-variant border border-outline-variant/5" data-testid="next-run-absolute">{nextRunInfo.absolute}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -376,9 +503,6 @@ const TaskExecutions: React.FC = () => {
           <Clock size={12} />
           Cluster Synchronized: {new Date().toLocaleTimeString()} UTC
         </div>
-        <div className="text-primary/20 text-[10px] font-black uppercase tracking-tighter cursor-not-allowed italic">
-          v2.4.0-alpha:execution_manifest_active
-        </div>
       </footer>
 
       {activeProject && task && (
@@ -402,6 +526,17 @@ const TaskExecutions: React.FC = () => {
         message={`Are you sure you want to re-activate the automated orchestration routine "${task.title}"? This will resume the scheduled executions according to the cron definition.`}
         confirmText="Confirm Activation"
         variant="primary"
+        loading={executing}
+      />
+
+      <ConfirmDialog
+        isOpen={isPauseConfirmOpen}
+        onClose={() => setIsPauseConfirmOpen(false)}
+        onConfirm={handleConfirmPause}
+        title="Pause Protocol"
+        message={`Are you sure you want to pause "${task.title}"? Scheduled executions will be suspended until the task is re-activated.`}
+        confirmText="Confirm Pause"
+        variant="danger"
         loading={executing}
       />
 

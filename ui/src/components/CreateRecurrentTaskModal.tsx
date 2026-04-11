@@ -81,7 +81,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
         setDescription(initialData.description);
         setCronExpression(initialData.cronExpression);
         setAssigneeId(initialData.assignee.id);
-        setPriority(initialData.priority);
+        setPriority(Number(initialData.priority) as TaskPriority);
       }
     } else {
       // Reset form for create mode or when closing
@@ -436,7 +436,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                         type="button"
                         onClick={() => setPriority(p)}
                         className={`flex-1 py-2 text-[10px] font-bold rounded transition-all ${
-                          priority === p 
+                          Number(priority) === Number(p)
                             ? (p === TaskPriority.CRITICAL ? 'bg-error/20 text-error' : 'bg-surface-container-high text-primary') 
                             : 'text-on-surface-variant hover:text-on-surface'
                         }`}

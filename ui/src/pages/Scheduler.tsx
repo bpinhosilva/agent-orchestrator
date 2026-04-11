@@ -10,7 +10,6 @@ import {
   Activity,
   Database,
   Sparkles,
-  Search,
   Plus,
   Layout,
 } from 'lucide-react';
@@ -353,43 +352,6 @@ const Scheduler: React.FC = () => {
         </div>
         {/* Abstract background glow */}
         <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-tertiary/5 blur-[100px] rounded-full group-hover:bg-tertiary/10 transition-colors duration-1000"></div>
-      </motion.div>
-
-      {/* Floating System Stream (Relative to main container for now, but will likely be fixed if integrated into layout) */}
-      <motion.div 
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
-        className="fixed bottom-8 right-8 w-80 bg-surface-container-highest/60 backdrop-blur-2xl p-6 rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.5)] border border-outline-variant/20 z-10"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span>
-            <span className="text-[10px] font-black font-headline uppercase tracking-[0.2em] text-secondary">Real-time Stream</span>
-          </div>
-          <button className="text-on-surface-variant hover:text-white transition-colors">
-            <Search size={14} />
-          </button>
-        </div>
-        
-        <div className="space-y-4">
-          {[
-            { time: '09:42:11', msg: 'started execution sweep', node: 'Oracle-v2', nodeColor: 'text-primary' },
-            { time: '09:41:00', msg: 'verified task queue (12 tasks)', node: 'Cron-Engine', nodeColor: 'text-on-surface' },
-            { time: '09:30:00', msg: 'archived 400 records', node: 'Log-Service', nodeColor: 'text-secondary' },
-          ].map((log, i) => (
-            <div key={i} className="flex gap-4 text-xs font-medium">
-              <span className="text-on-surface-variant/40 font-mono tracking-tighter shrink-0">{log.time}</span>
-              <p className="text-on-surface-variant/80">
-                <span className={`${log.nodeColor} font-black`}>{log.node}</span> {log.msg}
-              </p>
-            </div>
-          ))}
-        </div>
-        
-        <button className="w-full mt-8 py-3 bg-surface-container/40 border border-outline-variant/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 hover:bg-surface-container-high hover:text-white transition-all">
-          Expand Log Manifest
-        </button>
       </motion.div>
 
       <CreateRecurrentTaskModal 

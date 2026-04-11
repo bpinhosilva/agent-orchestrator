@@ -138,5 +138,6 @@ describe('Scheduler', () => {
 
     expect(await screen.findByText('Daily Market Sweep')).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.queryByText('Real-time Stream')).not.toBeInTheDocument();
   });
 });

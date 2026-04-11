@@ -142,6 +142,7 @@ erDiagram
         enum status
         text result
         int latencyMs
+        json artifacts
         datetime createdAt
         datetime updatedAt
     }
@@ -151,7 +152,6 @@ erDiagram
         string originalName
         string mimeType
         string filePath
-        json metadata
     }
 
     SYSTEM_SETTINGS {
