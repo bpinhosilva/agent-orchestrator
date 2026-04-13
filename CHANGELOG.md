@@ -1,3 +1,10 @@
+# [1.0.0-alpha.37](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2026-04-13)
+
+
+### Features
+
+* **models:** implement model deletion with agent association check and enhance UI for model mgn ([e4cc599](https://github.com/bpinhosilva/agent-orchestrator/commit/e4cc599263f910e80e00116218e9408ec2ac2bf3))
+
 # [1.0.0-alpha.36](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.35...v1.0.0-alpha.36) (2026-04-13)
 
 
