@@ -29,6 +29,7 @@ export enum TaskPriority {
 }
 
 @Entity('tasks')
+@Index(['project', 'status', 'priority'])
 @Index(['project', 'status', 'updatedAt'])
 @Index(['project', 'updatedAt'])
 export class Task {
