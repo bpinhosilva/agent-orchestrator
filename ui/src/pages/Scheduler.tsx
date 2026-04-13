@@ -30,8 +30,17 @@ const Scheduler: React.FC = () => {
   const queryClient = useQueryClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInsight, setShowInsight] = useState(() => {
+    const saved = localStorage.getItem('scheduler_show_insight');
+    return saved === null ? true : saved === 'true';
+  });
   const [editingTask, setEditingTask] = useState<RecurrentTask | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<RecurrentTask | null>(null);
+
+  const handleDismissInsight = () => {
+    setShowInsight(false);
+    localStorage.setItem('scheduler_show_insight', 'false');
+  };
 
   const queryKey = ['recurrent-tasks', activeProject?.id] as const;
 
@@ -90,9 +99,13 @@ const Scheduler: React.FC = () => {
     toggleStatusMutation.mutate(task);
   };
 
+  const successRate = tasks.length > 0 
+    ? ((tasks.length - tasks.filter(t => t.status === RecurrentTaskStatus.ERROR).length) / tasks.length) * 100 
+    : 100;
+
   const stats = [
     { label: 'Active Schedules', value: tasks.filter(t => t.status === RecurrentTaskStatus.ACTIVE).length.toString(), change: '+12%', icon: TrendingUp, color: 'text-secondary', bg: 'bg-secondary/10' },
-    { label: 'Success Rate', value: '99.8%', trend: 99.8, icon: Activity, color: 'text-primary' },
+    { label: 'Success Rate', value: `${successRate.toFixed(1)}%`, trend: successRate, icon: Activity, color: 'text-primary' },
     { label: 'Paused Agents', value: tasks.filter(t => t.status === RecurrentTaskStatus.PAUSED).length.toString(), subtext: 'Awaiting manual audit', icon: Pause, color: 'text-on-surface-variant' },
     { label: 'Critical Errors', value: tasks.filter(t => t.status === RecurrentTaskStatus.ERROR).length.toString(), subtext: 'System integrity: nominal', icon: CheckCircle, color: 'text-error', bg: 'bg-error/10' },
   ];
@@ -327,32 +340,39 @@ const Scheduler: React.FC = () => {
       </motion.div>
 
       {/* AI Insight Section */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.6 }}
-        className="p-8 rounded-3xl bg-gradient-to-br from-tertiary/10 via-surface-container-low to-surface-container-low border border-tertiary/20 relative overflow-hidden group"
-      >
-        <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
-          <div className="w-16 h-16 bg-tertiary/10 rounded-2xl border border-tertiary/20 flex items-center justify-center text-tertiary shadow-xl group-hover:scale-110 transition-transform duration-500">
-            <Sparkles size={32} />
-          </div>
-          <div className="flex-1 space-y-4">
-            <div>
-              <h4 className="text-xl font-headline font-black text-tertiary mb-2 uppercase tracking-tight">Orchestrator Intelligence Insight</h4>
-              <p className="text-on-surface-variant leading-relaxed max-w-4xl font-body italic text-base">
-                "Scheduling patterns suggest a resource collision likely at <span className="text-tertiary font-bold">03:00 UTC</span> between 'Daily Market Sweep' and the 'Primary Indexer'. I recommend shifting the Market Sweep forward by 15 minutes to optimize throughput by 12.4%."
-              </p>
+      {showInsight && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6 }}
+          className="p-8 rounded-3xl bg-gradient-to-br from-tertiary/10 via-surface-container-low to-surface-container-low border border-tertiary/20 relative overflow-hidden group"
+        >
+          <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
+            <div className="w-16 h-16 bg-tertiary/10 rounded-2xl border border-tertiary/20 flex items-center justify-center text-tertiary shadow-xl group-hover:scale-110 transition-transform duration-500">
+              <Sparkles size={32} />
             </div>
-            <div className="flex gap-4">
-              <button className="px-6 py-2.5 bg-tertiary text-on-tertiary rounded-xl font-black text-xs uppercase tracking-widest hover:opacity-90 shadow-lg shadow-tertiary/20 transition-all">Apply Optimization</button>
-              <button className="px-6 py-2.5 border border-tertiary/30 text-tertiary rounded-xl font-black text-xs uppercase tracking-widest hover:bg-tertiary/5 transition-colors">Dismiss</button>
+            <div className="flex-1 space-y-4">
+              <div>
+                <h4 className="text-xl font-headline font-black text-tertiary mb-2 uppercase tracking-tight">Orchestrator Intelligence Insight</h4>
+                <p className="text-on-surface-variant leading-relaxed max-w-4xl font-body italic text-base">
+                  "To maximize efficiency, schedule tasks with non-overlapping times."
+                </p>
+              </div>
+              <div className="flex gap-4">
+                {/* <button className="px-6 py-2.5 bg-tertiary text-on-tertiary rounded-xl font-black text-xs uppercase tracking-widest hover:opacity-90 shadow-lg shadow-tertiary/20 transition-all">Apply Optimization</button> */}
+                <button 
+                  onClick={handleDismissInsight}
+                  className="px-6 py-2.5 border border-tertiary/30 text-tertiary rounded-xl font-black text-xs uppercase tracking-widest hover:bg-tertiary/5 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        {/* Abstract background glow */}
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-tertiary/5 blur-[100px] rounded-full group-hover:bg-tertiary/10 transition-colors duration-1000"></div>
-      </motion.div>
+          {/* Abstract background glow */}
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-tertiary/5 blur-[100px] rounded-full group-hover:bg-tertiary/10 transition-colors duration-1000"></div>
+        </motion.div>
+      )}
 
       <CreateRecurrentTaskModal 
         projectId={activeProject.id}

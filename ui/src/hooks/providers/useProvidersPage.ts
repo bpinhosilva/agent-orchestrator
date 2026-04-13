@@ -1,11 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
+import type { Model } from '../../api/models';
 import type { Provider } from '../../api/providers';
-import { useProviderModelsQuery, useProvidersQuery } from './useProviderQueries';
+import {
+  useDeleteModelMutation,
+  useProviderModelsQuery,
+  useProvidersQuery,
+} from './useProviderQueries';
 
 export const useProvidersPage = () => {
   const [isRegisterProviderModalOpen, setIsRegisterProviderModalOpen] = useState(false);
   const [isCreateModelModalOpen, setIsCreateModelModalOpen] = useState(false);
   const [requestedProviderId, setRequestedProviderId] = useState<string | null>(null);
+  const [modelPendingDelete, setModelPendingDelete] = useState<Model | null>(null);
 
   const {
     data: providers = [],
@@ -22,6 +28,10 @@ export const useProvidersPage = () => {
   const selectedProvider = useMemo<Provider | null>(
     () => providers.find((provider) => provider.id === selectedProviderId) ?? null,
     [providers, selectedProviderId],
+  );
+
+  const { mutate: deleteModel, isPending: isDeletingModel } = useDeleteModelMutation(
+    selectedProviderId ?? '',
   );
 
   const refreshProviders = useCallback(async () => {
@@ -45,5 +55,9 @@ export const useProvidersPage = () => {
     isCreateModelModalOpen,
     setIsCreateModelModalOpen,
     refreshProviders,
+    modelPendingDelete,
+    setModelPendingDelete,
+    deleteModel,
+    isDeletingModel,
   };
 };

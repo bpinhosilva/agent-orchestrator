@@ -37,35 +37,6 @@ import {
 
 /* ─────────────────────────── helpers ─────────────────────────── */
 
-function Toggle({
-  enabled,
-  onToggle,
-  id,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-  id: string;
-}) {
-  return (
-    <button
-      id={id}
-      type="button"
-      role="switch"
-      aria-checked={enabled}
-      onClick={onToggle}
-      className={`relative inline-flex flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
-        enabled ? 'bg-secondary' : 'bg-surface-container-highest'
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300 ${
-          enabled ? 'left-5' : 'left-0.5'
-        }`}
-      />
-    </button>
-  );
-}
-
 function InputField({
   label,
   id,
@@ -234,10 +205,6 @@ const Profile: React.FC = () => {
   /* ── password ── */
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
-
-  /* ── security toggles ── */
-  const [twoFactor, setTwoFactor] = useState(false);
-  const [biometric, setBiometric] = useState(false);
 
   /* ── field-level validation errors ── */
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -808,7 +775,7 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Toggle switches */}
-            <div className="mt-7 pt-6 border-t border-outline-variant/20 space-y-4">
+            {/* <div className="mt-7 pt-6 border-t border-outline-variant/20 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-on-surface">
@@ -839,7 +806,7 @@ const Profile: React.FC = () => {
                   onToggle={() => setBiometric((v) => !v)}
                 />
               </div>
-            </div>
+            </div> */}
           </section>
         </div>
       </div>

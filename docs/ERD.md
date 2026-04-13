@@ -14,7 +14,6 @@ erDiagram
     AGENTS ||--o{ PROJECTS : "owns (as ownerAgent)"
     
     PROVIDERS ||--o{ MODELS : "provides"
-    PROVIDERS ||--o{ AGENTS : "associated with"
     MODELS ||--o{ AGENTS : "used by"
     
     AGENTS ||--o{ TASKS : "assigned to"
@@ -145,13 +144,6 @@ erDiagram
         json artifacts
         datetime createdAt
         datetime updatedAt
-    }
-
-    ARTIFACTS {
-        uuid id PK
-        string originalName
-        string mimeType
-        string filePath
     }
 
     SYSTEM_SETTINGS {

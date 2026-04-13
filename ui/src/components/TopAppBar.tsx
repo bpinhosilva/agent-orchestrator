@@ -1,4 +1,4 @@
-import { Bell, Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContextInstance';
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from './UserAvatar';
@@ -29,9 +29,9 @@ const TopAppBar = () => {
           <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">{user?.email || 'Active Protocol'}</span>
         </div>
         
-        <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
+        {/* <button aria-label="Notifications" className="text-on-surface-variant hover:text-primary transition-all active:scale-95 duration-200">
           <Bell size={20} aria-hidden="true" />
-        </button>
+        </button> */}
         <button
           onClick={() => navigate('/settings')}
           aria-label="Settings"

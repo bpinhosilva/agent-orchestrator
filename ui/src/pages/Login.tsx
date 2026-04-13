@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContextInstance';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -58,8 +58,8 @@ const Login: React.FC = () => {
             <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center mb-6 ghost-border">
               <span className="material-symbols-outlined text-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>deployed_code</span>
             </div>
-            <h1 className="font-headline text-2xl font-extrabold tracking-tight text-on-surface uppercase mb-2">Orchestrator</h1>
-            <p className="font-label text-xs tracking-widest text-on-surface-variant uppercase">Neural Gateway Alpha-7</p>
+            <h1 className="font-headline text-2xl font-extrabold tracking-tight text-on-surface uppercase mb-2">Agent Orchestrator</h1>
+            <p className="font-label text-xs tracking-widest text-on-surface-variant uppercase">Neural Gateway</p>
           </div>
 
           {/* Error Message */}
@@ -131,10 +131,10 @@ const Login: React.FC = () => {
               </button>
 
               <div className="flex flex-col gap-3">
-                <button className="w-full py-2 font-label text-[10px] uppercase tracking-widest text-slate-500 hover:text-primary transition-colors text-center" type="button">
+                {/* <button className="w-full py-2 font-label text-[10px] uppercase tracking-widest text-slate-500 hover:text-primary transition-colors text-center" type="button">
                   Forgot Access Credentials?
-                </button>
-                <div className="flex items-center gap-4 py-2">
+                </button> */}
+                {/* <div className="flex items-center gap-4 py-2">
                   <div className="h-[1px] flex-1 bg-outline-variant opacity-20"></div>
                   <span className="font-label text-[10px] uppercase tracking-widest text-outline-variant">Enterprise Node</span>
                   <div className="h-[1px] flex-1 bg-outline-variant opacity-20"></div>
@@ -149,7 +149,7 @@ const Login: React.FC = () => {
                     Don't have a protocol?{' '}
                     <Link to="/register" className="text-primary hover:text-tertiary transition-colors font-bold uppercase tracking-widest">Register</Link>
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
           </form>

@@ -1,15 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateModelDto } from './dto/create-model.dto';
 import { UpdateModelDto } from './dto/update-model.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Model } from './entities/model.entity';
+import { AgentEntity } from '../agents/entities/agent.entity';
 
 @Injectable()
 export class ModelsService {
   constructor(
     @InjectRepository(Model)
     private readonly modelRepository: Repository<Model>,
+    @InjectRepository(AgentEntity)
+    private readonly agentRepository: Repository<AgentEntity>,
   ) {}
 
   async create(createModelDto: CreateModelDto): Promise<Model> {
@@ -61,6 +68,14 @@ export class ModelsService {
 
   async remove(id: string): Promise<void> {
     const model = await this.findOne(id);
+    const agentCount = await this.agentRepository.count({
+      where: { model: { id } },
+    });
+    if (agentCount > 0) {
+      throw new ConflictException(
+        `Cannot delete model "${model.name}": ${agentCount} agent(s) are currently using it.`,
+      );
+    }
     await this.modelRepository.remove(model);
   }
 }

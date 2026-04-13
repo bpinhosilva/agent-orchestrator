@@ -109,3 +109,22 @@ export const useCreateModelsMutation = (
     },
   });
 };
+
+export const useDeleteModelMutation = (providerId: string) => {
+  const queryClient = useQueryClient();
+  const { notifySuccess, notifyApiError } = useNotification();
+
+  return useMutation({
+    mutationFn: (modelId: string) => modelsApi.delete(modelId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: providerQueryKeys.models(providerId),
+      });
+      notifySuccess('Model Removed', 'The model has been successfully deleted from the registry.');
+    },
+    onError: (error) => {
+      notifyApiError(error, 'Cannot Delete Model');
+    },
+  });
+};
+

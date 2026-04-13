@@ -6,10 +6,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Box,
   ChevronDown,
-  Code,
   Edit2,
   Layers,
-  Shield,
   Sparkles,
 } from 'lucide-react';
 import { agentsApi, BALANCED_ATTRIBUTES } from '../api/agents';
@@ -619,7 +617,7 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
                   )}
                 </div>
 
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">
                     Knowledge Integration
                   </label>
@@ -647,7 +645,7 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
                       </span>
                     </button>
                   </div>
-                </div>
+                </div> */}
               </section>
             </div>
           </div>

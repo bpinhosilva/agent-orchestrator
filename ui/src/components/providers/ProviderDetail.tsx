@@ -1,12 +1,11 @@
+import { useEffect, useRef, useState } from 'react';
 import {
   Clock,
-  Copy,
-  Eye,
   Monitor,
   MoreVertical,
   Plus,
   RefreshCcw,
-  RotateCw,
+  Trash2,
 } from 'lucide-react';
 import type { Model } from '../../api/models';
 import type { Provider } from '../../api/providers';
@@ -19,34 +18,62 @@ interface ProviderDetailProps {
   isRefreshing: boolean;
   onRefresh: () => void;
   onOpenCreateModel: () => void;
+  onDeleteModel: (model: Model) => void;
 }
 
-const providerStats = [
-  { label: 'Latency', value: '182ms', color: 'text-tertiary', bar: 'bg-tertiary', width: '75%' },
-  { label: 'Success Rate', value: '99.9%', color: 'text-secondary', bar: 'bg-secondary', width: '99%' },
-  { label: 'Uptime', value: '30d 12h', color: 'text-primary', bar: 'bg-primary', width: '100%' },
-] as const;
 
-const endpointUrlForProvider = (providerName: string) =>
-  providerName.includes('Gemini')
-    ? 'https://generativelanguage.googleapis.com/v1beta'
-    : 'https://api.openai.com/v1';
-
-const PlaceholderIconButton = ({
-  label,
+const ModelActionMenu = ({
+  model,
+  onDelete,
 }: {
-  label: string;
-}) => (
-  <button
-    type="button"
-    disabled
-    aria-label={label}
-    title={label}
-    className="text-on-surface-variant/20 cursor-not-allowed transition-colors disabled:opacity-50"
-  >
-    <Copy size={16} className="pointer-events-none" />
-  </button>
-);
+  model: Model;
+  onDelete: (model: Model) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handler);
+    }
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={`Actions for model ${model.name}`}
+        title={`Actions for model ${model.name}`}
+        className="text-on-surface-variant/40 hover:text-white transition-colors p-1 rounded"
+      >
+        <MoreVertical size={14} />
+      </button>
+      {open && (
+        <div className="absolute right-0 bottom-full mb-1 z-50 w-36 bg-surface-container-high rounded-xl shadow-2xl ring-1 ring-outline-variant/10 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onDelete(model);
+            }}
+            className="w-full px-4 py-3 text-left text-xs font-bold text-error hover:bg-error/10 transition-colors flex items-center gap-2"
+            aria-label={`Remove model ${model.name}`}
+          >
+            <Trash2 size={12} />
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ProviderDetail = ({
   provider,
@@ -55,6 +82,7 @@ const ProviderDetail = ({
   isRefreshing,
   onRefresh,
   onOpenCreateModel,
+  onDeleteModel,
 }: ProviderDetailProps) => {
   if (!provider) {
     return (
@@ -122,84 +150,6 @@ const ProviderDetail = ({
             </button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-12 relative z-10">
-          {providerStats.map((stat) => (
-            <div key={stat.label}>
-              <p className="text-[10px] text-on-surface-variant/40 uppercase tracking-[0.2em] font-black mb-2">
-                {stat.label}
-              </p>
-              <p className={cn('text-2xl font-headline font-black', stat.color)}>{stat.value}</p>
-              <div className="w-full bg-surface-container-highest/30 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div className={cn('h-full rounded-full transition-all duration-1000 delay-300', stat.bar)} style={{ width: stat.width }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="p-10 border-t border-outline-variant/5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="space-y-4">
-            <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-on-surface-variant/40">
-              Endpoint URL
-            </label>
-            <div className="relative group">
-              <input
-                readOnly
-                value={endpointUrlForProvider(provider.name)}
-                className="w-full bg-surface-container-highest/20 border-none rounded-xl text-xs font-mono py-4 px-5 text-primary focus:ring-1 focus:ring-primary h-12"
-                aria-label={`${provider.name} endpoint URL`}
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <PlaceholderIconButton label="Copy endpoint URL unavailable" />
-              </div>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-on-surface-variant/40">
-              Management API Key
-            </label>
-            <div className="relative group">
-              <input
-                type="password"
-                value="********************************"
-                readOnly
-                className="w-full bg-surface-container-highest/20 rounded-xl text-xs font-mono py-4 px-14 text-white focus:ring-1 focus:ring-primary h-12 ring-0 outline-none"
-                aria-label={`${provider.name} management API key`}
-              />
-              <button
-                type="button"
-                disabled
-                aria-label="Reveal API key unavailable"
-                title="Reveal API key unavailable"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/20 cursor-not-allowed transition-colors disabled:opacity-50"
-              >
-                <Eye size={16} />
-              </button>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-                <button
-                  type="button"
-                  disabled
-                  aria-label="Rotate API key unavailable"
-                  title="Rotate API key unavailable"
-                  className="text-on-surface-variant/20 cursor-not-allowed transition-colors disabled:opacity-50"
-                >
-                  <RotateCw size={16} />
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  aria-label="Copy API key unavailable"
-                  title="Copy API key unavailable"
-                  className="text-on-surface-variant/20 cursor-not-allowed transition-colors disabled:opacity-50"
-                >
-                  <Copy size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="p-10 border-t border-outline-variant/5">
@@ -224,7 +174,7 @@ const ProviderDetail = ({
           </button>
         </div>
 
-        <div className="rounded-2xl border border-outline-variant/5 overflow-hidden">
+        <div className="rounded-2xl border border-outline-variant/5 overflow-visible">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-surface-container-high/30 text-on-surface-variant/40 font-black uppercase tracking-[0.2em]">
@@ -255,15 +205,7 @@ const ProviderDetail = ({
                       </span>
                     </td>
                     <td className="py-5 px-6 text-center">
-                      <button
-                        type="button"
-                        disabled
-                        aria-label="Model actions unavailable"
-                        title="Model actions unavailable"
-                        className="text-on-surface-variant/20 cursor-not-allowed transition-colors disabled:opacity-50"
-                      >
-                        <MoreVertical size={14} />
-                      </button>
+                      <ModelActionMenu model={model} onDelete={onDeleteModel} />
                     </td>
                   </tr>
                 ))
