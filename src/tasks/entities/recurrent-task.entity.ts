@@ -48,6 +48,7 @@ export class RecurrentTask {
   @Column()
   cronExpression: string;
 
+  @Index()
   @ManyToOne(() => AgentEntity, {
     nullable: false,
     eager: true,

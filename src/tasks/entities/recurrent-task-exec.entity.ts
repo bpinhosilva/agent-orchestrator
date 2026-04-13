@@ -18,6 +18,7 @@ export enum ExecStatus {
 }
 
 @Entity('recurrent_task_execs')
+@Index(['recurrentTask', 'createdAt'])
 export class RecurrentTaskExec {
   @PrimaryGeneratedColumn('uuid')
   id: string;

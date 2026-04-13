@@ -21,7 +21,6 @@ export class ProjectMember {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Index()
   @ManyToOne(() => Project, (project) => project.members, {
     onDelete: 'CASCADE',
   })
