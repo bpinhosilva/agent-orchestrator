@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { UUID_COLUMN_TYPE } from '../../config/typeorm';
 
 @Entity('refresh_tokens')
 @Index(['userId', 'expiresAt'])
@@ -16,7 +17,7 @@ export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: UUID_COLUMN_TYPE })
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

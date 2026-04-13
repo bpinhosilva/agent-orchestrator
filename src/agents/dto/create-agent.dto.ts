@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -48,10 +47,6 @@ export class CreateAgentDto {
   @IsOptional()
   @IsIn(AGENT_EMOJI_VALUES)
   emoji?: AgentEmojiValue;
-
-  @IsUUID()
-  @IsNotEmpty()
-  providerId: string;
 
   @IsOptional()
   @ValidateNested()

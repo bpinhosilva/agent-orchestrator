@@ -42,7 +42,7 @@ describe('Sidebar Component', () => {
       user: {
         id: 'user-1',
         name: 'Test',
-        last_name: 'User',
+        lastName: 'User',
         email: 'test@example.com',
         role: 'user',
       },
@@ -90,7 +90,7 @@ describe('Sidebar Component', () => {
       user: {
         id: 'admin-1',
         name: 'Admin',
-        last_name: 'User',
+        lastName: 'User',
         email: 'admin@example.com',
         role: 'admin',
       },

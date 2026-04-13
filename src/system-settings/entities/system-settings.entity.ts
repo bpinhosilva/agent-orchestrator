@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { JSON_COLUMN_TYPE } from '../../config/typeorm';
 
 export interface SystemSettingsData {
   taskScheduler: {
@@ -23,7 +24,7 @@ export class SystemSettings {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'simple-json' })
+  @Column({ type: JSON_COLUMN_TYPE })
   data: SystemSettingsData;
 
   @CreateDateColumn()

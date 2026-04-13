@@ -8,7 +8,7 @@ export interface LoginResponse {
 export interface RegisterResponse {
   id: string;
   name: string;
-  last_name: string;
+  lastName: string;
   email: string;
   avatar: string;
   avatarUrl: string;
@@ -22,7 +22,7 @@ export interface RefreshResponse {
 
 export interface UpdateProfilePayload {
   name?: string;
-  last_name?: string;
+  lastName?: string;
   email?: string;
   currentPassword?: string;
   newPassword?: string;
@@ -35,14 +35,14 @@ export const authApi = {
   },
   register: async (
     name: string,
-    last_name: string,
+    lastName: string,
     email: string,
     password: string,
     avatar?: string,
   ): Promise<RegisterResponse> => {
     const response = await client.post('/auth/register', {
       name,
-      last_name,
+      lastName,
       email,
       password,
       avatar,

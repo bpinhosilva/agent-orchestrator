@@ -90,7 +90,7 @@ export async function setupAdminUser(
       const hashedPassword = await bcryptDep.hash(response.password, 10);
       const user = userRepository.create({
         name: response.name,
-        last_name: 'User',
+        lastName: 'User',
         email: response.email,
         password: hashedPassword,
         avatar: DEFAULT_USER_AVATAR,

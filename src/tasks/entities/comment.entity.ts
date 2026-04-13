@@ -11,6 +11,7 @@ import { Task } from './task.entity';
 import { AgentEntity } from '../../agents/entities/agent.entity';
 import { User } from '../../users/entities/user.entity';
 import { Artifact } from '../../common/interfaces/artifact.interface';
+import { JSON_COLUMN_TYPE } from '../../config/typeorm';
 
 export enum CommentAuthorType {
   USER = 'user',
@@ -54,7 +55,7 @@ export class TaskComment {
   })
   authorAgent: AgentEntity | null;
 
-  @Column({ type: 'simple-json', nullable: true })
+  @Column({ type: JSON_COLUMN_TYPE, nullable: true })
   artifacts: Artifact[] | null;
 
   @CreateDateColumn()

@@ -190,7 +190,6 @@ const CreateAgentModal = ({ isOpen, onClose, onCreated }: CreateAgentModalProps)
         role: values.role,
         description: values.description,
         systemInstructions: values.instructions,
-        providerId: values.providerId,
         modelId: values.modelId,
         status: 'active',
         attributes: values.attributes,

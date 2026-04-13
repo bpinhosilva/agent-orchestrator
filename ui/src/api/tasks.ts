@@ -44,6 +44,8 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   assignee?: Agent;
+  costEstimate?: number;
+  llmLatency?: number;
   projectId: string;
   createdAt: string;
   updatedAt: string;

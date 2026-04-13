@@ -15,19 +15,13 @@ import {
   Zap,
 } from 'lucide-react';
 import { agentsApi, type Agent } from '../api/agents';
-import { tasksApi, TaskPriority, TaskStatus, type Task } from '../api/tasks';
+import { tasksApi, TaskPriority, TaskStatus } from '../api/tasks';
 import MarkdownField from '../components/MarkdownField';
 import CommentSection from '../components/tasks/CommentSection';
 import ConfirmDialog from '../components/ConfirmDialog';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useNotification } from '../hooks/useNotification';
 import { taskDetailSchema, type TaskDetailFormValues } from '../lib/taskFormSchemas';
-
-interface ExtendedTask extends Omit<Task, 'id'> {
-  id: string;
-  llm_latency?: number;
-  cost_estimate?: number;
-}
 
 const taskDetailDefaults: TaskDetailFormValues = {
   title: '',
@@ -67,7 +61,7 @@ const TaskDetail = () => {
     enabled: Boolean(projectId && taskId),
     queryFn: async () => {
       const response = await tasksApi.findOne(projectId!, taskId!);
-      return response.data as ExtendedTask;
+      return response.data;
     },
   });
 
@@ -527,14 +521,14 @@ const TaskDetail = () => {
                     <Zap size={14} className="text-secondary" aria-hidden="true" />
                     <span className="text-[9px] font-black uppercase tracking-widest">Latency</span>
                   </div>
-                  <div className="text-lg font-mono font-bold text-white">{task.llm_latency || 0}ms</div>
+                  <div className="text-lg font-mono font-bold text-white">{task.llmLatency || 0}ms</div>
                 </div>
                 <div className="p-4 bg-surface-container-highest/20 rounded-xl border border-outline-variant/5">
                   <div className="flex items-center gap-2 mb-1 text-on-surface-variant/60">
                     <Wallet size={14} className="text-tertiary" aria-hidden="true" />
                     <span className="text-[9px] font-black uppercase tracking-widest">Node Cost</span>
                   </div>
-                  <div className="text-lg font-mono font-bold text-white">${(task.cost_estimate || 0).toFixed(6)}</div>
+                  <div className="text-lg font-mono font-bold text-white">${(task.costEstimate || 0).toFixed(6)}</div>
                 </div>
               </div>
             </div>

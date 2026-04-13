@@ -45,7 +45,7 @@ async function bootstrap() {
       },
       {
         type: 'input',
-        name: 'last_name',
+        name: 'lastName',
         message: 'Admin last name:',
         initial: 'User',
       },
@@ -63,7 +63,7 @@ async function bootstrap() {
       },
     ]);
 
-    const { name, last_name, email, password } = response;
+    const { name, lastName, email, password } = response;
 
     const existingUser = await usersService.findByEmail(email);
     if (existingUser) {
@@ -74,7 +74,7 @@ async function bootstrap() {
 
     await authService.register({
       name,
-      last_name,
+      lastName,
       email,
       password,
       avatar: DEFAULT_USER_AVATAR,

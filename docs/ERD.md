@@ -28,7 +28,7 @@ erDiagram
     USERS {
         uuid id PK
         string name
-        string last_name
+        string lastName
         string email UK
         string password
         enum role
@@ -71,15 +71,15 @@ erDiagram
         string name UK
         text description
         text systemInstructions
-        text role
-        text status
+        string role
+        string status
         string emoji
         json attributes
-        uuid providerId FK
         uuid modelId FK
         datetime createdAt
         datetime updatedAt
     }
+
 
     MODELS {
         uuid id PK
@@ -103,8 +103,8 @@ erDiagram
         text description
         enum status
         int priority
-        float cost_estimate
-        int llm_latency
+        float costEstimate
+        int llmLatency
         uuid assigneeId FK
         uuid projectId FK
         datetime createdAt

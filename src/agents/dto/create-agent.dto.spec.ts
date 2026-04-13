@@ -12,7 +12,6 @@ describe('CreateAgentDto', () => {
     dto.name = 'Research Node';
     dto.role = 'Researcher';
     dto.modelId = 'model-123';
-    dto.providerId = '550e8400-e29b-41d4-a716-446655440000';
   });
 
   it('should be valid with a supported emoji', async () => {

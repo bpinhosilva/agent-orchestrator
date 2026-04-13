@@ -52,7 +52,7 @@ describe('AuthContext', () => {
     const mockUser: User = {
       id: '1',
       name: 'Test',
-      last_name: 'User',
+      lastName: 'User',
       email: 'test@example.com',
     };
     vi.mocked(authApi.login).mockResolvedValue(undefined);
@@ -79,7 +79,7 @@ describe('AuthContext', () => {
     const mockUser: User = {
       id: '1',
       name: 'Test',
-      last_name: 'User',
+      lastName: 'User',
       email: 'test@example.com',
     };
     vi.mocked(authApi.me).mockResolvedValue(mockUser);
@@ -109,7 +109,7 @@ describe('AuthContext', () => {
     const mockUser: User = {
       id: '1',
       name: 'Restored',
-      last_name: 'User',
+      lastName: 'User',
       email: 'test@example.com',
     };
     vi.mocked(authApi.me).mockResolvedValue(mockUser);

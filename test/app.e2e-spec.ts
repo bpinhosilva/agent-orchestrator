@@ -81,7 +81,7 @@ describe('AppController (e2e)', () => {
       id: 'test-user-id',
       email: 'test@test.com',
       name: 'Test User',
-      last_name: 'Tester',
+      lastName: 'Tester',
       role: UserRole.ADMIN,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -113,7 +113,7 @@ describe('AppController (e2e)', () => {
 
     await authService.register({
       name: 'Cookie User',
-      last_name: 'Tester',
+      lastName: 'Tester',
       email: 'cookie-user@example.com',
       password: 'password123',
     });
@@ -135,7 +135,7 @@ describe('AppController (e2e)', () => {
         expect(res.body).toMatchObject({
           email: 'cookie-user@example.com',
           name: 'Cookie User',
-          last_name: 'Tester',
+          lastName: 'Tester',
           avatar: 'avatar-01',
           avatarUrl: '/avatar-presets/avatar-01.svg',
         });

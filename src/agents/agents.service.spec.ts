@@ -101,8 +101,11 @@ describe('AgentsService', () => {
       systemInstructions: 'Test Instructions',
       role: 'Test Role',
       emoji: '🧠',
-      model: { id: 'model-123', name: 'gpt-4' },
-      provider: { id: 'provider-123', name: 'google' },
+      model: {
+        id: 'model-123',
+        name: 'gpt-4',
+        provider: { id: 'provider-123', name: 'google' },
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
     } as unknown as AgentEntity;
@@ -135,7 +138,6 @@ describe('AgentsService', () => {
         role: 'Test Role',
         emoji: '🧠',
         modelId: 'model-123',
-        providerId: 'provider-123',
       };
 
       const result = await service.create(createDto);
@@ -200,7 +202,6 @@ describe('AgentsService', () => {
       const createDto = {
         name: mockAgent.name,
         modelId: 'model-123',
-        providerId: 'provider-123',
         attributes: { creativity: 3.0, strictness: 3.5 },
       };
 
@@ -238,7 +239,6 @@ describe('AgentsService', () => {
       const createDto = {
         name: mockAgent.name,
         modelId: 'model-123',
-        providerId: 'provider-123',
       };
 
       const result = await service.create(createDto);

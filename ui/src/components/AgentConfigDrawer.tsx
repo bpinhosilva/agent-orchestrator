@@ -53,7 +53,7 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
       setSystemInstructions(agent.systemInstructions || '');
       setSelectedModelId(agent.model?.id || '');
       setSelectedEmoji(normalizeAgentEmoji(agent.emoji));
-      const providerId = agent.provider?.id ?? agent.model?.provider?.id ?? '';
+      const providerId = agent.model?.provider?.id ?? '';
       setSelectedProviderId(providerId);
       setAttributes(agent.attributes ?? { ...BALANCED_ATTRIBUTES });
     }
@@ -120,7 +120,6 @@ const AgentConfigDrawer: React.FC<AgentConfigDrawerProps> = ({
         role,
         description,
         systemInstructions,
-        providerId: selectedProviderId || undefined,
         modelId: selectedModelId || undefined,
         attributes,
       });

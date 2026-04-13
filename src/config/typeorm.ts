@@ -3,6 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { getPackageRoot, getSqlitePath, loadRuntimeEnv } from './runtime-paths';
 
+loadRuntimeEnv();
+
+const dbType = process.env.DB_TYPE;
+const databaseUrl = process.env.DATABASE_URL;
+
+export const JSON_COLUMN_TYPE =
+  dbType === 'sqlite' || (!dbType && !databaseUrl) ? 'simple-json' : 'jsonb';
+
+export const UUID_COLUMN_TYPE =
+  dbType === 'sqlite' || (!dbType && !databaseUrl) ? 'varchar' : 'uuid';
+
 export type RuntimeDbType = 'postgres' | 'sqlite';
 
 export function resolveDataSourceType(

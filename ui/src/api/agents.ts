@@ -24,7 +24,6 @@ export interface Agent {
   description?: string;
   systemInstructions?: string;
   attributes?: AgentAttributes | null;
-  provider?: AgentProvider;
   model?: {
     id: string;
     name: string;
@@ -39,7 +38,6 @@ export interface CreateAgentPayload {
   role?: string;
   description?: string;
   systemInstructions?: string;
-  providerId: string;
   modelId: string;
   status?: string;
   attributes?: AgentAttributes | null;
@@ -51,7 +49,6 @@ export interface UpdateAgentPayload {
   role?: string;
   description?: string;
   systemInstructions?: string;
-  providerId?: string;
   modelId?: string;
   status?: string;
   attributes?: AgentAttributes | null;

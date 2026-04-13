@@ -210,7 +210,7 @@ const CreateUserModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) => {
     try {
       const created = await usersApi.createUser({
         name: firstName.trim(),
-        last_name: lastName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
         password,
       });

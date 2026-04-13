@@ -120,7 +120,7 @@ const AgentFleet = () => {
                 model={agent.model?.name || 'Unknown'}
                 status={agent.status || 'active'}
                 metricLabel="Provider"
-                metricValue={agent.provider?.name || 'Unknown'}
+                metricValue={agent.model?.provider?.name || 'Unknown'}
                 onConfigure={() => handleConfigure(agent)}
                 onProbe={() => handleProbe(agent)}
                 onDelete={() => handleDeleteRequest(agent)}

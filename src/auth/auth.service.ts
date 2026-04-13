@@ -247,7 +247,7 @@ export class AuthService {
 
     const updateData: Record<string, string> = {};
     if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.last_name !== undefined) updateData.last_name = dto.last_name;
+    if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
     if (dto.email !== undefined) updateData.email = dto.email;
     if (dto.avatar !== undefined) updateData.avatar = dto.avatar;
     if (dto.newPassword) {

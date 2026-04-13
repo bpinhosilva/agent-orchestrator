@@ -37,7 +37,7 @@ describe('UsersPage', () => {
       user: {
         id: 'admin-1',
         name: 'Admin',
-        last_name: 'User',
+        lastName: 'User',
         email: 'admin@example.com',
         role: 'admin',
       },
@@ -57,7 +57,7 @@ describe('UsersPage', () => {
           {
             id: 'user-1',
             name: 'Ada',
-            last_name: 'Lovelace',
+            lastName: 'Lovelace',
             email: 'ada@example.com',
             role: 'admin',
             createdAt: new Date().toISOString(),
@@ -72,7 +72,7 @@ describe('UsersPage', () => {
           {
             id: 'user-2',
             name: 'Alan',
-            last_name: 'Turing',
+            lastName: 'Turing',
             email: 'alan@example.com',
             role: 'user',
             createdAt: new Date().toISOString(),

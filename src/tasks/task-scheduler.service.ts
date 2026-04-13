@@ -364,8 +364,8 @@ If no agent is suitable, return your own ID: "${ownerAgent.id}".
           if (!t) throw new Error(`Task ${task.id} not found for final update`);
 
           t.status = TaskStatus.REVIEW;
-          t.llm_latency = latency;
-          t.cost_estimate = (t.cost_estimate || 0) + iterationCost;
+          t.llmLatency = latency;
+          t.costEstimate = (t.costEstimate || 0) + iterationCost;
 
           const savedTask = await manager.save(t);
 

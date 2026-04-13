@@ -65,7 +65,7 @@ export class UsersService {
           qb.where("LOWER(user.name) LIKE :search ESCAPE '\\'", {
             search: normalizedSearch,
           })
-            .orWhere("LOWER(user.last_name) LIKE :search ESCAPE '\\'", {
+            .orWhere("LOWER(user.lastName) LIKE :search ESCAPE '\\'", {
               search: normalizedSearch,
             })
             .orWhere("LOWER(user.email) LIKE :search ESCAPE '\\'", {
@@ -100,7 +100,7 @@ export class UsersService {
         'id',
         'email',
         'name',
-        'last_name',
+        'lastName',
         'password',
         'role',
         'avatar',

@@ -56,10 +56,10 @@ export class Task {
   priority: TaskPriority;
 
   @Column('float', { default: 0 })
-  cost_estimate: number;
+  costEstimate: number;
 
   @Column('int', { default: 0 })
-  llm_latency: number;
+  llmLatency: number;
 
   @Index()
   @ManyToOne(() => AgentEntity, {

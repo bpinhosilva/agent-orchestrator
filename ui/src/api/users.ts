@@ -4,7 +4,7 @@ import type { PaginatedResponse } from './pagination';
 export interface User {
   id: string;
   name: string;
-  last_name: string;
+  lastName: string;
   email: string;
   role?: string;
   avatar?: string;
@@ -15,7 +15,7 @@ export interface User {
 
 export interface CreateUserPayload {
   name: string;
-  last_name: string;
+  lastName: string;
   email: string;
   password: string;
   avatar?: string;

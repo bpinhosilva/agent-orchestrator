@@ -197,7 +197,7 @@ const UsersPage: React.FC = () => {
       if (nextPage === currentPage) {
         await fetchUsers(nextPage, debouncedSearch);
       }
-      showToast(`${deleteTarget.name} ${deleteTarget.last_name} removed successfully.`);
+      showToast(`${deleteTarget.name} ${deleteTarget.lastName} removed successfully.`);
     } catch {
       showToast('Failed to delete user.', 'error');
     } finally {
@@ -384,7 +384,7 @@ const UsersPage: React.FC = () => {
                 const isEditingRole = editingRoleId === u.id;
                 const isUpdatingRole = roleUpdating === u.id;
                 const justUpdated = roleUpdateSuccess === u.id;
-                const displayName = `${u.name} ${u.last_name}`.trim();
+                const displayName = `${u.name} ${u.lastName}`.trim();
 
                 return (
                   <tr
@@ -610,7 +610,7 @@ const UsersPage: React.FC = () => {
         title="Remove User"
         message={
           deleteTarget
-            ? `Are you sure you want to permanently remove ${deleteTarget.name} ${deleteTarget.last_name}? This action cannot be undone.`
+            ? `Are you sure you want to permanently remove ${deleteTarget.name} ${deleteTarget.lastName}? This action cannot be undone.`
             : ''
         }
         confirmText="Remove"

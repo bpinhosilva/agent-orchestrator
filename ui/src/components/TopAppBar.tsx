@@ -6,7 +6,7 @@ import UserAvatar from './UserAvatar';
 const TopAppBar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const displayName = user ? `${user.name} ${user.last_name}`.trim() : 'Agent';
+  const displayName = user ? `${user.name} ${user.lastName}`.trim() : 'Agent';
 
   return (
     <header role="banner" className="w-full top-0 sticky bg-surface flex items-center justify-between px-6 py-3 shadow-[0_8px_32px_rgba(173,198,255,0.06)] z-40">

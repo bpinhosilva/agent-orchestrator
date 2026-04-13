@@ -108,28 +108,28 @@ describe('AuthService', () => {
       mockUsersService.create.mockResolvedValue({
         id: '1',
         name: 'Test',
-        last_name: 'User',
+        lastName: 'User',
         email: 'test@test.com',
         avatar: 'avatar-01',
       });
 
       const result = await service.register({
         name: 'Test',
-        last_name: 'User',
+        lastName: 'User',
         email: 'test@test.com',
         password: 'password',
       });
       expect(result).toEqual({
         id: '1',
         name: 'Test',
-        last_name: 'User',
+        lastName: 'User',
         email: 'test@test.com',
         avatar: 'avatar-01',
         avatarUrl: '/avatar-presets/avatar-01.svg',
       });
       expect(mockUsersService.create).toHaveBeenCalledWith({
         name: 'Test',
-        last_name: 'User',
+        lastName: 'User',
         email: 'test@test.com',
         password: 'hashedPassword',
       });
@@ -140,7 +140,7 @@ describe('AuthService', () => {
       await expect(
         service.register({
           name: 'Test',
-          last_name: 'User',
+          lastName: 'User',
           email: 'test@test.com',
           password: 'password',
         }),

@@ -135,7 +135,7 @@ const Scheduler: React.FC = () => {
         >
           <h2 className="text-4xl font-headline font-extrabold text-white tracking-tight mb-2">Temporal Orchestration</h2>
           <p className="text-on-surface-variant font-body max-w-md">
-            Manage autonomous agent lifecycle schedules and recurrent operational flows within the <span className="text-primary font-bold">Alpha-Centauri</span> cluster.
+            Manage autonomous agent lifecycle schedules and recurrent operational flows.
           </p>
         </motion.div>
         

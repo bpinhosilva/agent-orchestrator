@@ -20,7 +20,7 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  last_name?: string;
+  lastName?: string;
 
   @IsOptional()
   @IsEmail()

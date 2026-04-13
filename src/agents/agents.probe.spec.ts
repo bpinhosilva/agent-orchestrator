@@ -28,8 +28,10 @@ describe('AgentsService (Probe)', () => {
   const mockAgentEntity = {
     id: 'agent-123',
     name: 'Test Agent',
-    provider: { id: 'provider-123', name: 'test-provider' },
-    model: { name: 'test-model' },
+    model: {
+      name: 'test-model',
+      provider: { id: 'provider-123', name: 'test-provider' },
+    },
   } as unknown as AgentEntity;
 
   beforeEach(async () => {
@@ -106,7 +108,7 @@ describe('AgentsService (Probe)', () => {
 
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: agentId },
-        relations: ['model', 'provider'],
+        relations: ['model'],
       });
       expect(result).toEqual({ content: 'hi from db' });
       expect(

@@ -69,7 +69,7 @@ describe('SystemSettings (e2e)', () => {
     const userRepository = dataSource.getRepository(User);
     const admin = userRepository.create({
       name: 'Admin',
-      last_name: 'User',
+      lastName: 'User',
       email: 'admin@example.com',
       password: await bcrypt.hash('password123', 10),
       role: UserRole.ADMIN,
@@ -81,7 +81,7 @@ describe('SystemSettings (e2e)', () => {
     const userRepository = dataSource.getRepository(User);
     const user = userRepository.create({
       name: 'Regular',
-      last_name: 'User',
+      lastName: 'User',
       email: 'user@example.com',
       password: await bcrypt.hash('password123', 10),
       role: UserRole.USER,

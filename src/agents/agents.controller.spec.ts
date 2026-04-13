@@ -68,7 +68,6 @@ describe('AgentsController', () => {
         systemInstructions: 'Test Instructions',
         emoji: '🧠',
         modelId: 'model-123',
-        providerId: 'provider-123',
       };
       jest.spyOn(service, 'create').mockResolvedValue(mockAgent);
       expect(await controller.create(dto)).toBe(mockAgent);

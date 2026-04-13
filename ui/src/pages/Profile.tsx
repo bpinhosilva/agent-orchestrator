@@ -295,7 +295,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     if (user) {
       setName(user.name ?? '');
-      setLastName(user.last_name ?? '');
+      setLastName(user.lastName ?? '');
       setEmail(user.email ?? '');
       setSelectedRole(user.role ?? 'user');
       setSelectedAvatar(getSelectedAvatar(user.avatar));
@@ -316,7 +316,7 @@ const Profile: React.FC = () => {
     try {
       const payload: UpdateProfilePayload = {};
       if (name !== (user?.name ?? '')) payload.name = name;
-      if (lastName !== (user?.last_name ?? '')) payload.last_name = lastName;
+      if (lastName !== (user?.lastName ?? '')) payload.lastName = lastName;
       if (email !== (user?.email ?? '')) payload.email = email;
 
       const ops: Promise<unknown>[] = [];
@@ -403,7 +403,7 @@ const Profile: React.FC = () => {
   };
 
   const displayName = user
-    ? `${user.name ?? ''} ${user.last_name ?? ''}`.trim()
+    ? `${user.name ?? ''} ${user.lastName ?? ''}`.trim()
     : 'Agent';
   const roleLabel = user?.role ?? 'user';
   const roleDisplay = roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1);
@@ -456,7 +456,7 @@ const Profile: React.FC = () => {
             id="profile-cancel-btn"
             onClick={() => {
               setName(user?.name ?? '');
-              setLastName(user?.last_name ?? '');
+              setLastName(user?.lastName ?? '');
               setEmail(user?.email ?? '');
               setSelectedRole(user?.role ?? 'user');
               setSaveError('');

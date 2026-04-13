@@ -13,10 +13,9 @@ import { UpdateAgentDto } from './dto/update-agent.dto';
 import { Agent, AgentResponse } from './interfaces/agent.interface';
 import { getAgentImplementation } from './registry/agent.registry';
 import { Model } from '../models/entities/model.entity';
-import { Provider } from '../providers/entities/provider.entity';
 import { ModuleRef } from '@nestjs/core';
 
-const AGENT_RELATIONS = ['model', 'provider'];
+const AGENT_RELATIONS = ['model'];
 
 @Injectable()
 export class AgentsService implements OnModuleInit {
@@ -56,10 +55,10 @@ export class AgentsService implements OnModuleInit {
       return;
     }
 
-    const providerName = agentEntity.provider?.name?.toLowerCase();
+    const providerName = agentEntity.model?.provider?.name?.toLowerCase();
     if (!providerName) {
       this.logger.warn(
-        `No provider found for agent #${agentEntity.id}. Skipping instance creation.`,
+        `No provider found for agent #${agentEntity.id} (via model). Skipping instance creation.`,
       );
       return;
     }
@@ -102,14 +101,11 @@ export class AgentsService implements OnModuleInit {
   }
 
   async create(createAgentDto: CreateAgentDto): Promise<AgentEntity> {
-    const { modelId, providerId, ...rest } = createAgentDto;
+    const { modelId, ...rest } = createAgentDto;
     const agentData: DeepPartial<AgentEntity> = { ...rest };
 
     if (modelId) {
       agentData.model = { id: modelId } as Model;
-    }
-    if (providerId) {
-      agentData.provider = { id: providerId } as Provider;
     }
 
     return await this.agentRepository.manager.transaction(async (manager) => {
@@ -154,14 +150,11 @@ export class AgentsService implements OnModuleInit {
     id: string,
     updateAgentDto: UpdateAgentDto,
   ): Promise<AgentEntity> {
-    const { modelId, providerId, ...rest } = updateAgentDto;
+    const { modelId, ...rest } = updateAgentDto;
     const updateData: DeepPartial<AgentEntity> = { ...rest };
 
     if (modelId) {
       updateData.model = { id: modelId } as Model;
-    }
-    if (providerId) {
-      updateData.provider = { id: providerId } as Provider;
     }
 
     return await this.agentRepository.manager.transaction(async (manager) => {

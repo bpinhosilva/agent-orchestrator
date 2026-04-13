@@ -99,7 +99,7 @@ const UserDetail: React.FC = () => {
       setUserProjects(userP.data);
       
       setName(u.name);
-      setLastName(u.last_name);
+      setLastName(u.lastName);
       setEmail(u.email);
       setRole(u.role || 'user');
     } catch (err: unknown) {
