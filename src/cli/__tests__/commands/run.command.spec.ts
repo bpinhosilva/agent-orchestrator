@@ -4,37 +4,16 @@ import { registerRunCommand } from '../../commands/run.command';
 jest.mock('../../process-manager', () => ({
   assertBuildExists: jest.fn(),
   findManagedProcess: jest.fn(),
-  getChildEnvironment: jest.fn(() => ({})),
-  getConfiguredHost: jest.fn(() => '127.0.0.1'),
-  persistProcessMetadata: jest.fn(),
-  formatProcessSummary: jest.fn(() => 'PID: 123\nPort: 15789'),
-}));
-
-jest.mock('../../env', () => ({
-  readEnvFile: jest.fn(() => ({ PORT: '15789' })),
-}));
-
-jest.mock('fs', () => ({
-  existsSync: jest.fn(() => true),
-  mkdirSync: jest.fn(),
-  openSync: jest.fn(() => 1),
-}));
-
-jest.mock('child_process', () => ({
-  spawn: jest.fn(() => ({
-    pid: 42,
-    unref: jest.fn(),
-  })),
+  formatProcessSummary: jest.fn(() => 'PID: 42\nPort: 15789'),
+  startServer: jest.fn(() => ({ pid: 42, host: '127.0.0.1', port: '15789' })),
 }));
 
 import * as processManager from '../../process-manager';
-import { spawn } from 'child_process';
 
 describe('run command', () => {
   let program: Command;
   let consoleSpy: jest.SpyInstance;
   let consoleErrSpy: jest.SpyInstance;
-
   let exitSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -67,51 +46,66 @@ describe('run command', () => {
 
     await program.parseAsync(['node', 'cli', 'run']);
 
-    expect(spawn).not.toHaveBeenCalled();
+    expect(processManager.startServer).not.toHaveBeenCalled();
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('already running'),
     );
   });
 
-  it('logs error and calls process.exit(1) when assertBuildExists throws', async () => {
-    (processManager.assertBuildExists as jest.Mock).mockImplementation(() => {
+  it('logs error and calls process.exit(1) when startServer throws', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockImplementation(() => {
       throw new Error('Build not found');
     });
-    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
 
     await program.parseAsync(['node', 'cli', 'run']);
 
-    expect(spawn).not.toHaveBeenCalled();
     expect(consoleErrSpy).toHaveBeenCalledWith(
       expect.stringContaining('Build not found'),
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it('spawns process and persists metadata on happy path', async () => {
-    (processManager.assertBuildExists as jest.Mock).mockImplementation(
-      () => {},
-    );
+  it('calls startServer and logs summary on happy path', async () => {
     (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockReturnValue({
+      pid: 42,
+      host: '127.0.0.1',
+      port: '15789',
+    });
 
     await program.parseAsync(['node', 'cli', 'run']);
 
-    expect(spawn).toHaveBeenCalledTimes(1);
-    expect(processManager.persistProcessMetadata).toHaveBeenCalledTimes(1);
-    expect(processManager.persistProcessMetadata).toHaveBeenCalledWith(
-      expect.objectContaining({ pid: 42, host: '127.0.0.1' }),
-    );
+    expect(processManager.startServer).toHaveBeenCalledTimes(1);
+    const allOutput = consoleSpy.mock.calls
+      .map((c: string[]) => c[0])
+      .join('\n');
+    expect(allOutput).toContain('started in background');
   });
 
-  it('applies the requested log level before spawning', async () => {
-    (processManager.assertBuildExists as jest.Mock).mockImplementation(
-      () => {},
-    );
+  it('passes log level to startServer when --log-level is given', async () => {
     (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockReturnValue({
+      pid: 42,
+      host: '127.0.0.1',
+      port: '15789',
+    });
 
     await program.parseAsync(['node', 'cli', 'run', '--log-level', 'debug']);
 
-    expect(process.env.LOG_LEVEL).toBe('debug');
-    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(processManager.startServer).toHaveBeenCalledWith(
+      expect.objectContaining({ logLevel: 'debug' }),
+    );
+  });
+
+  it('exits with error for invalid --log-level values', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-level', 'invalid']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid log level'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 });

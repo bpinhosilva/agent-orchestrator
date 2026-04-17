@@ -45,7 +45,6 @@ const ProbeAgentModal: React.FC<ProbeAgentModalProps> = ({ isOpen, onClose, agen
       setImageResponse(data.image);
       setStatus('success');
     } catch (error: unknown) {
-      console.error('Probe failed:', error);
       let errorMessage = 'An unexpected error occurred during the probe.';
       if (error && typeof error === 'object' && 'response' in error) {
         const anyError = error as {

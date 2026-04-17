@@ -4,6 +4,18 @@ import type { BasicConfig, FileSystem } from './types';
 
 const realFs = fs as unknown as FileSystem;
 
+export function unquoteEnvValue(value: string): string {
+  if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
+    return value
+      .slice(1, -1)
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+  return value;
+}
+
 export function parseEnvContent(content: string): Record<string, string> {
   return content
     .split(/\r?\n/)
@@ -17,7 +29,7 @@ export function parseEnvContent(content: string): Record<string, string> {
       const key = line.slice(0, separatorIndex).trim();
       if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return acc;
       const value = line.slice(separatorIndex + 1).trim();
-      acc[key] = value;
+      acc[key] = unquoteEnvValue(value);
       return acc;
     }, {});
 }
@@ -44,6 +56,18 @@ export function writePrivateFile(
 ): void {
   fsDep.writeFileSync(filePath, content, { mode: 0o600 });
   fsDep.chmodSync(filePath, 0o600);
+}
+
+export function quoteEnvValue(value: string): string {
+  if (!/[\n\r"\\]/.test(value)) {
+    return value;
+  }
+  const escaped = value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n');
+  return `"${escaped}"`;
 }
 
 export function buildEnvContent(
@@ -114,7 +138,7 @@ export function buildEnvContent(
 
   return [...orderedKeys, ...remainingKeys]
     .filter((key) => envValues[key] !== undefined && envValues[key] !== '')
-    .map((key) => `${key}=${envValues[key]}`)
+    .map((key) => `${key}=${quoteEnvValue(envValues[key])}`)
     .join('\n')
     .concat('\n');
 }

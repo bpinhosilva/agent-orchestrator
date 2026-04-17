@@ -49,8 +49,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
       });
 
       invalidateComments();
-    } catch (error) {
-      console.error('Failed to send comment:', error);
+    } catch {
+      // axios interceptor handles notification
     } finally {
       setIsSending(false);
     }
@@ -70,7 +70,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ taskId }) => {
       setDeleteConfirmId(null);
       notifySuccess('Protocol Cleared', 'The comment data has been purged from the orchestration logs.');
     } catch (error) {
-      console.error('Failed to delete comment:', error);
       notifyApiError(error, 'Purge Failed');
     } finally {
       setIsDeleting(false);

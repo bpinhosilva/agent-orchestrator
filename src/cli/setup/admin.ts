@@ -1,7 +1,7 @@
 import * as enquirer from 'enquirer';
 import { createDataSource } from '../../config/typeorm';
 import { DEFAULT_USER_AVATAR } from '../../users/avatar.constants';
-import { User } from '../../users/entities/user.entity';
+import { User, UserRole } from '../../users/entities/user.entity';
 import type {
   DataSourceFactory,
   SetupAdminOptions,
@@ -94,6 +94,7 @@ export async function setupAdminUser(
         email: response.email,
         password: hashedPassword,
         avatar: DEFAULT_USER_AVATAR,
+        role: UserRole.ADMIN,
       });
       await userRepository.save(user);
       console.log('Admin user created successfully!');

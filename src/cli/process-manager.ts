@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
 import type { FileSystem, ManagedProcess, ProcessMetadata } from './types';
 import {
   PID_FILE,
@@ -11,7 +12,7 @@ import {
   ENV_PATH,
   PACKAGE_ROOT,
 } from './constants';
-
+import { readEnvFile } from './env';
 import { getDefaultPort } from '../config/port.defaults';
 import { getDefaultHost } from '../config/host.defaults';
 
@@ -153,53 +154,14 @@ export function getConfiguredPort(
   envPath: string,
   fsDep: FileSystem = realFs,
 ): string {
-  try {
-    if (!fsDep.existsSync(envPath)) {
-      return DEFAULT_PORT;
-    }
-    const content = fsDep.readFileSync(envPath, 'utf8');
-    const lines = content.split(/\r?\n/);
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('#') || !trimmed) continue;
-      const separatorIndex = trimmed.indexOf('=');
-      if (separatorIndex === -1) continue;
-      const key = trimmed.slice(0, separatorIndex).trim();
-      if (key === 'PORT') {
-        return trimmed.slice(separatorIndex + 1).trim() || DEFAULT_PORT;
-      }
-    }
-  } catch {
-    // fall through
-  }
-  return DEFAULT_PORT;
+  return readEnvFile(envPath, fsDep).PORT || DEFAULT_PORT;
 }
 
 export function getConfiguredHost(
   envPath: string,
   fsDep: FileSystem = realFs,
 ): string {
-  const defaultHost = getDefaultHost('production');
-  try {
-    if (!fsDep.existsSync(envPath)) {
-      return defaultHost;
-    }
-    const content = fsDep.readFileSync(envPath, 'utf8');
-    const lines = content.split(/\r?\n/);
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('#') || !trimmed) continue;
-      const separatorIndex = trimmed.indexOf('=');
-      if (separatorIndex === -1) continue;
-      const key = trimmed.slice(0, separatorIndex).trim();
-      if (key === 'HOST') {
-        return trimmed.slice(separatorIndex + 1).trim() || defaultHost;
-      }
-    }
-  } catch {
-    // fall through
-  }
-  return defaultHost;
+  return readEnvFile(envPath, fsDep).HOST || getDefaultHost('production');
 }
 
 // ---------------------------------------------------------------------------
@@ -416,4 +378,126 @@ export function checkIfRunning(fsDep: FileSystem = realFs): number | null {
     fsDep,
   );
   return managedProcess?.pid ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Async process lifecycle helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Polls until the given PID is no longer a managed process or the timeout
+ * expires. Returns true if the process died, false if it survived.
+ */
+export async function waitForProcessDeath(
+  pid: number,
+  cwd: string,
+  mainPath: string,
+  fsDep: FileSystem = realFs,
+  timeoutMs = 10000,
+  pollIntervalMs = 500,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!isManagedProcess(pid, { cwd, mainPath }, fsDep)) {
+      return true;
+    }
+    await new Promise<void>((r) => setTimeout(r, pollIntervalMs));
+  }
+  return !isManagedProcess(pid, { cwd, mainPath }, fsDep);
+}
+
+/**
+ * Sends SIGTERM to the process and waits up to 10 s for it to exit.
+ * If still alive, escalates to SIGKILL and waits up to 5 s more.
+ * Returns true if the process is confirmed dead, false otherwise.
+ */
+export async function stopManagedProcessById(
+  pid: number,
+  cwd: string,
+  mainPath: string,
+  fsDep: FileSystem = realFs,
+): Promise<boolean> {
+  try {
+    process.kill(pid, 'SIGTERM');
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === 'ESRCH') return true; // already gone
+    throw err;
+  }
+
+  const diedOnTerm = await waitForProcessDeath(
+    pid,
+    cwd,
+    mainPath,
+    fsDep,
+    10000,
+  );
+  if (diedOnTerm) return true;
+
+  // Escalate
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === 'ESRCH') return true;
+    throw err;
+  }
+
+  return waitForProcessDeath(pid, cwd, mainPath, fsDep, 5000);
+}
+
+/**
+ * Spawns the server process in detached mode, persists metadata, and
+ * returns the new process details. Caller must verify build exists and
+ * that no instance is already running before calling this.
+ */
+export function startServer(
+  options: { logLevel?: string } = {},
+  mainFile = MAIN_FILE,
+  packageRoot = PACKAGE_ROOT,
+  logFile = LOG_FILE,
+  pidDir = PID_DIR,
+  envPath = ENV_PATH,
+): { pid: number; host: string; port: string } {
+  assertBuildExists(mainFile, UI_INDEX_FILE);
+
+  if (!fs.existsSync(pidDir)) {
+    fs.mkdirSync(pidDir, { recursive: true, mode: 0o700 });
+  }
+
+  const env = getChildEnvironment(pidDir);
+  if (options.logLevel) {
+    env.LOG_LEVEL = options.logLevel;
+  }
+
+  const logFd = fs.openSync(logFile, 'a');
+  try {
+    const child = spawn('node', [mainFile], {
+      detached: true,
+      stdio: ['ignore', logFd, logFd],
+      cwd: packageRoot,
+      env,
+    });
+
+    const pid = child.pid;
+    if (!pid) throw new Error('Failed to determine spawned process PID.');
+
+    const port = getConfiguredPort(envPath);
+    const host = getConfiguredHost(envPath);
+
+    persistProcessMetadata({
+      pid,
+      cwd: packageRoot,
+      mainPath: mainFile,
+      host,
+      port,
+      logFile,
+      startedAt: new Date().toISOString(),
+    });
+
+    child.unref();
+    return { pid, host, port };
+  } finally {
+    fs.closeSync(logFd);
+  }
 }

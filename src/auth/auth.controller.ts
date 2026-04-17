@@ -129,6 +129,7 @@ export class AuthController {
     return req.user;
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Patch('me')
   updateMe(
     @Request() req: { user: { id: string } },

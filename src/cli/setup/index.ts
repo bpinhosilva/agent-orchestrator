@@ -11,13 +11,39 @@ import type {
 import { maybeSetupAdmin } from './admin';
 import { runSetupPrompts, type SetupAnswers } from './prompts';
 
+const SENSITIVE_FLAG_ENV_VARS: [keyof SetupCommandOptions, string, string][] = [
+  ['geminiKey', 'GEMINI_API_KEY', '--gemini-key'],
+  ['anthropicKey', 'ANTHROPIC_API_KEY', '--anthropic-key'],
+  ['ollamaKey', 'OLLAMA_API_KEY', '--ollama-key'],
+  ['databaseUrl', 'DATABASE_URL', '--database-url'],
+  ['adminPassword', 'SETUP_ADMIN_PASSWORD', '--admin-password'],
+];
+
 export async function handleSetup(
   opts: SetupCommandOptions,
   fsDep?: FileSystem,
   prompter?: Prompter,
   dsFactory?: DataSourceFactory,
 ): Promise<void> {
+  // Warn when sensitive values are supplied as CLI flags
+  for (const [optKey, , flagName] of SENSITIVE_FLAG_ENV_VARS) {
+    if (opts[optKey] !== undefined) {
+      console.warn(
+        `Warning: Passing secrets as CLI flags (${flagName}) exposes them in process ` +
+          `tables and shell history. Use environment variables instead.`,
+      );
+    }
+  }
+
   const existingEnv = readEnvFile(ENV_PATH, fsDep);
+
+  // Resolve a sensitive value: CLI flag > process env var > existing .env value
+  const resolveSecret = (
+    flagValue: string | undefined,
+    envVar: string,
+    existingKey: string,
+  ): string =>
+    flagValue ?? process.env[envVar] ?? existingEnv[existingKey] ?? '';
 
   let answers: SetupAnswers;
   if (opts.yes) {
@@ -33,14 +59,30 @@ export async function handleSetup(
       host: opts.host ?? existingEnv.HOST ?? getDefaultHost('production'),
       port: opts.port ?? '15789',
       dbType: opts.dbType ?? 'sqlite',
-      databaseUrl: opts.databaseUrl ?? '',
+      databaseUrl: resolveSecret(
+        opts.databaseUrl,
+        'DATABASE_URL',
+        'DATABASE_URL',
+      ),
       providers: [],
       schedulerEnabled: existingEnv.SCHEDULER_ENABLED !== 'false',
       jwtSecret,
       jwtRefreshSecret,
-      geminiApiKey: opts.geminiKey ?? existingEnv.GEMINI_API_KEY ?? '',
-      anthropicApiKey: opts.anthropicKey ?? existingEnv.ANTHROPIC_API_KEY ?? '',
-      ollamaApiKey: opts.ollamaKey ?? existingEnv.OLLAMA_API_KEY ?? '',
+      geminiApiKey: resolveSecret(
+        opts.geminiKey,
+        'GEMINI_API_KEY',
+        'GEMINI_API_KEY',
+      ),
+      anthropicApiKey: resolveSecret(
+        opts.anthropicKey,
+        'ANTHROPIC_API_KEY',
+        'ANTHROPIC_API_KEY',
+      ),
+      ollamaApiKey: resolveSecret(
+        opts.ollamaKey,
+        'OLLAMA_API_KEY',
+        'OLLAMA_API_KEY',
+      ),
       ollamaHost: opts.ollamaHost ?? existingEnv.OLLAMA_HOST ?? '',
     };
   } else {
@@ -70,9 +112,15 @@ export async function handleSetup(
   writePrivateFile(ENV_PATH, envContent, fsDep);
   console.log(`Configuration saved to ${ENV_PATH} with mode 600.`);
 
+  // Resolve admin password via env var fallback before passing to admin setup
+  const resolvedAdminPassword =
+    opts.adminPassword ?? process.env.SETUP_ADMIN_PASSWORD;
+
+  const resolvedOpts = { ...opts, adminPassword: resolvedAdminPassword };
+
   if (dsFactory !== undefined) {
-    await maybeSetupAdmin({ ...opts }, dsFactory);
+    await maybeSetupAdmin(resolvedOpts, dsFactory);
   } else {
-    await maybeSetupAdmin({ ...opts });
+    await maybeSetupAdmin(resolvedOpts);
   }
 }

@@ -79,7 +79,7 @@ async function bootstrap() {
     logger: logLevels,
   });
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   app.useGlobalFilters(new HttpExceptionFilter());
 

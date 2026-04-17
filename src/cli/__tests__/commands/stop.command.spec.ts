@@ -4,6 +4,7 @@ import { registerStopCommand } from '../../commands/stop.command';
 jest.mock('../../process-manager', () => ({
   findManagedProcess: jest.fn(),
   removeRuntimeState: jest.fn(),
+  stopManagedProcessById: jest.fn(),
 }));
 
 import * as processManager from '../../process-manager';
@@ -12,8 +13,6 @@ describe('stop command', () => {
   let program: Command;
   let consoleSpy: jest.SpyInstance;
   let consoleErrSpy: jest.SpyInstance;
-  let killSpy: jest.SpyInstance;
-
   let exitSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -23,7 +22,6 @@ describe('stop command', () => {
     registerStopCommand(program);
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    killSpy = jest.spyOn(process, 'kill').mockImplementation(() => true);
     exitSpy = jest
       .spyOn(process, 'exit')
       .mockImplementation(() => undefined as never);
@@ -32,7 +30,6 @@ describe('stop command', () => {
   afterEach(() => {
     consoleSpy.mockRestore();
     consoleErrSpy.mockRestore();
-    killSpy.mockRestore();
     exitSpy.mockRestore();
   });
 
@@ -41,14 +38,14 @@ describe('stop command', () => {
 
     await program.parseAsync(['node', 'cli', 'stop']);
 
-    expect(killSpy).not.toHaveBeenCalled();
+    expect(processManager.stopManagedProcessById).not.toHaveBeenCalled();
     expect(processManager.removeRuntimeState).not.toHaveBeenCalled();
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('not running'),
     );
   });
 
-  it('sends SIGTERM and removes runtime state when process is found', async () => {
+  it('calls stopManagedProcessById and removes runtime state when process is found', async () => {
     const mockProcess = {
       pid: 123,
       source: 'metadata' as const,
@@ -59,17 +56,24 @@ describe('stop command', () => {
     (processManager.findManagedProcess as jest.Mock).mockReturnValue(
       mockProcess,
     );
+    (processManager.stopManagedProcessById as jest.Mock).mockResolvedValue(
+      true,
+    );
 
     await program.parseAsync(['node', 'cli', 'stop']);
 
-    expect(killSpy).toHaveBeenCalledWith(123, 'SIGTERM');
+    expect(processManager.stopManagedProcessById).toHaveBeenCalledWith(
+      123,
+      '/app',
+      '/app/dist/main.js',
+    );
     expect(processManager.removeRuntimeState).toHaveBeenCalledTimes(1);
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('stop signal sent'),
+      expect.stringContaining('stopped successfully'),
     );
   });
 
-  it('logs error and calls process.exit(1) when process.kill throws', async () => {
+  it('logs error and exits with 1 when process does not die', async () => {
     (processManager.findManagedProcess as jest.Mock).mockReturnValue({
       pid: 123,
       source: 'metadata' as const,
@@ -77,9 +81,30 @@ describe('stop command', () => {
       mainPath: '/app/dist/main.js',
       port: '15789',
     });
-    killSpy.mockImplementation(() => {
-      throw new Error('ESRCH');
+    (processManager.stopManagedProcessById as jest.Mock).mockResolvedValue(
+      false,
+    );
+
+    await program.parseAsync(['node', 'cli', 'stop']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to stop'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(processManager.removeRuntimeState).not.toHaveBeenCalled();
+  });
+
+  it('logs error and calls process.exit(1) when stopManagedProcessById throws', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue({
+      pid: 123,
+      source: 'metadata' as const,
+      cwd: '/app',
+      mainPath: '/app/dist/main.js',
+      port: '15789',
     });
+    (processManager.stopManagedProcessById as jest.Mock).mockRejectedValue(
+      new Error('ESRCH'),
+    );
 
     await program.parseAsync(['node', 'cli', 'stop']);
 

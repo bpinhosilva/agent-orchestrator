@@ -21,6 +21,7 @@ export enum RecurrentTaskStatus {
 
 @Entity('recurrent_tasks')
 @Index(['status'])
+@Index(['project', 'updatedAt'])
 export class RecurrentTask {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -50,11 +51,11 @@ export class RecurrentTask {
 
   @Index()
   @ManyToOne(() => AgentEntity, {
-    nullable: false,
+    nullable: true,
     eager: true,
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   })
-  assignee: AgentEntity;
+  assignee: AgentEntity | null;
 
   @Index()
   @ManyToOne(() => Project, {

@@ -7,7 +7,8 @@ jest.mock('../../../database/migration-state', () => ({
 }));
 
 jest.mock('enquirer', () => ({
-  prompt: jest.fn(),
+  __esModule: true,
+  default: { prompt: jest.fn() },
 }));
 
 jest.mock('../../utils', () => {
@@ -18,7 +19,9 @@ jest.mock('../../utils', () => {
 
 import * as migrationState from '../../../database/migration-state';
 
-const mockEnquirer = jest.requireMock<{ prompt: jest.Mock }>('enquirer');
+const mockEnquirer = jest.requireMock<{ default: { prompt: jest.Mock } }>(
+  'enquirer',
+).default;
 
 describe('migrate command', () => {
   let program: Command;

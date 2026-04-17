@@ -13,7 +13,7 @@ Agent Orchestrator is an open-source platform for managing and orchestrating AI 
 
 ### Current capabilities
 
-- Multi-provider agent execution with **Google Gemini** and **Anthropic Claude**
+- Multi-provider agent execution with **Google Gemini**, **Anthropic Claude**, and **Ollama** (local or cloud)
 - Task execution and recurring scheduling
 - Project management with project membership and RBAC
 - File uploads and storage-backed task workflows
@@ -59,10 +59,10 @@ npm run test:all
 - Source installs use hardened npm settings; after `npm install` or `npm ci`, run:
 
 ```bash
-npm rebuild
+npm rebuild --ignore-scripts=false
 ```
 
-This is important for native modules such as `bcrypt` and `sqlite3`.
+This is important for native modules such as `bcrypt` and `better-sqlite3`.
 
 ---
 
@@ -127,7 +127,7 @@ This project supports both **source checkout development** and a **packaged CLI/
 ```bash
 git clone <repo> && cd agent-orchestrator
 npm install
-npm rebuild
+npm rebuild --ignore-scripts=false
 npm run build:all
 ```
 
@@ -274,6 +274,9 @@ Do not treat project membership as a substitute for system role checks; both are
 - `DB_LOGGING`
 - `SERVE_STATIC_UI`
 - `CHECK_PENDING_MIGRATIONS_ON_STARTUP`
+- `OLLAMA_HOST` (optional; defaults to `http://127.0.0.1:11434`)
+- `OLLAMA_API_KEY` (optional; required for cloud Ollama endpoints)
+- `LOG_LEVEL` (optional; defaults to `error` in production)
 
 ---
 
@@ -286,6 +289,7 @@ Agent implementations are registered through a registry decorator.
 - `src/agents/registry/agent.registry.ts`
 - `src/agents/implementations/gemini.agent.ts`
 - `src/agents/implementations/claude.agent.ts`
+- `src/agents/implementations/ollama.agent.ts`
 
 ### Pattern
 
@@ -439,7 +443,7 @@ The repository uses Jest for API and E2E tests, plus separate UI tests.
 ## Common gotchas
 
 1. `JWT_SECRET` must be at least 32 characters
-2. Source installs usually need `npm rebuild`
+2. Source installs need `npm rebuild --ignore-scripts=false` (`.npmrc` sets `ignore-scripts=true`)
 3. The packaged runtime expects both `dist/main.js` and `dist/ui/index.html`
 4. UI assets are in `dist/ui`, not `dist/public`
 5. `@Public()` is required for unauthenticated routes because auth is globally enforced

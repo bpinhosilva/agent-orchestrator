@@ -1,7 +1,12 @@
 import { Command } from 'commander';
-import { findManagedProcess } from '../process-manager';
-import { registerRunCommand } from './run.command';
-import { registerStopCommand } from './stop.command';
+import {
+  findManagedProcess,
+  formatProcessSummary,
+  removeRuntimeState,
+  startServer,
+  stopManagedProcessById,
+} from '../process-manager';
+import { MAIN_FILE, PACKAGE_ROOT } from '../constants';
 
 export function registerRestartCommand(program: Command): void {
   program
@@ -10,21 +15,43 @@ export function registerRestartCommand(program: Command): void {
       'Restart the orchestrator server (smart: stop if running, then start)',
     )
     .action(async () => {
-      const running = findManagedProcess(); // TODO: pass default args if needed
-      if (running) {
-        // Stop if running
-        await new Promise<void>((resolve) => {
-          const stopProgram = new Command();
-          registerStopCommand(stopProgram);
-          stopProgram.exitOverride();
-          stopProgram.parse(['node', 'cli', 'stop'], { from: 'user' });
-          setTimeout(resolve, 2000); // Wait for stop
-        });
+      try {
+        const running = findManagedProcess();
+        if (running) {
+          console.log(`Stopping Orchestrator (PID: ${running.pid})...`);
+          const died = await stopManagedProcessById(
+            running.pid,
+            running.cwd,
+            running.mainPath,
+          );
+          if (!died) {
+            console.error(
+              'Failed to stop orchestrator. Aborting restart to avoid duplicate instances.',
+            );
+            process.exit(1);
+            return;
+          }
+          removeRuntimeState();
+          console.log('Orchestrator stopped.');
+        }
+
+        console.log('Starting Agent Orchestrator in background...');
+        const { pid, host, port } = startServer();
+
+        console.log(
+          `Orchestrator started in background.\n${formatProcessSummary({
+            pid,
+            source: 'metadata',
+            cwd: PACKAGE_ROOT,
+            mainPath: MAIN_FILE,
+            host,
+            port,
+          })}`,
+        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error(`Failed to restart orchestrator: ${errorMessage}`);
+        process.exit(1);
       }
-      // Start
-      const runProgram = new Command();
-      registerRunCommand(runProgram);
-      runProgram.exitOverride();
-      runProgram.parse(['node', 'cli', 'run'], { from: 'user' });
     });
 }

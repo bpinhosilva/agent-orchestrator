@@ -57,7 +57,6 @@ const ProjectDetail: React.FC = () => {
       setStatus(p.status || ProjectStatus.PLANNING);
       setOwnerAgentId(p.ownerAgent?.id || '');
     } catch (error) {
-      console.error('Failed to load project details:', error);
       notifyApiError(error, 'Fetch Error');
     } finally {
       setLoading(false);
@@ -85,7 +84,6 @@ const ProjectDetail: React.FC = () => {
       await refreshProjects();
       notifySuccess('Project Updated', 'Project settings have been updated');
     } catch (error) {
-      console.error('Failed to update project:', error);
       notifyApiError(error, 'Sync Error');
     } finally {
       setSaving(false);

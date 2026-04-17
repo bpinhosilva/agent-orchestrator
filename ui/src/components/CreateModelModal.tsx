@@ -150,7 +150,7 @@ const CreateModelModal: React.FC<CreateModelModalProps> = ({
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-none custom-scrollbar">
                     {models.map((model, index) => (
                       <motion.div
-                        key={index}
+                        key={`${model}-${index}`}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex gap-2 group"

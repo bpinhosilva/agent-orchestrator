@@ -90,9 +90,7 @@ export class ProjectsService {
         (m) => (m.user?.id || m.user) === user.id,
       );
       if (!isMember) {
-        throw new ForbiddenException(
-          `Access denied (user ${user.id} not in project ${id})`,
-        );
+        throw new ForbiddenException('Access denied');
       }
     }
     return project;

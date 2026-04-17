@@ -14,6 +14,9 @@ export const JSON_COLUMN_TYPE =
 export const UUID_COLUMN_TYPE =
   dbType === 'sqlite' || (!dbType && !databaseUrl) ? 'varchar' : 'uuid';
 
+export const DATETIME_COLUMN_TYPE =
+  dbType === 'sqlite' || (!dbType && !databaseUrl) ? 'datetime' : 'timestamptz';
+
 export type RuntimeDbType = 'postgres' | 'sqlite';
 
 export function resolveDataSourceType(
@@ -47,10 +50,6 @@ export const getTypeOrmConfig = (
   const migrations = isTsNode
     ? [join(packageRoot, 'src/migrations/*.ts')]
     : [join(packageRoot, 'dist/migrations/*.js')];
-
-  if (process.env.NODE_ENV === 'test') {
-    console.log('Entities:', entities, 'Migrations:', migrations);
-  }
 
   const baseConfig = {
     entities,

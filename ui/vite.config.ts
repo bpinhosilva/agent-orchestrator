@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite';
 const devServerHost = process.env.VITE_DEV_HOST || '0.0.0.0';
 const apiProxyTarget =
   process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3000';
+const devAllowedHosts = process.env.VITE_ALLOWED_HOSTS
+  ? process.env.VITE_ALLOWED_HOSTS.split(',').map((h) => h.trim())
+  : undefined;
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,6 +16,7 @@ export default defineConfig({
   server: {
     host: devServerHost,
     port: 5173,
+    allowedHosts: devAllowedHosts,
     proxy: {
       '/api': {
         target: apiProxyTarget,

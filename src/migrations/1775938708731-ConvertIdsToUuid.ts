@@ -79,10 +79,13 @@ export class ConvertIdsToUuid1775938708731 implements MigrationInterface {
 
     for (const table of tables) {
       for (const col of table.ids) {
+        // Drop any existing default before type change — PostgreSQL cannot cast string defaults to uuid
+        await queryRunner.query(
+          `ALTER TABLE "${table.name}" ALTER COLUMN "${col}" DROP DEFAULT`,
+        );
         await queryRunner.query(
           `ALTER TABLE "${table.name}" ALTER COLUMN "${col}" TYPE uuid USING "${col}"::uuid`,
         );
-        // Remove old string default if exists
         if (col === 'id') {
           await queryRunner.query(
             `ALTER TABLE "${table.name}" ALTER COLUMN "${col}" SET DEFAULT gen_random_uuid()`,

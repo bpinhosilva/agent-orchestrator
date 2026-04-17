@@ -22,12 +22,13 @@ export class ProjectMember {
   id: string;
 
   @ManyToOne(() => Project, (project) => project.members, {
+    nullable: false,
     onDelete: 'CASCADE',
   })
   project: Project;
 
   @Index()
-  @ManyToOne(() => User, { onDelete: 'CASCADE', eager: true })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE', eager: true })
   user: User;
 
   @Column({ type: 'varchar', default: ProjectMemberRole.MEMBER })

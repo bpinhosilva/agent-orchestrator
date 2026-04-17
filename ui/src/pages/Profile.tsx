@@ -343,8 +343,8 @@ const Profile: React.FC = () => {
       await refreshProjects();
       setShowAssignProject(false);
       setAssigningProjectId('');
-    } catch (err: unknown) {
-      console.error('Failed to assign project:', err);
+    } catch {
+      // axios interceptor handles notification
     } finally {
       setIsAssigning(false);
     }

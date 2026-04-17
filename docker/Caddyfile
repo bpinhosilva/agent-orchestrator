@@ -1,8 +1,25 @@
-localhost, agent-orchestrator.localhost {
-  tls internal
+# DOMAIN defaults to "localhost". Set DOMAIN=mysite.com in .env for public deployments.
+# Caddy automatically provisions Let's Encrypt certs for public domains.
+{$DOMAIN:localhost} {
   encode zstd gzip
-  root * /srv
-  reverse_proxy /api/* api:3000
-  try_files {path} /index.html
-  file_server
+
+  header {
+    X-Frame-Options "SAMEORIGIN"
+    X-Content-Type-Options "nosniff"
+    X-XSS-Protection "1; mode=block"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    -Server
+  }
+
+  # API requests — proxy to the backend first, before SPA fallback
+  handle /api/* {
+    reverse_proxy api:3000
+  }
+
+  # SPA fallback — serve static files, unknown paths get index.html
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
 }

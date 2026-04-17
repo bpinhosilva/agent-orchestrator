@@ -21,6 +21,8 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - backend
 
   api:
     build:
@@ -32,26 +34,38 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOST: 0.0.0.0
       DB_TYPE: postgres
       DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}
       SERVE_STATIC_UI: 'false'
       CHECK_PENDING_MIGRATIONS_ON_STARTUP: 'true'
-      ALLOWED_ORIGINS: https://localhost,https://agent-orchestrator.localhost
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://localhost}
     depends_on:
       db:
         condition: service_healthy
     expose:
       - '3000'
+    healthcheck:
+      test: ["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
+    networks:
+      - frontend
+      - backend
 
   ui:
     build:
       context: .
       dockerfile: Dockerfile.ui
       target: runtime
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
     ports:
       - '80:80'
       - '443:443'
@@ -59,6 +73,54 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     restart: unless-stopped
+    networks:
+      - frontend
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runtime
+    profiles: ['tools']
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_TYPE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["dist/cli/index.js", "migrate", "--yes"]
+    networks:
+      - backend
+
+  seed-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runtime
+    profiles: ['tools']
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_TYPE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["dist/cli/index.js", "seed-admin"]
+    networks:
+      - backend
+
+networks:
+  frontend:
+  backend:
+    internal: true
 
 volumes:
   postgres-data:

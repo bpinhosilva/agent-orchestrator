@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -13,6 +14,7 @@ export enum UserRole {
 }
 
 @Entity('users')
+@Index(['createdAt', 'id'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;

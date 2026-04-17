@@ -32,10 +32,18 @@ export function registerLogsCommand(program: Command): void {
         }
 
         if (opts.follow) {
-          let position = fs.statSync(LOG_FILE).size;
+          const initialStat = fs.statSync(LOG_FILE);
+          let position = initialStat.size;
+          let trackedIno = initialStat.ino;
           fs.watchFile(LOG_FILE, { interval: 200 }, () => {
             try {
               const stat = fs.statSync(LOG_FILE);
+              const rotated = stat.ino !== trackedIno || stat.size < position;
+              if (rotated) {
+                // File replaced or truncated — restart from beginning
+                position = 0;
+                trackedIno = stat.ino;
+              }
               if (stat.size > position) {
                 const length = stat.size - position;
                 const buffer = Buffer.alloc(length);

@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -29,13 +30,19 @@ export class AuthService {
     private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
+  private readonly logger = new Logger(AuthService.name);
+
   async validateUser(userId: string): Promise<SerializedUser | null> {
     try {
       const user = await this.usersService.findOne(userId);
       if (user) {
         return this.usersService.serializeUser(user);
       }
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        'Failed to validate user',
+        error instanceof Error ? error.stack : String(error),
+      );
       return null;
     }
     return null;
@@ -133,7 +140,11 @@ export class AuthService {
       return tokenFound
         ? ((payload as Record<string, unknown>).sub as string)
         : null;
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        'Failed to validate refresh token',
+        error instanceof Error ? error.stack : String(error),
+      );
       return null;
     }
   }
@@ -276,9 +287,13 @@ export class AuthService {
           { revokedAt: new Date() },
         );
       }
-    } catch {
-      // Token is invalid or expired, but we still want to log out
-      // This is safe since the token can't be used anyway
+    } catch (error) {
+      // Token is invalid or expired, but we still want to log out.
+      // This is safe since the token can't be used anyway.
+      this.logger.warn(
+        'Failed to revoke refresh token (token may already be expired)',
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }

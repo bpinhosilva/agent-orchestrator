@@ -107,9 +107,9 @@ const Sidebar = () => {
       />
 
       <nav className="flex-1 px-3 space-y-2" aria-label="Main navigation">
-        {navItems.map((item, index) => (
+        {navItems.map((item) => (
           <NavLink
-            key={index}
+            key={item.path}
             to={item.path}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${

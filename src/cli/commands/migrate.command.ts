@@ -14,7 +14,7 @@ async function confirmAction(
     return true;
   }
 
-  const enquirer = await import('enquirer');
+  const { default: enquirer } = await import('enquirer');
   const { confirmed } = await enquirer.prompt<{ confirmed: boolean }>({
     type: 'confirm',
     name: 'confirmed',
@@ -33,7 +33,7 @@ async function promptForEnter(
     return;
   }
 
-  const enquirer = await import('enquirer');
+  const { default: enquirer } = await import('enquirer');
   await enquirer.prompt({
     type: 'input',
     name: 'continue',

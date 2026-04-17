@@ -10,6 +10,7 @@ import ArchiveZone from '../components/tasks/ArchiveZone';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppErrorBoundary from '../components/AppErrorBoundary';
 import { useProject } from '../hooks/useProject';
+import { ProjectStatus } from '../api/projects';
 import { useNotification } from '../hooks/useNotification';
 import { useTaskSSE } from '../hooks/useTaskSSE';
 import { useTaskDnD } from '../hooks/useTaskDnD';
@@ -178,6 +179,7 @@ const TaskManager: React.FC = () => {
   }
 
   const missingLead = !activeProject.ownerAgent;
+  const isInactive = activeProject.status !== ProjectStatus.ACTIVE;
 
   const content = (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -205,7 +207,33 @@ const TaskManager: React.FC = () => {
         </div>
       )}
 
-      {/* Page Header */}
+      {/* Inactive Project Warning */}
+      {isInactive && (
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 shadow-lg shadow-amber-500/5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/30">
+              <ShieldAlert size={24} />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-white uppercase tracking-tight">Administrative Protocol Warning</h4>
+              <p className="text-xs text-on-surface-variant max-w-2xl leading-relaxed mt-0.5">
+                Project <span className="text-amber-400 font-bold italic">"{activeProject.title}"</span> is currently in{' '}
+                <span className="text-amber-400 font-bold uppercase">{activeProject.status.replace('_', ' ')}</span> mode.
+                The agent scheduler will not execute tasks until the project is set to{' '}
+                <span className="text-amber-400 font-bold uppercase">Active</span>.
+              </p>
+            </div>
+          </div>
+          <NavLink
+            to={`/projects/${activeProject.id}`}
+            className="w-full md:w-auto px-6 py-2.5 rounded-xl bg-amber-500 text-black text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap text-center shadow-lg shadow-amber-500/20"
+          >
+            Activate Project
+          </NavLink>
+        </div>
+      )}
+
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">

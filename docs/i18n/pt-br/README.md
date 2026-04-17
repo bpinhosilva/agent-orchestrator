@@ -16,12 +16,12 @@ O Agent Orchestrator é uma plataforma de código aberto para gerenciar agentes 
 
 ## Capacidades atuais
 
-- Execução de agentes em múltiplos provedores com Google Gemini e Anthropic Claude
+- Execução de agentes em múltiplos provedores com Google Gemini, Anthropic Claude e Ollama (local ou nuvem)
 - Perfis de agentes com seleção de provedor/modelo
 - Gerenciamento de projetos com membros e RBAC (Controle de Acesso Baseado em Funções)
 - Execução de tarefas e agendamento recorrente
 - Upload de arquivos e fluxos de trabalho de tarefas baseados em artefatos
-- CLI/runtime empacotada para configuração, execução, status, logs, parada e migração
+- CLI/runtime empacotada com gerenciamento completo do ciclo de vida: `setup`, `run`, `restart`, `stop`, `status`, `health`, `logs`, `migrate`, `config`, `reset-password` e `rotate-secrets`
 - Painel React servido pelo backend ou pelo runtime empacotado
 
 ## Direção planejada
@@ -46,9 +46,10 @@ O Agent Orchestrator é uma plataforma de código aberto para gerenciar agentes 
 - [Node.js](https://nodejs.org/) 24 ou mais recente
 - npm
 - [Docker](https://www.docker.com/) e Docker Compose (opcional)
-- Pelo menos uma chave de API de provedor para executar agentes:
+- Pelo menos uma chave de API de provedor ou servidor de modelo local para executar agentes:
   - [Chave de API do Google Gemini](https://aistudio.google.com/)
   - [Chave de API da Anthropic](https://console.anthropic.com/)
+  - [Ollama](https://ollama.com/) rodando localmente (sem chave) ou um endpoint Ollama na nuvem
 
 ## Início rápido
 
@@ -76,7 +77,7 @@ Para um uso mais aprofundado da CLI, veja [CLI.md](CLI.md).
 git clone https://github.com/bpinhosilva/agent-orchestrator.git
 cd agent-orchestrator
 npm install
-npm rebuild
+npm rebuild --ignore-scripts=false
 npm run build:all
 ```
 
@@ -100,10 +101,15 @@ Exemplo de `.env`:
 ```bash
 # Obrigatório
 JWT_SECRET="substitua-por-um-segredo-com-pelo-menos-32-caracteres"
+JWT_REFRESH_SECRET="substitua-por-outro-segredo-com-pelo-menos-32-caracteres"
 
 # Chaves de provedor (opcional até você querer executar agentes)
 GEMINI_API_KEY=""
 ANTHROPIC_API_KEY=""
+
+# Ollama (local por padrão; defina OLLAMA_HOST e OLLAMA_API_KEY para uso na nuvem)
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_API_KEY=""
 
 # Banco de Dados
 DB_TYPE=sqlite
@@ -129,6 +135,14 @@ SQLite é a opção padrão local/runtime quando `DATABASE_URL` não está defin
 
 - `local.sqlite` na raiz do projeto/pacote, ou
 - `${AGENT_ORCHESTRATOR_HOME}/local.sqlite` quando o diretório do runtime está definido
+
+> **Importante — o servidor de desenvolvimento e o runtime da CLI usam bancos de dados diferentes por padrão.**
+> `npm run dev` usa `./local.sqlite` na raiz do projeto. `node dist/cli/index.js` (ou o binário `agent-orchestrator`) usa `~/.agent-orchestrator/local.sqlite`.
+> Para executar comandos da CLI contra o banco de dados do servidor de desenvolvimento, defina `AGENT_ORCHESTRATOR_HOME`:
+>
+> ```bash
+> AGENT_ORCHESTRATOR_HOME=$(pwd) node dist/cli/index.js reset-password
+> ```
 
 ### PostgreSQL
 
@@ -192,7 +206,7 @@ Ao executar o aplicativo empacotado ou uma build de produção com UI estática 
 
 O repositório disponibiliza três entrypoints Compose:
 
-Todos os stacks Compose agora requerem as variáveis de banco de dados no arquivo `.env` do projeto: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, e `POSTGRES_TEST_DB` para o stack de integração.
+Todos os stacks Compose requerem as variáveis de banco de dados no `.env`: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` e `POSTGRES_TEST_DB` para o stack de integração. O stack de produção também aceita `DOMAIN` (padrão: `localhost`) e `ALLOWED_ORIGINS` (padrão: `https://localhost`) para implantações com domínio personalizado.
 
 | Arquivo | Propósito |
 | --- | --- |
@@ -202,15 +216,56 @@ Todos os stacks Compose agora requerem as variáveis de banco de dados no arquiv
 
 ### Stack estilo produção
 
+**Passo 1: Crie o `.env`** — copie o exemplo na raiz do repositório e preencha com seus valores:
+
 ```bash
-npm run docker:up
-docker compose run --rm api dist/cli/index.js migrate --yes
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=change_me
+POSTGRES_DB=agent_orchestrator
+
+JWT_SECRET=<segredo-de-pelo-menos-32-chars>
+JWT_REFRESH_SECRET=<segredo-de-pelo-menos-32-chars>
+
+# Para seed-admin:
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change_me
 ```
 
-Endpoints:
+**Passo 2: Execute as migrações**
 
-- UI: `https://localhost` ou `https://agent-orchestrator.localhost`
-- API: `https://localhost/api/v1` ou `https://agent-orchestrator.localhost/api/v1`
+```bash
+docker compose --profile tools run --rm migrate
+```
+
+**Passo 3: Crie o usuário administrador** — as credenciais são lidas de `ADMIN_EMAIL` e `ADMIN_PASSWORD` no `.env`, nunca de flags de linha de comando.
+
+```bash
+docker compose --profile tools run --rm seed-admin
+```
+
+**Passo 4: Inicie o stack**
+
+```bash
+docker compose up -d
+```
+
+Acesse em `https://localhost` (o navegador exibirá um aviso sobre o certificado autoassinado — clique em continuar).
+
+**Parar:**
+
+```bash
+docker compose down      # parar, manter dados
+docker compose down -v   # parar e apagar todos os dados (incluindo o volume do PostgreSQL)
+```
+
+**Domínio personalizado:**
+
+```bash
+DOMAIN=meusite.com
+ALLOWED_ORIGINS=https://meusite.com
+```
+
+O Caddy provisiona automaticamente certificados Let's Encrypt para domínios públicos reais.
 
 Neste stack, a UI é servida pelo **Caddy**, não pelo app Nest. O Docker define explicitamente `SERVE_STATIC_UI=false` para que o backend sirva apenas a API.
 
@@ -238,8 +293,8 @@ docker compose -f docker-compose.test.yml --profile tools run --rm cli
 
 Endpoints:
 
-- UI: `https://localhost:8444` ou `https://agent-orchestrator.localhost:8444`
-- API: `https://localhost:8444/api/v1` ou `https://agent-orchestrator.localhost:8444/api/v1`
+- UI: `https://localhost:8444`
+- API: `https://localhost:8444/api/v1`
 
 ## Fluxo de desenvolvimento
 
@@ -265,6 +320,7 @@ Endpoints:
 ## Documentação útil
 
 - [Referência da CLI](CLI.md)
+- [Guia Docker](DOCKER.md)
 - [Pipeline de CI/CD](CI_CD.md)
 - [Processo de Lançamento](RELEASE.md)
 - [Guia de Contribuição](../../../CONTRIBUTING.md)
@@ -276,6 +332,10 @@ Endpoints:
 - **A execução do agente falha imediatamente**: confirme que `GEMINI_API_KEY` e/ou `ANTHROPIC_API_KEY` estão definidos
 - **Problemas no esquema/inicialização**: rode `npm run migration:run`
 - **Precisa desfazer a última migração**: rode `npm run migration:revert`
+- **Precisa redefinir a senha de um usuário**: use `agent-orchestrator reset-password` — isso também revoga todas as sessões ativas desse usuário. Se o servidor de desenvolvimento (`npm run dev`) estiver em execução, a CLI aponta para um banco de dados diferente por padrão; use `AGENT_ORCHESTRATOR_HOME=$(pwd) node dist/cli/index.js reset-password`
+- **Precisa rotacionar os segredos JWT** (por exemplo, após um vazamento de credenciais): use `agent-orchestrator rotate-secrets` — isso regenera `JWT_SECRET` e `JWT_REFRESH_SECRET`, invalida todas as sessões ativas e reinicia o servidor automaticamente se estiver em execução
+
+- **Tarefas permanecem em backlog e não são executadas**: o agendador só processa tarefas de projetos com status **Ativo**. Projetos são criados com status `Planejamento` por padrão. Altere o status do projeto para **Ativo** na interface para habilitar a execução de tarefas.
 
 ## Licença
 

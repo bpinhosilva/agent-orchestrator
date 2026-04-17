@@ -26,7 +26,7 @@ Agent Orchestrator is an open-source platform for managing AI agents, tasks, and
 - Project management with project membership and RBAC
 - Task execution plus recurring scheduling
 - File upload and artifact-backed task workflows
-- Packaged CLI/runtime for setup, run, status, logs, stop, and migrate
+- Packaged CLI/runtime with full lifecycle management: `setup`, `run`, `restart`, `stop`, `status`, `health`, `logs`, `migrate`, `config`, `reset-password`, and `rotate-secrets`
 - React dashboard served by the backend or packaged runtime
 
 ## Planned direction
@@ -71,6 +71,7 @@ agent-orchestrator setup
 agent-orchestrator run
 agent-orchestrator restart
 agent-orchestrator status
+agent-orchestrator health
 ```
 
 `setup` can create the runtime `.env`, run migrations, seed an admin user, and prompt you to apply pending migrations after package updates. `run` does not upgrade the database automatically. The default runtime home is `~/.agent-orchestrator`, or `${AGENT_ORCHESTRATOR_HOME}` if you set it explicitly.
@@ -83,7 +84,7 @@ For deeper CLI usage, see [docs/CLI.md](docs/CLI.md).
 git clone https://github.com/bpinhosilva/agent-orchestrator.git
 cd agent-orchestrator
 npm install
-npm rebuild
+npm rebuild --ignore-scripts=false
 npm run build:all
 ```
 
@@ -142,6 +143,15 @@ SQLite is the default local/runtime option when `DATABASE_URL` is not set. The d
 - `local.sqlite` in the project/package root, or
 - `${AGENT_ORCHESTRATOR_HOME}/local.sqlite` when runtime home is set
 
+> **Important — dev server vs. packaged CLI runtime use different databases by default.**
+> Running `npm run dev` or `npm run start:dev` uses `./local.sqlite` in the project root.
+> Running `node dist/cli/index.js` (or the installed `agent-orchestrator` binary) defaults to `~/.agent-orchestrator/local.sqlite`.
+> If you run the dev server and also use CLI admin commands (e.g. `reset-password`, `migrate`), point the CLI at the project root database:
+>
+> ```bash
+> AGENT_ORCHESTRATOR_HOME=/path/to/agent-orchestrator node dist/cli/index.js reset-password
+> ```
+
 ### PostgreSQL
 
 Use PostgreSQL by setting `DATABASE_URL` or `DB_TYPE=postgres`:
@@ -195,18 +205,21 @@ npm run start:dev
 agent-orchestrator setup
 agent-orchestrator run
 agent-orchestrator status
+agent-orchestrator health
 agent-orchestrator logs --lines 50
 agent-orchestrator restart
 agent-orchestrator stop
+agent-orchestrator config show
+agent-orchestrator rotate-secrets
 ```
 
 When running the packaged app or a production build with static UI enabled, the dashboard is served from `http://localhost:15789` by default.
 
 ## Docker
 
-The repository ships three Compose entrypoints:
+> For the full Docker guide, see [docs/DOCKER.md](docs/DOCKER.md).
 
-All Compose stacks now require the database variables in the project `.env` file: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `POSTGRES_TEST_DB` for the integration stack.
+The repository ships three Compose entrypoints:
 
 | File | Purpose |
 | --- | --- |
@@ -216,15 +229,56 @@ All Compose stacks now require the database variables in the project `.env` file
 
 ### Production-style stack
 
+**Step 1: Create `.env`** — copy the example in the repo root and fill in your values:
+
 ```bash
-npm run docker:up
-docker compose run --rm api dist/cli/index.js migrate --yes
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=change_me
+POSTGRES_DB=agent_orchestrator
+
+JWT_SECRET=<at-least-32-char-secret>
+JWT_REFRESH_SECRET=<at-least-32-char-secret>
+
+# For seed-admin:
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change_me
 ```
 
-Endpoints:
+**Step 2: Run migrations**
 
-- UI: `https://localhost` or `https://agent-orchestrator.localhost`
-- API: `https://localhost/api/v1` or `https://agent-orchestrator.localhost/api/v1`
+```bash
+docker compose --profile tools run --rm migrate
+```
+
+**Step 3: Seed the admin user** — credentials are read from `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, never from CLI flags.
+
+```bash
+docker compose --profile tools run --rm seed-admin
+```
+
+**Step 4: Start the stack**
+
+```bash
+docker compose up -d
+```
+
+Access at `https://localhost` (your browser will warn about a self-signed cert — click through).
+
+**Stopping:**
+
+```bash
+docker compose down      # stop, keep data
+docker compose down -v   # stop and wipe all data (including the PostgreSQL volume)
+```
+
+**Custom domain:**
+
+```bash
+DOMAIN=mysite.com
+ALLOWED_ORIGINS=https://mysite.com
+```
+
+Caddy automatically provisions Let's Encrypt certificates for real public domains.
 
 In this stack the UI is served by **Caddy**, not by the Nest app. Docker explicitly sets `SERVE_STATIC_UI=false` so the backend only serves the API.
 
@@ -252,8 +306,8 @@ docker compose -f docker-compose.test.yml --profile tools run --rm cli
 
 Endpoints:
 
-- UI: `https://localhost:8444` or `https://agent-orchestrator.localhost:8444`
-- API: `https://localhost:8444/api/v1` or `https://agent-orchestrator.localhost:8444/api/v1`
+- UI: `https://localhost:8444`
+- API: `https://localhost:8444/api/v1`
 
 ## Development workflow
 
@@ -278,6 +332,7 @@ Endpoints:
 
 ## Useful docs
 
+- [Docker guide](docs/DOCKER.md)
 - [CLI reference](docs/CLI.md)
 - [CI/CD pipeline](docs/CI_CD.md)
 - [Release process](docs/RELEASE.md)
@@ -290,6 +345,9 @@ Endpoints:
 - **Agent execution fails immediately**: confirm `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or Ollama (`OLLAMA_HOST`) are set correctly for the provider in use
 - **Schema/startup issues**: run `npm run migration:run`
 - **Need to undo the latest migration**: run `npm run migration:revert`
+- **Need to reset a user's password**: use `agent-orchestrator reset-password` — this also revokes all active sessions for that user. If the dev server (`npm run dev`) is running instead of the packaged runtime, the CLI targets a different database by default; override with `AGENT_ORCHESTRATOR_HOME=$(pwd) node dist/cli/index.js reset-password`
+- **Need to rotate JWT secrets** (e.g. after a credential leak): use `agent-orchestrator rotate-secrets` — this regenerates `JWT_SECRET` and `JWT_REFRESH_SECRET`, invalidating all active sessions, and restarts the server automatically if it is running
+- **Stale PostgreSQL volume (version mismatch)**: if the `db` container fails its health check with "data directory was initialized by PostgreSQL version X, which is not compatible with this version", run `docker compose down -v` to wipe the volume and start fresh
 
 ## License
 

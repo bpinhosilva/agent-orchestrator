@@ -1,29 +1,21 @@
 import { Command } from 'commander';
-import * as fs from 'fs';
-import { spawn } from 'child_process';
 import { resolveActionOptions } from '../utils';
 import type { RunCommandOptions } from '../types';
 import {
-  assertBuildExists,
   findManagedProcess,
-  getChildEnvironment,
-  persistProcessMetadata,
   formatProcessSummary,
-  getConfiguredHost,
+  startServer,
 } from '../process-manager';
-import { readEnvFile } from '../env';
-import {
-  LOG_FILE,
-  MAIN_FILE,
-  PACKAGE_ROOT,
-  PID_DIR,
-  ENV_PATH,
-} from '../constants';
+import { MAIN_FILE, PACKAGE_ROOT } from '../constants';
 
-function getConfiguredPort(): string {
-  const env = readEnvFile(ENV_PATH);
-  return env.PORT || '15789';
-}
+const VALID_LOG_LEVELS = [
+  'fatal',
+  'error',
+  'warn',
+  'log',
+  'debug',
+  'verbose',
+] as const;
 
 export function registerRunCommand(program: Command): void {
   program
@@ -36,8 +28,18 @@ export function registerRunCommand(program: Command): void {
     .action((...args: unknown[]) => {
       try {
         const options = resolveActionOptions<RunCommandOptions>(args);
-        assertBuildExists();
-        const existingProcess = findManagedProcess(); // TODO: pass default args if needed
+
+        if (options.logLevel) {
+          if (
+            !(VALID_LOG_LEVELS as readonly string[]).includes(options.logLevel)
+          ) {
+            throw new Error(
+              `Invalid log level "${options.logLevel}". Valid values: ${VALID_LOG_LEVELS.join(', ')}`,
+            );
+          }
+        }
+
+        const existingProcess = findManagedProcess();
         if (existingProcess) {
           console.log(
             `Orchestrator is already running.\n${formatProcessSummary(existingProcess)}`,
@@ -45,42 +47,9 @@ export function registerRunCommand(program: Command): void {
           return;
         }
 
-        if (options.logLevel) {
-          process.env.LOG_LEVEL = options.logLevel;
-        }
-
         console.log('Starting Agent Orchestrator in background...');
 
-        if (!fs.existsSync(PID_DIR)) {
-          fs.mkdirSync(PID_DIR, { recursive: true, mode: 0o700 });
-        }
-
-        const logStream = fs.openSync(LOG_FILE, 'a');
-        const child = spawn('node', [MAIN_FILE], {
-          detached: true,
-          stdio: ['ignore', logStream, logStream],
-          cwd: PACKAGE_ROOT,
-          env: getChildEnvironment(),
-        });
-
-        const pid = child.pid;
-        if (!pid) {
-          throw new Error('Failed to determine spawned process PID.');
-        }
-
-        const port = getConfiguredPort();
-        const host = getConfiguredHost(ENV_PATH);
-        persistProcessMetadata({
-          pid,
-          cwd: PACKAGE_ROOT,
-          mainPath: MAIN_FILE,
-          host,
-          port,
-          logFile: LOG_FILE,
-          startedAt: new Date().toISOString(),
-        });
-
-        child.unref();
+        const { pid, host, port } = startServer({ logLevel: options.logLevel });
 
         console.log(
           `Orchestrator started in background.\n${formatProcessSummary({

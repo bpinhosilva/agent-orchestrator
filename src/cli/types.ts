@@ -82,6 +82,30 @@ export interface RunCommandOptions {
   logLevel?: string;
 }
 
+export interface StatusCommandOptions {
+  format?: string;
+}
+
+export interface HealthCommandOptions {
+  timeout?: string;
+  format?: string;
+}
+
+export interface ConfigCommandOptions {
+  showSecrets?: boolean;
+  format?: string;
+}
+
+export interface ResetPasswordCommandOptions {
+  email?: string;
+  password?: string;
+  yes?: boolean;
+}
+
+export interface RotateSecretsCommandOptions {
+  yes?: boolean;
+}
+
 export interface ProcessMetadata {
   pid: number;
   cwd: string;

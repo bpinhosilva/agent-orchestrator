@@ -45,8 +45,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     try {
       const res = await agentsApi.findAll();
       setAgents(res.data);
-    } catch (error) {
-      console.error('Failed to fetch agents for project lead:', error);
+    } catch {
+      // axios interceptor handles notification
     }
   };
 
@@ -79,8 +79,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       setDescription('');
       setStatus(ProjectStatus.PLANNING);
       setOwnerAgentId('');
-    } catch (error) {
-      console.error('Failed to create project:', error);
+    } catch {
+      // axios interceptor handles notification
     } finally {
       setLoading(false);
     }

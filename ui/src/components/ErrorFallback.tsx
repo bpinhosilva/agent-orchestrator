@@ -11,7 +11,10 @@ const ErrorFallback = ({
   title = 'Something went wrong',
   description = 'This section hit an unexpected error. You can try again without losing the rest of the app.',
 }: ErrorFallbackProps) => {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  const displayMessage = import.meta.env.DEV
+    ? rawMessage
+    : 'An unexpected error occurred. Please try again or contact support.';
 
   return (
     <div className="rounded-2xl border border-error/20 bg-error/5 p-6 text-left shadow-lg">
@@ -24,7 +27,7 @@ const ErrorFallback = ({
       </div>
 
       <pre className="mt-4 overflow-x-auto rounded-xl bg-surface/70 p-4 text-xs text-on-surface-variant">
-        {errorMessage}
+        {displayMessage}
       </pre>
 
       <button

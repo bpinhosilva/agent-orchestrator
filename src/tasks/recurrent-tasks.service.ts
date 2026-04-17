@@ -64,7 +64,7 @@ export class RecurrentTasksService {
       .leftJoinAndSelect(
         'task.executions',
         'execution',
-        'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e.recurrentTaskId = task.id ORDER BY e.updatedAt DESC LIMIT 1)',
+        'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e."recurrentTaskId" = task.id ORDER BY e."updatedAt" DESC LIMIT 1)',
       )
       .where('task.projectId = :projectId', { projectId })
       .orderBy('task.updatedAt', 'DESC')
@@ -83,7 +83,7 @@ export class RecurrentTasksService {
       .leftJoinAndSelect(
         'task.executions',
         'execution',
-        'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e.recurrentTaskId = task.id ORDER BY e.updatedAt DESC LIMIT 1)',
+        'execution.id = (SELECT e.id FROM recurrent_task_execs e WHERE e."recurrentTaskId" = task.id ORDER BY e."updatedAt" DESC LIMIT 1)',
       )
       .where('task.id = :id', { id });
 

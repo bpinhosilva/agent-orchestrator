@@ -35,19 +35,15 @@ export const useTaskSSE = (
               if (data && data.task && data.event) {
                 callbackRef.current(data.event, data.task);
               }
-            } catch (err) {
-              console.error('Failed to parse SSE message', err);
+            } catch {
+              // ignore malformed SSE messages
             }
           },
-          onclose() {
-            // Server closed connection, let fetchEventSource retry naturally if appropriate
-          },
-          onerror(err) {
-            console.error('SSE connection error:', err);
-          },
+          onclose() {},
+          onerror() {},
         });
-      } catch (err) {
-        console.error('SSE initialization failed', err);
+      } catch {
+        // SSE initialization failed; fetchEventSource will retry
       }
     };
 
