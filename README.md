@@ -21,7 +21,7 @@ Agent Orchestrator is an open-source platform for managing AI agents, tasks, and
 
 ## Current capabilities
 
-- Multi-provider agent execution with Google Gemini and Anthropic Claude
+- Multi-provider agent execution with Google Gemini, Anthropic Claude, and Ollama (local or cloud)
 - Agent profiles with provider/model selection
 - Project management with project membership and RBAC
 - Task execution plus recurring scheduling
@@ -51,9 +51,10 @@ Agent Orchestrator is an open-source platform for managing AI agents, tasks, and
 - [Node.js](https://nodejs.org/) 24 or newer
 - npm
 - [Docker](https://www.docker.com/) and Docker Compose (optional)
-- At least one provider API key to execute agents:
+- At least one provider API key or local model server to execute agents:
   - [Google Gemini API key](https://aistudio.google.com/)
   - [Anthropic API key](https://console.anthropic.com/)
+  - [Ollama](https://ollama.com/) running locally (no key required) or a cloud Ollama endpoint
 
 ## Quick start
 
@@ -111,6 +112,10 @@ JWT_REFRESH_SECRET="replace-with-another-secret-at-least-32-characters-long"
 # Provider keys (optional until you want to execute agents)
 GEMINI_API_KEY=""
 ANTHROPIC_API_KEY=""
+
+# Ollama (local by default, fill in OLLAMA_HOST and OLLAMA_API_KEY for cloud usage)
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_API_KEY=""
 
 # Database
 DB_TYPE=sqlite
@@ -282,7 +287,7 @@ Endpoints:
 
 - **Native module errors after install**: run `npm rebuild`
 - **`JWT_SECRET` rejected**: it must be at least 32 characters
-- **Agent execution fails immediately**: confirm `GEMINI_API_KEY` and/or `ANTHROPIC_API_KEY` are set
+- **Agent execution fails immediately**: confirm `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or Ollama (`OLLAMA_HOST`) are set correctly for the provider in use
 - **Schema/startup issues**: run `npm run migration:run`
 - **Need to undo the latest migration**: run `npm run migration:revert`
 

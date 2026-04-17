@@ -10,6 +10,8 @@ import {
   promptJwtRefreshSecret,
   promptGeminiKey,
   promptAnthropicKey,
+  promptOllamaKey,
+  promptOllamaHost,
   runSetupPrompts,
 } from '../../setup/prompts';
 import { Prompter } from '../../types';
@@ -355,6 +357,62 @@ describe('promptAnthropicKey', () => {
   });
 });
 
+describe('promptOllamaHost', () => {
+  it('returns the trimmed host from the prompter answer', async () => {
+    const p = makeFakePrompter({ ollamaHost: ' http://127.0.0.1:11434 ' });
+    await expect(promptOllamaHost(p)).resolves.toBe('http://127.0.0.1:11434');
+  });
+
+  it('uses the supplied initial value as default', async () => {
+    const p = makeFakePrompter({ ollamaHost: 'https://api.ollama.com' });
+    await expect(promptOllamaHost(p, 'https://api.ollama.com')).resolves.toBe(
+      'https://api.ollama.com',
+    );
+  });
+
+  it('falls back to http://127.0.0.1:11434 when answer is empty', async () => {
+    const p = makeFakePrompter({ ollamaHost: '' });
+    await expect(promptOllamaHost(p)).resolves.toBe('http://127.0.0.1:11434');
+  });
+
+  it('validate callback rejects empty input', async () => {
+    let capturedValidate: ((v: string) => unknown) | undefined;
+    const p: Prompter = {
+      async prompt<T>(question: unknown): Promise<T> {
+        const q = question as {
+          name: string;
+          validate?: (v: string) => unknown;
+        };
+        capturedValidate = q.validate;
+        return { ollamaHost: 'http://127.0.0.1:11434' } as T;
+      },
+    };
+    await promptOllamaHost(p);
+    expect(capturedValidate).toBeDefined();
+    expect(capturedValidate!('')).toBe('Ollama host URL cannot be empty');
+    expect(capturedValidate!('http://127.0.0.1:11434')).toBe(true);
+  });
+});
+
+describe('promptOllamaKey', () => {
+  it('returns the key from the prompter answer', async () => {
+    const p = makeFakePrompter({ key: 'my-ollama-key' });
+    await expect(promptOllamaKey(p)).resolves.toBe('my-ollama-key');
+  });
+
+  it('returns an empty string when no key is entered (local usage)', async () => {
+    const p = makeFakePrompter({ key: '' });
+    await expect(promptOllamaKey(p)).resolves.toBe('');
+  });
+
+  it('uses the supplied initial value as default', async () => {
+    const p = makeFakePrompter({ key: 'existing-key' });
+    await expect(promptOllamaKey(p, 'existing-key')).resolves.toBe(
+      'existing-key',
+    );
+  });
+});
+
 describe('runSetupPrompts', () => {
   const jwtSecret = 'a'.repeat(64);
   const jwtRefreshSecret = 'b'.repeat(64);
@@ -562,6 +620,92 @@ describe('runSetupPrompts', () => {
       await runSetupPrompts({}, p);
 
       expect(called).not.toContain('key');
+    });
+
+    it('prompts for ollama host and key when ollama is selected', async () => {
+      const called: string[] = [];
+      const p: Prompter = {
+        async prompt<T>(question: unknown): Promise<T> {
+          const q = question as { name: string };
+          called.push(q.name);
+          const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
+            port: '3000',
+            dbType: 'sqlite',
+            providers: ['ollama'],
+            schedulerEnabled: true,
+            jwtSecret,
+            jwtRefreshSecret,
+            ollamaHost: 'http://127.0.0.1:11434',
+            key: '',
+          };
+          return { [q.name]: responses[q.name] } as T;
+        },
+      };
+
+      const result = await runSetupPrompts({}, p);
+
+      expect(called).toContain('ollamaHost');
+      expect(called).toContain('key');
+      expect(result.ollamaHost).toBe('http://127.0.0.1:11434');
+      expect(result.ollamaApiKey).toBe('');
+    });
+
+    it('captures ollama api key from prompter', async () => {
+      let keyCallCount = 0;
+      const p: Prompter = {
+        async prompt<T>(question: unknown): Promise<T> {
+          const q = question as { name: string };
+          const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
+            port: '3000',
+            dbType: 'sqlite',
+            providers: ['ollama'],
+            schedulerEnabled: true,
+            jwtSecret,
+            jwtRefreshSecret,
+            ollamaHost: 'https://api.ollama.com',
+          };
+          if (q.name === 'key') {
+            keyCallCount++;
+            return { key: 'my-ollama-token' } as T;
+          }
+          return { [q.name]: responses[q.name] } as T;
+        },
+      };
+
+      const result = await runSetupPrompts({}, p);
+
+      expect(result.ollamaApiKey).toBe('my-ollama-token');
+      expect(result.ollamaHost).toBe('https://api.ollama.com');
+      expect(keyCallCount).toBe(1);
+    });
+
+    it('does not prompt for ollama host/key when ollama not selected', async () => {
+      const called: string[] = [];
+      const p: Prompter = {
+        async prompt<T>(question: unknown): Promise<T> {
+          const q = question as { name: string };
+          called.push(q.name);
+          const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
+            port: '3000',
+            dbType: 'sqlite',
+            providers: ['gemini'],
+            schedulerEnabled: true,
+            jwtSecret,
+            jwtRefreshSecret,
+            key: 'gemini-key',
+          };
+          return { [q.name]: responses[q.name] } as T;
+        },
+      };
+
+      const result = await runSetupPrompts({}, p);
+
+      expect(called).not.toContain('ollamaHost');
+      expect(result.ollamaHost).toBe('');
+      expect(result.ollamaApiKey).toBe('');
     });
   });
 

@@ -20,6 +20,8 @@ export interface SetupAnswers {
   jwtRefreshSecret: string;
   geminiApiKey: string;
   anthropicApiKey: string;
+  ollamaApiKey: string;
+  ollamaHost: string;
 }
 
 /**
@@ -215,9 +217,37 @@ export async function promptAnthropicKey(
   return answer.key ?? '';
 }
 
+export async function promptOllamaHost(
+  prompter: Prompter,
+  initial = 'http://127.0.0.1:11434',
+): Promise<string> {
+  const answer = await prompter.prompt<{ ollamaHost: string }>({
+    type: 'input',
+    name: 'ollamaHost',
+    message:
+      'Enter your Ollama host URL (leave as default for local installations):',
+    initial,
+    validate: (value: string) =>
+      value.trim().length > 0 || 'Ollama host URL cannot be empty',
+  });
+  return (answer.ollamaHost ?? '').trim() || 'http://127.0.0.1:11434';
+}
+
+export async function promptOllamaKey(
+  prompter: Prompter,
+  initial?: string,
+): Promise<string> {
+  const answer = await prompter.prompt<{ key: string }>({
+    type: 'password',
+    name: 'key',
+    message: 'Enter your Ollama API Key (leave blank for local installations):',
+    initial: initial ?? '',
+  });
+  return answer.key ?? '';
+}
+
 /**
  * Orchestrates all interactive setup prompts and returns a `SetupAnswers`
- * object ready for env-file generation.
  *
  * @param existingEnv - Current env values used as prompt defaults.
  * @param prompter - Optional injected prompter; defaults to a lazy-loaded
@@ -267,6 +297,14 @@ export async function runSetupPrompts(
     ? await promptAnthropicKey(p, true, existingEnv.ANTHROPIC_API_KEY)
     : (existingEnv.ANTHROPIC_API_KEY ?? '');
 
+  const ollamaHost = providers.includes('ollama')
+    ? await promptOllamaHost(p, existingEnv.OLLAMA_HOST)
+    : (existingEnv.OLLAMA_HOST ?? '');
+
+  const ollamaApiKey = providers.includes('ollama')
+    ? await promptOllamaKey(p, existingEnv.OLLAMA_API_KEY)
+    : (existingEnv.OLLAMA_API_KEY ?? '');
+
   return {
     host,
     port,
@@ -278,5 +316,7 @@ export async function runSetupPrompts(
     jwtRefreshSecret,
     geminiApiKey,
     anthropicApiKey,
+    ollamaApiKey,
+    ollamaHost,
   };
 }

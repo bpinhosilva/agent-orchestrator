@@ -97,6 +97,7 @@
     "enquirer": "^2.4.1",
     "helmet": "^8.1.0",
     "joi": "^18.1.1",
+    "ollama": "^0.6.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

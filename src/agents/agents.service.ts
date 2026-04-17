@@ -2,11 +2,12 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, QueryFailedError, Repository } from 'typeorm';
 import { AgentEntity } from './entities/agent.entity';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
@@ -108,27 +109,32 @@ export class AgentsService implements OnModuleInit {
       agentData.model = { id: modelId } as Model;
     }
 
-    return await this.agentRepository.manager.transaction(async (manager) => {
-      const agent = manager.create(AgentEntity, agentData);
-      const savedAgent = await manager.save(agent);
+    try {
+      return await this.agentRepository.manager.transaction(async (manager) => {
+        const agent = manager.create(AgentEntity, agentData);
+        const savedAgent = await manager.save(agent);
 
-      // Reload with full relations for proper synchronization
-      const fullyLoadedAgent = await manager.findOne(AgentEntity, {
-        where: { id: savedAgent.id },
-        relations: AGENT_RELATIONS,
+        // Reload with full relations for proper synchronization
+        const fullyLoadedAgent = await manager.findOne(AgentEntity, {
+          where: { id: savedAgent.id },
+          relations: AGENT_RELATIONS,
+        });
+
+        if (!fullyLoadedAgent) {
+          throw new Error(
+            `Agent #${savedAgent.id} not found immediately after save`,
+          );
+        }
+
+        // This will throw BadRequestException if instantiation fails, rolling back the transaction
+        await this.syncAgentInstance(fullyLoadedAgent);
+
+        return fullyLoadedAgent;
       });
-
-      if (!fullyLoadedAgent) {
-        throw new Error(
-          `Agent #${savedAgent.id} not found immediately after save`,
-        );
-      }
-
-      // This will throw BadRequestException if instantiation fails, rolling back the transaction
-      await this.syncAgentInstance(fullyLoadedAgent);
-
-      return fullyLoadedAgent;
-    });
+    } catch (error) {
+      this.rethrowDatabaseError(error);
+      throw error;
+    }
   }
 
   async findAll(): Promise<AgentEntity[]> {
@@ -157,22 +163,41 @@ export class AgentsService implements OnModuleInit {
       updateData.model = { id: modelId } as Model;
     }
 
-    return await this.agentRepository.manager.transaction(async (manager) => {
-      await manager.update(AgentEntity, id, updateData);
-      const updatedAgent = await manager.findOne(AgentEntity, {
-        where: { id },
-        relations: AGENT_RELATIONS,
+    try {
+      return await this.agentRepository.manager.transaction(async (manager) => {
+        await manager.update(AgentEntity, id, updateData);
+        const updatedAgent = await manager.findOne(AgentEntity, {
+          where: { id },
+          relations: AGENT_RELATIONS,
+        });
+
+        if (!updatedAgent) {
+          throw new NotFoundException(`Agent #${id} not found`);
+        }
+
+        // This will throw BadRequestException if instantiation fails, rolling back the transaction
+        await this.syncAgentInstance(updatedAgent);
+
+        return updatedAgent;
       });
+    } catch (error) {
+      this.rethrowDatabaseError(error);
+      throw error;
+    }
+  }
 
-      if (!updatedAgent) {
-        throw new NotFoundException(`Agent #${id} not found`);
+  private rethrowDatabaseError(error: unknown): never | void {
+    if (error instanceof QueryFailedError) {
+      const msg =
+        (error as QueryFailedError & { message: string }).message ?? '';
+      const isUniqueViolation =
+        msg.toLowerCase().includes('unique') ||
+        msg.toLowerCase().includes('duplicate');
+      if (isUniqueViolation) {
+        throw new ConflictException('An agent with that name already exists');
       }
-
-      // This will throw BadRequestException if instantiation fails, rolling back the transaction
-      await this.syncAgentInstance(updatedAgent);
-
-      return updatedAgent;
-    });
+      throw new BadRequestException(`Database error: ${msg}`);
+    }
   }
 
   async remove(id: string): Promise<void> {

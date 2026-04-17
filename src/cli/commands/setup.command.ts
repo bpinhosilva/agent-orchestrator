@@ -18,7 +18,7 @@ export function registerSetupCommand(program: Command): void {
     .option('--db-logging', 'Enable database query logging')
     .option(
       '--provider <provider>',
-      'Configure a provider (gemini, anthropic)',
+      'Configure a provider (gemini, anthropic, ollama)',
       (value: string, previous: string[] = []) =>
         previous.concat(
           value
@@ -30,6 +30,14 @@ export function registerSetupCommand(program: Command): void {
     )
     .option('--gemini-key <key>', 'Google Gemini API key')
     .option('--anthropic-key <key>', 'Anthropic Claude API key')
+    .option(
+      '--ollama-key <key>',
+      'Ollama API key (leave blank for local installations)',
+    )
+    .option(
+      '--ollama-host <host>',
+      'Ollama host URL (default: http://127.0.0.1:11434)',
+    )
     .option('-y, --yes', 'Disable prompts and use supplied flags/defaults')
     .option('--skip-admin-setup', 'Skip creating or updating the admin user')
     .option('--admin-name <name>', 'Admin user name for non-interactive setup')

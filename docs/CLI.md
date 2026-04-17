@@ -65,6 +65,27 @@ agent-orchestrator setup \
   --skip-admin-setup
 ```
 
+Non-interactive setup with Ollama (local):
+
+```bash
+agent-orchestrator setup \
+  --yes \
+  --provider ollama \
+  --ollama-host http://127.0.0.1:11434 \
+  --skip-admin-setup
+```
+
+Non-interactive setup with Ollama (cloud):
+
+```bash
+agent-orchestrator setup \
+  --yes \
+  --provider ollama \
+  --ollama-host https://your-ollama-cloud-host \
+  --ollama-key YOUR_OLLAMA_API_KEY \
+  --skip-admin-setup
+```
+
 ### Logs, restart, and shutdown
 
 ```bash
@@ -91,9 +112,11 @@ Supported flags:
 - `--db-type <sqlite|postgres>`
 - `--database-url <url>`
 - `--db-logging`
-- `--provider <provider>` (repeatable or comma-separated; `gemini`, `anthropic`)
+- `--provider <provider>` (repeatable or comma-separated; `gemini`, `anthropic`, `ollama`)
 - `--gemini-key <key>`
 - `--anthropic-key <key>`
+- `--ollama-key <key>` (optional; leave empty for local Ollama usage)
+- `--ollama-host <url>` (default: `http://127.0.0.1:11434`)
 - `--admin-name <name>`
 - `--admin-email <email>`
 - `--admin-password <password>`

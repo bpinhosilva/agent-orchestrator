@@ -32,6 +32,7 @@ describe('SeedDefaultProvidersAndModels migration', () => {
     ).resolves.toEqual([
       expect.objectContaining({ name: 'anthropic' }),
       expect.objectContaining({ name: 'google' }),
+      expect.objectContaining({ name: 'ollama' }),
     ]);
     await expect(
       dataSource.query(
@@ -46,6 +47,7 @@ describe('SeedDefaultProvidersAndModels migration', () => {
       { name: 'claude-sonnet-4-6', providerName: 'anthropic' },
       { name: 'gemini-2.5-flash-image', providerName: 'google' },
       { name: 'gemini-2.5-flash-lite', providerName: 'google' },
+      { name: 'gemma4', providerName: 'ollama' },
     ]);
   });
 });

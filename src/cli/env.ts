@@ -54,6 +54,8 @@ export function buildEnvContent(
   anthropicKey: string,
   jwtSecret: string,
   jwtRefreshSecret: string,
+  ollamaApiKey = '',
+  ollamaHost = '',
 ): string {
   const envValues: Record<string, string> = {
     ...currentEnv,
@@ -82,6 +84,14 @@ export function buildEnvContent(
     envValues.ANTHROPIC_API_KEY = anthropicKey;
   }
 
+  if (ollamaHost) {
+    envValues.OLLAMA_HOST = ollamaHost;
+  }
+
+  if (ollamaApiKey) {
+    envValues.OLLAMA_API_KEY = ollamaApiKey;
+  }
+
   const orderedKeys = [
     'NODE_ENV',
     'HOST',
@@ -92,6 +102,8 @@ export function buildEnvContent(
     'DATABASE_URL',
     'GEMINI_API_KEY',
     'ANTHROPIC_API_KEY',
+    'OLLAMA_HOST',
+    'OLLAMA_API_KEY',
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
   ];

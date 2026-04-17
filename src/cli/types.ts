@@ -1,4 +1,4 @@
-export const SUPPORTED_PROVIDERS = ['gemini', 'anthropic'] as const;
+export const SUPPORTED_PROVIDERS = ['gemini', 'anthropic', 'ollama'] as const;
 export type SupportedProvider = (typeof SUPPORTED_PROVIDERS)[number];
 
 export interface BasicConfig {
@@ -36,6 +36,8 @@ export interface SetupCommandOptions {
   provider?: string[];
   geminiKey?: string;
   anthropicKey?: string;
+  ollamaKey?: string;
+  ollamaHost?: string;
   yes?: boolean;
   skipAdminSetup?: boolean;
   adminName?: string;

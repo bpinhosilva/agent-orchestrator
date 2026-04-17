@@ -8,6 +8,8 @@ export const envValidationSchema = Joi.object({
   JWT_REFRESH_SECRET: Joi.string().min(32).required(),
   GEMINI_API_KEY: Joi.string().optional(),
   ANTHROPIC_API_KEY: Joi.string().optional(),
+  OLLAMA_HOST: Joi.string().optional(),
+  OLLAMA_API_KEY: Joi.string().optional(),
   DB_LOGGING: Joi.boolean().default(false),
   SERVE_STATIC_UI: Joi.boolean().default(true),
   CHECK_PENDING_MIGRATIONS_ON_STARTUP: Joi.boolean().default(false),

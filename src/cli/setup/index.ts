@@ -40,6 +40,8 @@ export async function handleSetup(
       jwtRefreshSecret,
       geminiApiKey: opts.geminiKey ?? existingEnv.GEMINI_API_KEY ?? '',
       anthropicApiKey: opts.anthropicKey ?? existingEnv.ANTHROPIC_API_KEY ?? '',
+      ollamaApiKey: opts.ollamaKey ?? existingEnv.OLLAMA_API_KEY ?? '',
+      ollamaHost: opts.ollamaHost ?? existingEnv.OLLAMA_HOST ?? '',
     };
   } else {
     answers = await runSetupPrompts(existingEnv, prompter);
@@ -61,6 +63,8 @@ export async function handleSetup(
     answers.anthropicApiKey,
     answers.jwtSecret,
     answers.jwtRefreshSecret,
+    answers.ollamaApiKey,
+    answers.ollamaHost,
   );
 
   writePrivateFile(ENV_PATH, envContent, fsDep);

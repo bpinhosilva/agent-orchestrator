@@ -54,8 +54,8 @@ async function bootstrap() {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const defaultLevels: LogLevel[] =
     nodeEnv === 'production'
-      ? ['error']
-      : ['log', 'error', 'warn', 'debug', 'verbose', 'fatal'];
+      ? ['fatal', 'error']
+      : ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'];
 
   let logLevels: LogLevel[] = defaultLevels;
   const envLogLevel = process.env.LOG_LEVEL as LogLevel | undefined;

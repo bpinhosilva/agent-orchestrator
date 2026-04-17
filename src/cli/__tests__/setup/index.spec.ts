@@ -25,6 +25,8 @@ const fakeAnswers: SetupAnswers = {
   jwtRefreshSecret: 'b'.repeat(32),
   geminiApiKey: '',
   anthropicApiKey: '',
+  ollamaApiKey: '',
+  ollamaHost: '',
 };
 
 function makeFakeFs(existingContent: string | null): {

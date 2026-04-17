@@ -120,6 +120,57 @@ describe('buildEnvContent', () => {
     expect(content).toContain('GEMINI_API_KEY=g-key');
     expect(content).toContain('ANTHROPIC_API_KEY=a-key');
   });
+  it('includes OLLAMA_HOST and OLLAMA_API_KEY when non-empty', () => {
+    const content = buildEnvContent(
+      {},
+      basicConfig,
+      '',
+      '',
+      '',
+      's',
+      'r',
+      'ollama-token',
+      'http://127.0.0.1:11434',
+    );
+    expect(content).toContain('OLLAMA_API_KEY=ollama-token');
+    expect(content).toContain('OLLAMA_HOST=http://127.0.0.1:11434');
+  });
+  it('omits OLLAMA_HOST and OLLAMA_API_KEY when empty', () => {
+    const content = buildEnvContent(
+      {},
+      basicConfig,
+      '',
+      '',
+      '',
+      's',
+      'r',
+      '',
+      '',
+    );
+    expect(content).not.toContain('OLLAMA_HOST');
+    expect(content).not.toContain('OLLAMA_API_KEY');
+  });
+  it('places OLLAMA_HOST and OLLAMA_API_KEY after ANTHROPIC_API_KEY in order', () => {
+    const content = buildEnvContent(
+      {},
+      basicConfig,
+      '',
+      'g-key',
+      'a-key',
+      's',
+      'r',
+      'o-token',
+      'http://127.0.0.1:11434',
+    );
+    const lines = content.split('\n').filter(Boolean);
+    const anthropicIdx = lines.findIndex((l) =>
+      l.startsWith('ANTHROPIC_API_KEY'),
+    );
+    const ollamaHostIdx = lines.findIndex((l) => l.startsWith('OLLAMA_HOST'));
+    const ollamaKeyIdx = lines.findIndex((l) => l.startsWith('OLLAMA_API_KEY'));
+    expect(ollamaHostIdx).toBeGreaterThan(anthropicIdx);
+    expect(ollamaKeyIdx).toBeGreaterThan(ollamaHostIdx);
+  });
   it('ends with a newline', () => {
     const content = buildEnvContent({}, basicConfig, '', '', '', 's', 'r');
     expect(content.endsWith('\n')).toBe(true);

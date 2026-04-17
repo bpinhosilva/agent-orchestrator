@@ -4,8 +4,12 @@ import { ModuleRef } from '@nestjs/core';
 import { GeminiAgent } from './implementations/gemini.agent';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AgentEntity } from './entities/agent.entity';
-import { Repository } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { Repository, QueryFailedError } from 'typeorm';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('AgentsService', () => {
   let service: AgentsService;
@@ -250,6 +254,67 @@ describe('AgentsService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockAgent);
       jest.spyOn(repository, 'remove').mockResolvedValue(mockAgent);
       expect(await service.remove('uuid-123')).toBeUndefined();
+    });
+
+    describe('database error handling', () => {
+      const makeQueryFailedError = (message: string): QueryFailedError => {
+        const err = Object.create(
+          QueryFailedError.prototype,
+        ) as QueryFailedError;
+        Object.defineProperty(err, 'message', {
+          value: message,
+          writable: true,
+        });
+        return err;
+      };
+
+      it('should throw ConflictException on create when name is not unique', async () => {
+        jest
+          .spyOn(repository.manager, 'transaction' as any)
+          .mockRejectedValue(
+            makeQueryFailedError('UNIQUE constraint failed: agents.name'),
+          );
+
+        await expect(
+          service.create({ name: 'Duplicate', modelId: 'model-1' }),
+        ).rejects.toThrow(ConflictException);
+      });
+
+      it('should throw BadRequestException on create for other DB errors', async () => {
+        jest
+          .spyOn(repository.manager, 'transaction' as any)
+          .mockRejectedValue(
+            makeQueryFailedError('FOREIGN KEY constraint failed'),
+          );
+
+        await expect(
+          service.create({ name: 'Agent', modelId: 'bad-id' }),
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it('should throw ConflictException on update when name is not unique', async () => {
+        jest
+          .spyOn(repository.manager, 'transaction' as any)
+          .mockRejectedValue(
+            makeQueryFailedError(
+              'duplicate key value violates unique constraint',
+            ),
+          );
+
+        await expect(
+          service.update('uuid-123', { name: 'Duplicate' }),
+        ).rejects.toThrow(ConflictException);
+      });
+
+      it('should re-throw HttpException from create without wrapping', async () => {
+        jest
+          .spyOn(repository.manager, 'transaction' as any)
+          .mockRejectedValue(new BadRequestException('instance init failed'));
+
+        await expect(
+          service.create({ name: 'Agent', modelId: 'model-1' }),
+        ).rejects.toThrow(BadRequestException);
+      });
     });
   });
 });
