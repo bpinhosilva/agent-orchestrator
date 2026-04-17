@@ -86,6 +86,7 @@ agent-orchestrator migrate --force --yes
 
 Banderas soportadas:
 
+- `--host <host>`
 - `--port <puerto>`
 - `--db-type <sqlite|postgres>`
 - `--database-url <url>`

@@ -110,6 +110,7 @@ DB_TYPE=sqlite
 DATABASE_URL=
 
 # Runtime
+HOST=127.0.0.1
 PORT=15789
 NODE_ENV=production
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000

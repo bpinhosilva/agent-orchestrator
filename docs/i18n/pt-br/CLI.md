@@ -83,6 +83,7 @@ agent-orchestrator migrate --force --yes
 
 Flags suportadas:
 
+- `--host <host>`
 - `--port <port>`
 - `--db-type <sqlite|postgres>`
 - `--database-url <url>`
