@@ -1,3 +1,10 @@
+# [1.0.0-alpha.40](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.39...v1.0.0-alpha.40) (2026-04-17)
+
+
+### Features
+
+* add Ollama provider and model support ([7c24c38](https://github.com/bpinhosilva/agent-orchestrator/commit/7c24c38704975c0083485e1e2a4552997cd17e34))
+
 # [1.0.0-alpha.39](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.38...v1.0.0-alpha.39) (2026-04-17)
 
 
