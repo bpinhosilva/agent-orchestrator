@@ -1,3 +1,10 @@
+# [1.0.0-alpha.43](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.42...v1.0.0-alpha.43) (2026-04-17)
+
+
+### Features
+
+* implement server startup verification and enhance command handling for restart, rotate-secrets ([4033161](https://github.com/bpinhosilva/agent-orchestrator/commit/40331617046bcfe3bc96e189fa27614bee505235))
+
 # [1.0.0-alpha.42](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.41...v1.0.0-alpha.42) (2026-04-17)
 
 
