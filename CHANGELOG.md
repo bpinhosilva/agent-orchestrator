@@ -324,6 +324,8 @@
 
 * ensure cli binary is executable and correctly mapped ([7616d98](https://github.com/bpinhosilva/agent-orchestrator/commit/7616d98ec29f4dfb0091869b746a3c9a00fe8cea))
 
+# 1.0.0 (2026-03-17)
+
 
 ### Features
 
