@@ -100,8 +100,8 @@ Exemplo de `.env`:
 
 ```bash
 # Obrigatório
-JWT_SECRET="substitua-por-um-segredo-com-pelo-menos-32-caracteres"
-JWT_REFRESH_SECRET="substitua-por-outro-segredo-com-pelo-menos-32-caracteres"
+JWT_SECRET=<segredo-de-pelo-menos-32-chars>
+JWT_REFRESH_SECRET=<segredo-de-pelo-menos-32-chars>
 
 # Chaves de provedor (opcional até você querer executar agentes)
 GEMINI_API_KEY=""

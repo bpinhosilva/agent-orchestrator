@@ -76,7 +76,7 @@ const makeApiTask = (id: string, status: string = 'backlog'): ApiTask => ({
 const defaultDnDReturn = {
   activeId: null,
   sensors: [],
-  collisionDetection: () => null,
+  collisionDetection: () => [],
   handleDragStart: vi.fn(),
   handleDragOver: vi.fn(),
   handleDragEnd: vi.fn(),

@@ -6,6 +6,12 @@ coverage
 .git
 .github
 .husky
-local.sqlite
+.worktrees
+.agent-orchestrator
+docs
+test
+*.sqlite
 *.log
 .env
+.env.*
+!.env.example
