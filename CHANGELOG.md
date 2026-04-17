@@ -1,3 +1,10 @@
+# [1.0.0-alpha.38](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2026-04-17)
+
+
+### Features
+
+* **TaskManager:** refactor task management with lazy loading and improved state handling ([8988277](https://github.com/bpinhosilva/agent-orchestrator/commit/898827701c7824c93b063fc6ab88862a7d79110b))
+
 # [1.0.0-alpha.37](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2026-04-13)
 
 
