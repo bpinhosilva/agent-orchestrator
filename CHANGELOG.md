@@ -1,3 +1,10 @@
+# [1.0.0-alpha.39](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.38...v1.0.0-alpha.39) (2026-04-17)
+
+
+### Features
+
+* **docs:** add HOST configuration to README and CLI documentation ([8e7820e](https://github.com/bpinhosilva/agent-orchestrator/commit/8e7820e554088bc976559780088927c469f5d059))
+
 # [1.0.0-alpha.38](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2026-04-17)
 
 
