@@ -1,0 +1,100 @@
+services:
+  db:
+    image: postgres:17-alpine@sha256:6f30057d31f5861b66f3545d4821f987aacf1dd920765f0acadea0c58ff975b1
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_TEST_DB:?POSTGRES_TEST_DB is required}
+    expose:
+      - '5432'
+    volumes:
+      - postgres-data-test:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:?POSTGRES_USER is required} -d ${POSTGRES_TEST_DB:?POSTGRES_TEST_DB is required}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runtime
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_TYPE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_TEST_DB:?POSTGRES_TEST_DB is required}
+      SERVE_STATIC_UI: 'false'
+      CHECK_PENDING_MIGRATIONS_ON_STARTUP: 'true'
+      ALLOWED_ORIGINS: https://localhost,https://agent-orchestrator.localhost
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - '3000'
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+      target: runtime
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - '8081:80'
+      - '8444:443'
+    volumes:
+      - caddy-data-test:/data
+      - caddy-config-test:/config
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runtime
+    profiles: ['tools']
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_TYPE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_TEST_DB:?POSTGRES_TEST_DB is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["dist/cli/index.js", "migrate", "--yes"]
+
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runtime
+    profiles: ['tools']
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_TYPE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_TEST_DB:?POSTGRES_TEST_DB is required}
+      SERVE_STATIC_UI: 'false'
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["dist/cli/index.js", "status"]
+
+volumes:
+  postgres-data-test:
+  caddy-data-test:
+  caddy-config-test:

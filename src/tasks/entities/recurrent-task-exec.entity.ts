@@ -1,0 +1,56 @@
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
+import { RecurrentTask } from './recurrent-task.entity';
+import { Artifact } from '../../common/interfaces/artifact.interface';
+import { JSON_COLUMN_TYPE } from '../../config/typeorm';
+
+export enum ExecStatus {
+  RUNNING = 'running',
+  SUCCESS = 'success',
+  FAILURE = 'failure',
+  CANCELED = 'canceled',
+}
+
+@Entity('recurrent_task_execs')
+@Index(['recurrentTask', 'createdAt'])
+@Index(['recurrentTask', 'updatedAt'])
+export class RecurrentTaskExec {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Index()
+  @ManyToOne(() => RecurrentTask, (rt) => rt.executions, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
+  recurrentTask: RecurrentTask;
+
+  @Column({
+    type: 'varchar',
+    enum: ExecStatus,
+    default: ExecStatus.RUNNING,
+  })
+  status: ExecStatus;
+
+  @Column('text', { nullable: true })
+  result: string;
+
+  @Column('int', { nullable: true })
+  latencyMs: number;
+
+  @Column({ type: JSON_COLUMN_TYPE, nullable: true })
+  artifacts: Artifact[] | null;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}

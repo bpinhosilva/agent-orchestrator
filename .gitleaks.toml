@@ -1,0 +1,22 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow example/placeholder values in documentation and test fixtures"
+
+paths = [
+  '''docs/i18n/.*/README\.md''',
+]
+
+regexTarget = "line"
+regexes = [
+  # Example placeholder JWT secrets in documentation
+  '''replace-with-.*-secret''',
+  '''reemplaza-con-.*-secreto''',
+  '''segredo-de-pelo-menos''',
+  '''at-least-32-characters-long-secret-key''',
+  # Empty API key examples in docs
+  '''(GEMINI|ANTHROPIC)_API_KEY=""''',
+  # Test fixture API key values
+  '''gemini-key(-\w+)?['"]''',
+]

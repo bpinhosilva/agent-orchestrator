@@ -1,6 +1,8 @@
 # compiled output
 /dist
 /node_modules
+*.sqlite
+*.postman_collection.json
 
 # Logs
 logs
@@ -37,3 +39,7 @@ lerna-debug.log*
 .env
 .env.test
 .env.production
+
+# local planning artifacts
+/docs/plans/
+.worktrees/

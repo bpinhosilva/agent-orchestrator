@@ -1,6 +1,6 @@
 {
-  "name": "agent-orchestrator",
-  "version": "1.0.0",
+  "name": "@bpinhosilva/agent-orchestrator",
+  "version": "1.1.0-alpha.1",
   "description": "An open-source AI agent orchestrator platform built with NestJS.",
   "author": "bpinhosilva",
   "license": "MIT",
@@ -12,31 +12,99 @@
     "url": "https://github.com/bpinhosilva/agent-orchestrator/issues"
   },
   "homepage": "https://github.com/bpinhosilva/agent-orchestrator#readme",
+  "keywords": [
+    "agent orchestrator",
+    "generative ai",
+    "agentic dashboard",
+    "nestjs",
+    "typescript"
+  ],
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "!dist/**/*.tsbuildinfo",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && chmod +x dist/cli/index.js",
+    "build:ui": "npm --prefix ui run build",
+    "build:all": "npm run build && npm run build:ui && mkdir -p dist/ui && rsync -a --delete --exclude='*.map' ui/dist/ dist/ui/",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "dev:api": "nest start --watch",
+    "dev:ui": "npm --prefix ui run dev",
+    "prestart:dev": "ts-node -r tsconfig-paths/register scripts/setup-dev-env.ts",
+    "predev": "ts-node -r tsconfig-paths/register scripts/setup-dev-env.ts && (fuser -k 3000/tcp || true)",
+    "dev": "concurrently \"npm run dev:api\" \"wait-on tcp:127.0.0.1:3000 && npm run dev:ui\"",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:api": "npm run lint",
+    "lint:ui": "npm --prefix ui run lint",
+    "lint:all": "npm run lint:api && npm run lint:ui",
     "test": "jest",
+    "test:api": "npm run test",
+    "test:ui": "npm --prefix ui run test",
+    "test:all": "npm run test:api && npm run test:ui && npm run test:e2e",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepack": "npm run build:all",
+    "cli:build": "tsc src/cli/index.ts --outDir dist --rootDir src --esModuleInterop --skipLibCheck --target es2020 --moduleResolution node --module commonjs --experimentalDecorators --emitDecoratorMetadata && chmod +x dist/cli/index.js",
+    "typeorm": "TS_NODE=true ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/config/typeorm.ts",
+    "schema:drop": "npm run typeorm -- schema:drop",
+    "migration:generate": "npm run typeorm -- migration:generate src/migrations/InitialSchema",
+    "migration:run": "npm run typeorm -- migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "seed:admin": "ts-node scripts/seed-admin.ts",
+    "generate:postman": "ts-node scripts/generate-postman.ts",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "predocker:dev": "npm run prestart:dev",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up --build",
+    "docker:test": "docker compose -f docker-compose.test.yml up --build"
+  },
+  "bin": {
+    "agent-orchestrator": "dist/cli/index.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.84",
+    "@google/genai": "^1.48.0",
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/mapped-types": "^2.1.0",
+    "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/serve-static": "^5.0.4",
+    "@nestjs/swagger": "^11.2.6",
+    "@nestjs/throttler": "^6.5.0",
+    "@nestjs/typeorm": "^11.0.0",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.15.1",
+    "class-validator": "^0.14.1",
+    "commander": "^14.0.3",
+    "concurrently": "^9.2.1",
+    "cookie-parser": "^1.4.7",
+    "enquirer": "^2.4.1",
+    "helmet": "^8.1.0",
+    "joi": "^18.1.1",
+    "ollama": "^0.6.3",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.28"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -46,14 +114,16 @@
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
-    "@nestjs/cli": "^11.0.0",
-    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/cli": "^11.0.16",
+    "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.0.1",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.0",
     "@types/node": "^22.10.7",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/passport-local": "^1.0.38",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -61,9 +131,10 @@
     "gitleaks": "^1.0.0",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
-    "jest": "^30.0.0",
+    "jest": "^29.5.0",
+    "lockfile-lint": "^5.0.0",
+    "openapi-to-postmanv2": "^6.0.0",
     "prettier": "^3.4.2",
-    "semantic-release": "^25.0.3",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
@@ -71,7 +142,21 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "wait-on": "^9.0.4"
+  },
+  "overrides": {
+    "path-to-regexp": "^8.4.0",
+    "lodash": "^4.18.1",
+    "js-yaml": "^4.1.1",
+    "yaml": "^2.5.1",
+    "picomatch": "^2.3.2",
+    "brace-expansion": "^1.1.13",
+    "@angular-devkit/core": "^21.2.5",
+    "@angular-devkit/schematics": "^21.2.5",
+    "typeorm": {
+      "glob": "^13.0.0"
+    }
   },
   "jest": {
     "moduleFileExtensions": [
@@ -82,12 +167,22 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "CommonJS",
+            "moduleResolution": "node",
+            "resolvePackageJsonExports": false
+          }
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "maxWorkers": 1
   }
 }

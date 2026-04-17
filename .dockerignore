@@ -1,0 +1,17 @@
+node_modules
+ui/node_modules
+dist
+ui/dist
+coverage
+.git
+.github
+.husky
+.worktrees
+.agent-orchestrator
+docs
+test
+*.sqlite
+*.log
+.env
+.env.*
+!.env.example

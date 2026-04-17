@@ -1,0 +1,23 @@
+# Socket.dev configuration
+# Docs: https://docs.socket.dev/docs/socket-yml
+version: 2
+
+projectIgnorePaths: []
+
+githubApp:
+  enabled: true
+  pullRequestAlertsEnabled: true
+  dependencyOverviewEnabled: true
+
+issueRules:
+  installScripts: true
+  malware: true
+  didYouMean: true
+  telemetry: true
+  troll: true
+  hasNativeCode: true
+  shellScriptOverride: true
+  gitDependency: true
+  httpDependency: true
+  obfuscatedCode: true
+  unresolvedRequire: true
