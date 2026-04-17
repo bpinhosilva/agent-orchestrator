@@ -1,3 +1,10 @@
+# [1.0.0-alpha.42](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.41...v1.0.0-alpha.42) (2026-04-17)
+
+
+### Features
+
+* add early crash detection and log tailing for server process ([b3c7945](https://github.com/bpinhosilva/agent-orchestrator/commit/b3c79454f030845f3056e30f9daab1a7726ce00e))
+
 # [1.0.0-alpha.41](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.40...v1.0.0-alpha.41) (2026-04-17)
 
 
