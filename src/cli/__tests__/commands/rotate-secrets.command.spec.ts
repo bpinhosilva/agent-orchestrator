@@ -21,6 +21,11 @@ jest.mock('../../process-manager', () => ({
   stopManagedProcessById: jest.fn(),
 }));
 
+jest.mock('../../utils', () => ({
+  ...jest.requireActual<typeof import('../../utils')>('../../utils'),
+  verifyServerStartup: jest.fn(() => Promise.resolve(true)),
+}));
+
 jest.mock('../../health', () => ({
   waitForHealth: jest.fn(),
 }));
@@ -37,6 +42,7 @@ const mockEnquirer = jest.requireMock<{ default: { prompt: jest.Mock } }>(
 import * as envModule from '../../env';
 import * as processManager from '../../process-manager';
 import * as healthModule from '../../health';
+import * as utils from '../../utils';
 
 describe('rotate-secrets command', () => {
   let program: Command;
@@ -167,5 +173,26 @@ describe('rotate-secrets command', () => {
       expect(envModule.writePrivateFile).not.toHaveBeenCalled();
       expect(exitSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it('exits 1 if server crashes immediately after restart (--yes)', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue({
+      pid: 5,
+      source: 'metadata',
+      cwd: '/app',
+      mainPath: '/app/main.js',
+      host: '127.0.0.1',
+      port: '15789',
+    });
+    (processManager.stopManagedProcessById as jest.Mock).mockResolvedValue(
+      true,
+    );
+    (utils.verifyServerStartup as jest.Mock).mockResolvedValue(false);
+
+    await program.parseAsync(['node', 'cli', 'rotate-secrets', '--yes']);
+
+    expect(utils.verifyServerStartup).toHaveBeenCalledWith(9);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(healthModule.waitForHealth).not.toHaveBeenCalled();
   });
 });

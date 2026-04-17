@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { Command } from 'commander';
-import { resolveActionOptions } from '../utils';
+import { resolveActionOptions, verifyServerStartup } from '../utils';
 import { readEnvFile, buildEnvContent, writePrivateFile } from '../env';
 import {
   findManagedProcess,
@@ -90,6 +90,13 @@ export function registerRotateSecretsCommand(program: Command): void {
           console.log('Orchestrator stopped. Restarting...');
 
           const { pid, host, port } = startServer();
+
+          const survived = await verifyServerStartup(pid);
+          if (!survived) {
+            process.exit(1);
+            return;
+          }
+
           console.log(
             `Orchestrator started.\n${formatProcessSummary({
               pid,

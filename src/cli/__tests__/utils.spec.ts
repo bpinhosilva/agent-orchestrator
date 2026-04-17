@@ -2,8 +2,15 @@ import {
   getPackageVersion,
   tailLogLines,
   resolveActionOptions,
+  verifyServerStartup,
 } from '../utils';
 import { Command } from 'commander';
+import * as processManager from '../process-manager';
+
+jest.mock('../process-manager', () => ({
+  isManagedProcess: jest.fn(),
+  removeRuntimeState: jest.fn(),
+}));
 
 describe('getPackageVersion', () => {
   it('returns the version from a valid package.json', () => {
@@ -77,5 +84,49 @@ describe('resolveActionOptions', () => {
   });
   it('returns {} when last arg is a string (not an object)', () => {
     expect(resolveActionOptions(['somestring'])).toEqual({});
+  });
+});
+
+describe('verifyServerStartup', () => {
+  let consoleErrSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    consoleErrSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrSpy.mockRestore();
+  });
+
+  it('returns true when process is alive', async () => {
+    (processManager.isManagedProcess as jest.Mock).mockReturnValue(true);
+
+    const result = await verifyServerStartup(
+      42,
+      '/tmp/test.log',
+      '/app/main.js',
+      '/app',
+    );
+
+    expect(result).toBe(true);
+    expect(processManager.removeRuntimeState).not.toHaveBeenCalled();
+  });
+
+  it('returns false and cleans up when process died', async () => {
+    (processManager.isManagedProcess as jest.Mock).mockReturnValue(false);
+
+    const result = await verifyServerStartup(
+      42,
+      '/tmp/nonexistent.log',
+      '/app/main.js',
+      '/app',
+    );
+
+    expect(result).toBe(false);
+    expect(processManager.removeRuntimeState).toHaveBeenCalled();
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Server process exited immediately'),
+    );
   });
 });

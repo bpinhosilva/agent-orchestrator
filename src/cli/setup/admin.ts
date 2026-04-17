@@ -141,5 +141,6 @@ export async function maybeSetupAdmin(
       'Admin setup failed:',
       err instanceof Error ? err.message : err,
     );
+    throw err;
   }
 }

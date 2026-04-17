@@ -236,7 +236,7 @@ describe('maybeSetupAdmin', () => {
     expect(ds.initialize).toHaveBeenCalled();
   });
 
-  it('does not throw when setupAdminUser encounters an error', async () => {
+  it('re-throws when setupAdminUser encounters an error', async () => {
     const ds = makeDataSource(false, { initRejects: true });
     const factory: DataSourceFactory = () => ds as any;
     await expect(
@@ -249,10 +249,11 @@ describe('maybeSetupAdmin', () => {
         factory,
         fakeBcrypt,
       ),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow();
+    expect(console.error).toHaveBeenCalled();
   });
 
-  it('swallows short-password validation error from setupAdminUser', async () => {
+  it('re-throws short-password validation error from setupAdminUser', async () => {
     const ds = makeDataSource(false);
     const factory: DataSourceFactory = () => ds as any;
     await expect(
@@ -261,22 +262,22 @@ describe('maybeSetupAdmin', () => {
         factory,
         fakeBcrypt,
       ),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow();
     expect(console.error).toHaveBeenCalled();
     expect(ds.initialize).not.toHaveBeenCalled();
   });
 
-  it('swallows prompt cancellation error', async () => {
+  it('re-throws prompt cancellation error', async () => {
     const ds = makeDataSource(false);
     const factory: DataSourceFactory = () => ds as any;
     jest.mocked(enquirer.prompt).mockRejectedValue(new Error('User cancelled'));
     await expect(
       maybeSetupAdmin({ yes: false }, factory, fakeBcrypt),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow('User cancelled');
     expect(console.error).toHaveBeenCalled();
   });
 
-  it('swallows error when destroy fails during setupAdminUser', async () => {
+  it('re-throws error when destroy fails during setupAdminUser', async () => {
     const ds = makeDataSource(false, {
       saveRejects: true,
       destroyRejects: true,
@@ -292,6 +293,6 @@ describe('maybeSetupAdmin', () => {
         factory,
         fakeBcrypt,
       ),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow();
   });
 });

@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { verifyServerStartup } from '../utils';
 import {
   findManagedProcess,
   formatProcessSummary,
@@ -37,6 +38,12 @@ export function registerRestartCommand(program: Command): void {
 
         console.log('Starting Agent Orchestrator in background...');
         const { pid, host, port } = startServer();
+
+        const survived = await verifyServerStartup(pid);
+        if (!survived) {
+          process.exit(1);
+          return;
+        }
 
         console.log(
           `Orchestrator started in background.\n${formatProcessSummary({
