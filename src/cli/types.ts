@@ -2,6 +2,7 @@ export const SUPPORTED_PROVIDERS = ['gemini', 'anthropic'] as const;
 export type SupportedProvider = (typeof SUPPORTED_PROVIDERS)[number];
 
 export interface BasicConfig {
+  host: string;
   port: string;
   dbType: 'postgres' | 'sqlite';
   dbLogging: boolean;
@@ -27,6 +28,7 @@ export interface SetupAdminOptions {
 }
 
 export interface SetupCommandOptions {
+  host?: string;
   port?: string;
   dbType?: 'postgres' | 'sqlite';
   databaseUrl?: string;
@@ -74,10 +76,15 @@ export interface LogsCommandOptions {
   follow?: boolean;
 }
 
+export interface RunCommandOptions {
+  logLevel?: string;
+}
+
 export interface ProcessMetadata {
   pid: number;
   cwd: string;
   mainPath: string;
+  host: string;
   port: string;
   logFile: string;
   startedAt: string;
@@ -88,6 +95,7 @@ export interface ManagedProcess {
   source: 'metadata' | 'pid-file' | 'scan';
   cwd: string;
   mainPath: string;
+  host: string;
   port: string;
 }
 

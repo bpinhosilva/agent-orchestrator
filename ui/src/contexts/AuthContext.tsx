@@ -8,19 +8,15 @@ import type { User } from '../api/users';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const clearSession = useCallback(() => {
-    setToken(null);
     setUser(null);
   }, []);
 
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
-    } catch (error) {
-      console.error('Failed to logout:', error);
     } finally {
       clearSession();
     }
@@ -31,9 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(true);
       const currentUser = await authApi.me();
       setUser(currentUser);
-      setToken('authenticated');
-    } catch (error) {
-      console.error('Failed to restore session:', error);
+    } catch {
       clearSession();
     } finally {
       setIsLoading(false);
@@ -54,7 +48,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     await authApi.login(email, password);
-    setToken('authenticated');
 
     const currentUser = await authApi.me();
     setUser(currentUser);
@@ -72,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const value: AuthContextType = {
     user,
-    token,
+    token: user ? 'authenticated' : null,
     isLoading,
     login,
     register,

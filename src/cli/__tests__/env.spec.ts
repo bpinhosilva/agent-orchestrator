@@ -66,6 +66,7 @@ describe('readEnvFile', () => {
 
 describe('buildEnvContent', () => {
   const basicConfig: BasicConfig = {
+    host: '127.0.0.1',
     port: '3000',
     dbType: 'sqlite',
     dbLogging: false,
@@ -83,7 +84,8 @@ describe('buildEnvContent', () => {
     );
     const lines = content.split('\n').filter(Boolean);
     expect(lines[0]).toBe('NODE_ENV=production');
-    expect(lines[1]).toBe('PORT=3000');
+    expect(lines[1]).toBe('HOST=127.0.0.1');
+    expect(lines[2]).toBe('PORT=3000');
     expect(content).toContain('JWT_SECRET=jwt-s');
     expect(content).toContain('JWT_REFRESH_SECRET=jwt-r');
   });

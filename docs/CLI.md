@@ -100,6 +100,14 @@ Supported flags:
 - `--regenerate-jwt-secret`
 - `-y, --yes`
 
+### `run`
+
+Start the orchestrator server in detached mode.
+
+Supported flags:
+
+- `--log-level <level>`: Set the log level (`fatal`, `error`, `warn`, `log`, `debug`, `verbose`). Defaults to `error` in production.
+
 ### `logs`
 
 ```bash

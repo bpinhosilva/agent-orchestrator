@@ -97,6 +97,14 @@ Flags suportadas:
 - `--regenerate-jwt-secret`
 - `-y, --yes`
 
+### `run`
+
+Inicia o servidor do orchestrator em modo desanexado.
+
+Flags suportadas:
+
+- `--log-level <nivel>`: Define o nível de log (`fatal`, `error`, `warn`, `log`, `debug`, `verbose`). O padrão é `error` em produção.
+
 ### `logs`
 
 ```bash

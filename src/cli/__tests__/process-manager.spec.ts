@@ -112,6 +112,7 @@ describe('persistProcessMetadata', () => {
       pid: 1234,
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '127.0.0.1',
       port: '3000',
       logFile: FAKE_LOG_FILE,
       startedAt: '2026-01-01T00:00:00.000Z',
@@ -131,16 +132,18 @@ describe('persistProcessMetadata', () => {
 });
 
 describe('formatProcessSummary', () => {
-  it('includes pid, port, cwd, mainPath in output', () => {
+  it('includes pid, host, port, cwd, mainPath in output', () => {
     const proc: ManagedProcess = {
       pid: 42,
       source: 'metadata',
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '127.0.0.1',
       port: '8080',
     };
     const summary = formatProcessSummary(proc, FAKE_LOG_FILE);
     expect(summary).toContain('PID: 42');
+    expect(summary).toContain('Host: 127.0.0.1');
     expect(summary).toContain('Port: 8080');
     expect(summary).toContain(FAKE_ROOT);
   });
@@ -150,6 +153,7 @@ describe('formatProcessSummary', () => {
       source: 'scan',
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '0.0.0.0',
       port: '15789',
     };
     const summary = formatProcessSummary(proc);
@@ -185,6 +189,32 @@ describe('getChildEnvironment', () => {
     const env = getChildEnvironment(FAKE_PID_DIR);
     expect(env.DATABASE_URL).toBeUndefined();
     delete process.env.DATABASE_URL;
+  });
+});
+
+describe('getConfiguredPort', () => {
+  afterEach(() => {
+    jest.resetModules();
+    jest.dontMock('../../config/port.defaults');
+  });
+
+  it('uses the shared runtime default port when the env file is missing', () => {
+    const fakeFs = buildFakeFs({
+      existsSync: jest.fn().mockReturnValue(false),
+    });
+
+    jest.isolateModules(() => {
+      jest.doMock('../../config/port.defaults', () => ({
+        getDefaultPort: jest.fn().mockReturnValue(4242),
+      }));
+
+      const { getConfiguredPort } =
+        jest.requireActual<typeof import('../process-manager')>(
+          '../process-manager',
+        );
+
+      expect(getConfiguredPort(FAKE_ENV_PATH, fakeFs)).toBe('4242');
+    });
   });
 });
 
@@ -374,6 +404,7 @@ describe('findManagedProcess', () => {
       pid: 999,
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '127.0.0.1',
       port: '3000',
       logFile: FAKE_LOG_FILE,
       startedAt: '2026-01-01T00:00:00.000Z',
@@ -415,6 +446,7 @@ describe('findManagedProcess', () => {
       pid: 999,
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '127.0.0.1',
       port: '3000',
       logFile: FAKE_LOG_FILE,
       startedAt: '2026-01-01T00:00:00.000Z',
@@ -464,6 +496,7 @@ describe('findManagedProcess', () => {
       pid: 999,
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '127.0.0.1',
       port: '3000',
       logFile: FAKE_LOG_FILE,
       startedAt: '2026-01-01T00:00:00.000Z',
@@ -516,6 +549,7 @@ describe('findManagedProcess', () => {
       pid: 999,
       cwd: FAKE_ROOT,
       mainPath: FAKE_MAIN,
+      host: '127.0.0.1',
       port: '3000',
       logFile: FAKE_LOG_FILE,
       startedAt: '2026-01-01T00:00:00.000Z',
@@ -640,6 +674,7 @@ describe('checkIfRunning', () => {
       pid,
       cwd: PACKAGE_ROOT,
       mainPath: MAIN_FILE,
+      host: '127.0.0.1',
       port: '15789',
       logFile: LOG_FILE,
       startedAt: '2026-01-01T00:00:00.000Z',

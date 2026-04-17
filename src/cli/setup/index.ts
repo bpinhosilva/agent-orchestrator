@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import { ENV_PATH } from '../constants';
 import { buildEnvContent, readEnvFile, writePrivateFile } from '../env';
+import { getDefaultHost } from '../../config/host.defaults';
 import type {
   DataSourceFactory,
   FileSystem,
@@ -29,6 +30,7 @@ export async function handleSetup(
         ? crypto.randomBytes(32).toString('hex')
         : existingEnv.JWT_REFRESH_SECRET;
     answers = {
+      host: opts.host ?? existingEnv.HOST ?? getDefaultHost('production'),
       port: opts.port ?? '15789',
       dbType: opts.dbType ?? 'sqlite',
       databaseUrl: opts.databaseUrl ?? '',
@@ -49,6 +51,7 @@ export async function handleSetup(
       SCHEDULER_ENABLED: answers.schedulerEnabled ? 'true' : 'false',
     },
     {
+      host: answers.host,
       port: answers.port,
       dbType: answers.dbType,
       dbLogging: existingEnv.DB_LOGGING === 'true',

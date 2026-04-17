@@ -12,9 +12,12 @@ import {
   PACKAGE_ROOT,
 } from './constants';
 
+import { getDefaultPort } from '../config/port.defaults';
+import { getDefaultHost } from '../config/host.defaults';
+
 const realFs = fs as unknown as FileSystem;
 
-const DEFAULT_PORT = '15789';
+const DEFAULT_PORT = String(getDefaultPort('production'));
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -83,6 +86,7 @@ function readProcessMetadata(
       typeof parsed.pid !== 'number' ||
       typeof parsed.cwd !== 'string' ||
       typeof parsed.mainPath !== 'string' ||
+      typeof parsed.host !== 'string' ||
       typeof parsed.port !== 'string' ||
       typeof parsed.logFile !== 'string'
     ) {
@@ -93,6 +97,7 @@ function readProcessMetadata(
       pid: parsed.pid,
       cwd: parsed.cwd,
       mainPath: parsed.mainPath,
+      host: parsed.host,
       port: parsed.port,
       logFile: parsed.logFile,
       startedAt:
@@ -119,7 +124,10 @@ function readPidFile(pidFile: string, fsDep: FileSystem): number | null {
 }
 
 function scanForManagedProcesses(
-  expected: Pick<ProcessMetadata, 'cwd' | 'mainPath'> & { port: string },
+  expected: Pick<ProcessMetadata, 'cwd' | 'mainPath'> & {
+    port: string;
+    host: string;
+  },
   fsDep: FileSystem,
 ): ManagedProcess[] {
   if (!fsDep.existsSync('/proc')) {
@@ -136,11 +144,15 @@ function scanForManagedProcesses(
       source: 'scan' as const,
       cwd: expected.cwd,
       mainPath: expected.mainPath,
+      host: expected.host,
       port: expected.port,
     }));
 }
 
-function getConfiguredPort(envPath: string, fsDep: FileSystem): string {
+export function getConfiguredPort(
+  envPath: string,
+  fsDep: FileSystem = realFs,
+): string {
   try {
     if (!fsDep.existsSync(envPath)) {
       return DEFAULT_PORT;
@@ -161,6 +173,33 @@ function getConfiguredPort(envPath: string, fsDep: FileSystem): string {
     // fall through
   }
   return DEFAULT_PORT;
+}
+
+export function getConfiguredHost(
+  envPath: string,
+  fsDep: FileSystem = realFs,
+): string {
+  const defaultHost = getDefaultHost('production');
+  try {
+    if (!fsDep.existsSync(envPath)) {
+      return defaultHost;
+    }
+    const content = fsDep.readFileSync(envPath, 'utf8');
+    const lines = content.split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || !trimmed) continue;
+      const separatorIndex = trimmed.indexOf('=');
+      if (separatorIndex === -1) continue;
+      const key = trimmed.slice(0, separatorIndex).trim();
+      if (key === 'HOST') {
+        return trimmed.slice(separatorIndex + 1).trim() || defaultHost;
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return defaultHost;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +224,7 @@ export function formatProcessSummary(
   return [
     `PID: ${processInfo.pid}`,
     `Source: ${processInfo.source}`,
+    `Host: ${processInfo.host}`,
     `Port: ${processInfo.port}`,
     `Working directory: ${processInfo.cwd}`,
     `Entry point: ${processInfo.mainPath}`,
@@ -236,6 +276,7 @@ export function getChildEnvironment(pidDir = PID_DIR): NodeJS.ProcessEnv {
     'TEMP',
     'SystemRoot',
     'ComSpec',
+    'LOG_LEVEL',
   ];
 
   for (const envName of passthroughVars) {
@@ -312,10 +353,12 @@ export function findManagedProcess(
   fsDep: FileSystem = realFs,
 ): ManagedProcess | null {
   const port = getConfiguredPort(envPath, fsDep);
+  const host = getConfiguredHost(envPath, fsDep);
   const defaultExpected = {
     cwd: path.resolve(packageRoot),
     mainPath: path.resolve(mainFile),
     port,
+    host,
     logFile,
   };
 

@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { type InternalAxiosRequestConfig } from 'axios';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TaskExecutions from '../TaskExecutions';
 import { recurrentTasksApi, RecurrentTaskStatus, ExecStatus, type RecurrentTask } from '../../api/recurrent-tasks';
 import { TaskPriority } from '../../api/tasks';
@@ -101,6 +102,10 @@ vi.mock('../../api/recurrent-tasks', () => ({
   },
 }));
 
+vi.mock('../../components/CreateRecurrentTaskModal', () => ({
+  default: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div>Update Protocol</div> : null),
+}));
+
 // cron-parser mock returns a fixed future date so nextRun tests are deterministic
 vi.mock('cron-parser', () => ({
   CronExpressionParser: {
@@ -129,6 +134,19 @@ vi.mock('../../api/tasks', () => ({
 }));
 
 describe('TaskExecutions', () => {
+  const renderPage = () =>
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
+          <Routes>
+            <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -198,13 +216,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     // Initially shows loading
     expect(screen.getByText(/INITIALIZING DATA GRID/i)).toBeInTheDocument();
@@ -227,13 +239,7 @@ describe('TaskExecutions', () => {
   it('handles loading state', () => {
     vi.mocked(recurrentTasksApi.findOne).mockReturnValue(new Promise(() => {}));
     
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     expect(screen.getByText(/INITIALIZING DATA GRID/i)).toBeInTheDocument();
   });
@@ -265,13 +271,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -322,13 +322,7 @@ describe('TaskExecutions', () => {
 
     vi.mocked(recurrentTasksApi.update).mockResolvedValue({} as unknown as AxiosResponse<RecurrentTask>);
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -381,13 +375,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -434,13 +422,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -479,13 +461,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -523,13 +499,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -567,13 +537,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -612,13 +576,7 @@ describe('TaskExecutions', () => {
       config: {} as InternalAxiosRequestConfig,
     });
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -667,13 +625,7 @@ describe('TaskExecutions', () => {
 
     vi.mocked(recurrentTasksApi.update).mockResolvedValue({} as unknown as AxiosResponse<RecurrentTask>);
 
-    render(
-      <MemoryRouter initialEntries={['/scheduler/tasks/task-1/executions']}>
-        <Routes>
-          <Route path="/scheduler/tasks/:taskId/executions" element={<TaskExecutions />} />
-        </Routes>
-      </MemoryRouter>
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.queryByText(/INITIALIZING DATA GRID/i)).not.toBeInTheDocument();
@@ -696,4 +648,3 @@ describe('TaskExecutions', () => {
     });
   });
 });
-

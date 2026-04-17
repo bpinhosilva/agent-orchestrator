@@ -11,6 +11,7 @@ export function registerSetupCommand(program: Command): void {
   program
     .command('setup')
     .description('Create or update the local CLI runtime configuration')
+    .option('--host <host>', 'Server host for the orchestrator runtime')
     .option('--port <port>', 'Server port for the orchestrator runtime')
     .option('--db-type <type>', 'Database type: sqlite or postgres')
     .option('--database-url <url>', 'PostgreSQL connection string')

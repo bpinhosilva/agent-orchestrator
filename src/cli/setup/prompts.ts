@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import { Prompter, SupportedProvider } from '../types';
 import { SUPPORTED_PROVIDERS } from '../constants';
+import { getDefaultHost } from '../../config/host.defaults';
 import {
   validatePort,
   isValidPostgresConnectionString,
@@ -9,6 +10,7 @@ import {
 } from './validators';
 
 export interface SetupAnswers {
+  host: string;
   port: string;
   dbType: 'sqlite' | 'postgres';
   databaseUrl: string;
@@ -34,6 +36,23 @@ async function createDefaultPrompter(): Promise<Prompter> {
       return enquirer.prompt<T>(questions);
     },
   };
+}
+
+export async function promptHost(
+  prompter: Prompter,
+  initial = '127.0.0.1',
+): Promise<string> {
+  const answer = await prompter.prompt<{ host: string }>({
+    type: 'input',
+    name: 'host',
+    message: 'What host address should the orchestrator listen on?',
+    initial,
+    validate: (value: string) => {
+      if (!value.trim()) return 'Host address cannot be empty';
+      return true;
+    },
+  });
+  return answer.host.trim();
 }
 
 export async function promptPort(
@@ -215,7 +234,12 @@ export async function runSetupPrompts(
   )
     ? (existingEnv.DB_TYPE as 'sqlite' | 'postgres')
     : 'sqlite';
-  const port = await promptPort(p, existingEnv.PORT || '3000');
+
+  const host = await promptHost(
+    p,
+    existingEnv.HOST || getDefaultHost('production'),
+  );
+  const port = await promptPort(p, existingEnv.PORT || '15789');
   const dbType = await promptDbType(p, existingDbType);
 
   let databaseUrl = '';
@@ -244,6 +268,7 @@ export async function runSetupPrompts(
     : (existingEnv.ANTHROPIC_API_KEY ?? '');
 
   return {
+    host,
     port,
     dbType,
     databaseUrl,

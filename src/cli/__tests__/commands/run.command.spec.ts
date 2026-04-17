@@ -5,6 +5,7 @@ jest.mock('../../process-manager', () => ({
   assertBuildExists: jest.fn(),
   findManagedProcess: jest.fn(),
   getChildEnvironment: jest.fn(() => ({})),
+  getConfiguredHost: jest.fn(() => '127.0.0.1'),
   persistProcessMetadata: jest.fn(),
   formatProcessSummary: jest.fn(() => 'PID: 123\nPort: 15789'),
 }));
@@ -52,6 +53,7 @@ describe('run command', () => {
     consoleSpy.mockRestore();
     consoleErrSpy.mockRestore();
     exitSpy.mockRestore();
+    delete process.env.LOG_LEVEL;
   });
 
   it('prints already-running message and returns without spawning when process exists', async () => {
@@ -97,7 +99,19 @@ describe('run command', () => {
     expect(spawn).toHaveBeenCalledTimes(1);
     expect(processManager.persistProcessMetadata).toHaveBeenCalledTimes(1);
     expect(processManager.persistProcessMetadata).toHaveBeenCalledWith(
-      expect.objectContaining({ pid: 42 }),
+      expect.objectContaining({ pid: 42, host: '127.0.0.1' }),
     );
+  });
+
+  it('applies the requested log level before spawning', async () => {
+    (processManager.assertBuildExists as jest.Mock).mockImplementation(
+      () => {},
+    );
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-level', 'debug']);
+
+    expect(process.env.LOG_LEVEL).toBe('debug');
+    expect(spawn).toHaveBeenCalledTimes(1);
   });
 });

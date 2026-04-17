@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, type LogLevel } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -13,6 +13,7 @@ import {
   runMigrations,
 } from './database/migration-state';
 import { getDefaultPort } from './config/port.defaults';
+import { getDefaultHost } from './config/host.defaults';
 import { isEnvEnabled, loadRuntimeEnv } from './config/runtime-paths';
 
 const logger = new Logger('Bootstrap');
@@ -50,8 +51,32 @@ async function ensureDatabaseIsReadyForStartup() {
 async function bootstrap() {
   await ensureDatabaseIsReadyForStartup();
 
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const defaultLevels: LogLevel[] =
+    nodeEnv === 'production'
+      ? ['error']
+      : ['log', 'error', 'warn', 'debug', 'verbose', 'fatal'];
+
+  let logLevels: LogLevel[] = defaultLevels;
+  const envLogLevel = process.env.LOG_LEVEL as LogLevel | undefined;
+
+  if (envLogLevel) {
+    const allLevels: LogLevel[] = [
+      'fatal',
+      'error',
+      'warn',
+      'log',
+      'debug',
+      'verbose',
+    ];
+    const levelIndex = allLevels.indexOf(envLogLevel);
+    if (levelIndex !== -1) {
+      logLevels = allLevels.slice(0, levelIndex + 1);
+    }
+  }
+
   const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    logger: logLevels,
   });
 
   app.setGlobalPrefix('api/v1');
@@ -86,7 +111,6 @@ async function bootstrap() {
 
   // Configure CORS from ALLOWED_ORIGINS env var, falling back to safe defaults
   const configService = app.get(ConfigService);
-  const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
   const allowedOrigins = configService.get<string>('ALLOWED_ORIGINS');
   const corsOptions: CorsOptions = {
     credentials: true,
@@ -109,6 +133,7 @@ async function bootstrap() {
   app.enableCors(corsOptions);
 
   const port = configService.get<number>('PORT') || getDefaultPort(nodeEnv);
+  const host = configService.get<string>('HOST') || getDefaultHost(nodeEnv);
 
   // Only enable Swagger in non-production environments
   if (nodeEnv !== 'production') {
@@ -122,7 +147,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, document);
   }
 
-  await app.listen(port);
+  await app.listen(port, host);
   logger.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap().catch((err: Error) => {

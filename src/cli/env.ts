@@ -58,6 +58,7 @@ export function buildEnvContent(
   const envValues: Record<string, string> = {
     ...currentEnv,
     NODE_ENV: 'production',
+    HOST: basicConfig.host,
     PORT: basicConfig.port,
     DB_TYPE: basicConfig.dbType,
     DB_LOGGING: `${basicConfig.dbLogging}`,
@@ -83,6 +84,7 @@ export function buildEnvContent(
 
   const orderedKeys = [
     'NODE_ENV',
+    'HOST',
     'PORT',
     'DB_TYPE',
     'DB_LOGGING',

@@ -1,5 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CreateRecurrentTaskModal from '../CreateRecurrentTaskModal';
 import { agentsApi, type Agent } from '../../api/agents';
 import {
@@ -62,6 +63,21 @@ const mockOnClose = vi.fn();
 const mockOnSuccess = vi.fn();
 
 describe('CreateRecurrentTaskModal', () => {
+  const renderModal = (props?: Partial<React.ComponentProps<typeof CreateRecurrentTaskModal>>) =>
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}
+      >
+        <CreateRecurrentTaskModal
+          projectId="project-1"
+          isOpen={true}
+          onClose={mockOnClose}
+          onSuccess={mockOnSuccess}
+          {...props}
+        />
+      </QueryClientProvider>
+    );
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(agentsApi.findAll).mockResolvedValue({
@@ -70,14 +86,7 @@ describe('CreateRecurrentTaskModal', () => {
   });
 
   it('renders correctly when open', async () => {
-    render(
-      <CreateRecurrentTaskModal
-        projectId="project-1"
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-      />
-    );
+    renderModal();
 
     expect(screen.getByText('Deploy New Task')).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Daily Market Sweep/i)).toBeInTheDocument();
@@ -101,14 +110,7 @@ describe('CreateRecurrentTaskModal', () => {
       },
     } as Awaited<ReturnType<typeof recurrentTasksApi.create>>);
 
-    render(
-      <CreateRecurrentTaskModal
-        projectId="project-1"
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-      />
-    );
+    renderModal();
 
     fireEvent.change(screen.getByPlaceholderText(/Daily Market Sweep/i), { target: { value: 'Test Task' } });
     fireEvent.change(screen.getByPlaceholderText(/Briefly describe the objective/i), { target: { value: 'Test Description' } });
@@ -151,15 +153,7 @@ describe('CreateRecurrentTaskModal', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    render(
-      <CreateRecurrentTaskModal
-        projectId="project-1"
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-        initialData={initialData}
-      />
-    );
+    renderModal({ initialData });
 
     expect(await screen.findByText(/Update Protocol/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue('Existing Task')).toBeInTheDocument();
@@ -189,15 +183,7 @@ describe('CreateRecurrentTaskModal', () => {
       data: { ...initialData, title: 'Updated Task' },
     } as Awaited<ReturnType<typeof recurrentTasksApi.update>>);
 
-    render(
-      <CreateRecurrentTaskModal
-        projectId="project-1"
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-        initialData={initialData}
-      />
-    );
+    renderModal({ initialData });
 
     // Wait for initial data to be populated
     const titleInput = await screen.findByDisplayValue('Existing Task');
@@ -225,14 +211,7 @@ describe('CreateRecurrentTaskModal', () => {
   });
 
   it('shows validation errors for invalid cron expression', async () => {
-    render(
-      <CreateRecurrentTaskModal
-        projectId="project-1"
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-      />
-    );
+    renderModal();
 
     const cronInput = screen.getByPlaceholderText('e.g. 0 0 * * *');
     fireEvent.change(cronInput, { target: { value: 'invalid-cron' } });
@@ -244,14 +223,7 @@ describe('CreateRecurrentTaskModal', () => {
   });
 
   it('toggles markdown preview', async () => {
-    render(
-      <CreateRecurrentTaskModal
-        projectId="project-1"
-        isOpen={true}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-      />
-    );
+    renderModal();
 
     const descriptionInput = screen.getByPlaceholderText(/Briefly describe the objective/i);
     fireEvent.change(descriptionInput, { target: { value: '# Hello Markdown' } });
@@ -266,5 +238,15 @@ describe('CreateRecurrentTaskModal', () => {
     fireEvent.click(writeButton);
 
     expect(screen.getByPlaceholderText(/Briefly describe the objective/i)).toHaveValue('# Hello Markdown');
+  });
+
+  it('notifies through the shared error channel when agents fail to load', async () => {
+    vi.mocked(agentsApi.findAll).mockRejectedValue(new Error('no agents'));
+
+    renderModal();
+
+    await waitFor(() => {
+      expect(mockNotifyApiError).toHaveBeenCalledWith(expect.any(Error), 'Agents Load Failed');
+    });
   });
 });

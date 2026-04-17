@@ -118,6 +118,7 @@ SCHEDULER_ENABLED=true
 DB_LOGGING=false
 SERVE_STATIC_UI=true
 CHECK_PENDING_MIGRATIONS_ON_STARTUP=false
+LOG_LEVEL=error
 ```
 
 ## Configuración de la base de datos
@@ -163,10 +164,12 @@ npm run dev
 
 Esto inicia:
 
-- Servidor de desarrollo de UI: `http://localhost:5173`
-- API: `http://localhost:3000/api/v1`
+- Servidor de desarrollo de UI: `http://localhost:5173` (accesible desde su red local)
+- API: `http://localhost:3000/api/v1` (accesible desde su red local)
 - Swagger UI: `http://localhost:3000/api` (solo para entornos de no producción)
 - Endpoint de salud: `http://localhost:3000/health`
+
+Por defecto, los servidores de desarrollo se vinculan a `0.0.0.0`, permitiendo el acceso desde otros dispositivos en la misma red utilizando la dirección IP local de su máquina.
 
 Si solo quieres la API en modo watch:
 

@@ -1,12 +1,15 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
+import { resolveActionOptions } from '../utils';
+import type { RunCommandOptions } from '../types';
 import {
   assertBuildExists,
   findManagedProcess,
   getChildEnvironment,
   persistProcessMetadata,
   formatProcessSummary,
+  getConfiguredHost,
 } from '../process-manager';
 import { readEnvFile } from '../env';
 import {
@@ -26,8 +29,13 @@ export function registerRunCommand(program: Command): void {
   program
     .command('run')
     .description('Start the orchestrator server in detached mode')
-    .action(() => {
+    .option(
+      '--log-level <level>',
+      'Set the log level (fatal, error, warn, log, debug, verbose)',
+    )
+    .action((...args: unknown[]) => {
       try {
+        const options = resolveActionOptions<RunCommandOptions>(args);
         assertBuildExists();
         const existingProcess = findManagedProcess(); // TODO: pass default args if needed
         if (existingProcess) {
@@ -35,6 +43,10 @@ export function registerRunCommand(program: Command): void {
             `Orchestrator is already running.\n${formatProcessSummary(existingProcess)}`,
           );
           return;
+        }
+
+        if (options.logLevel) {
+          process.env.LOG_LEVEL = options.logLevel;
         }
 
         console.log('Starting Agent Orchestrator in background...');
@@ -57,10 +69,12 @@ export function registerRunCommand(program: Command): void {
         }
 
         const port = getConfiguredPort();
+        const host = getConfiguredHost(ENV_PATH);
         persistProcessMetadata({
           pid,
           cwd: PACKAGE_ROOT,
           mainPath: MAIN_FILE,
+          host,
           port,
           logFile: LOG_FILE,
           startedAt: new Date().toISOString(),
@@ -74,6 +88,7 @@ export function registerRunCommand(program: Command): void {
             source: 'metadata',
             cwd: PACKAGE_ROOT,
             mainPath: MAIN_FILE,
+            host,
             port,
           })}`,
         );

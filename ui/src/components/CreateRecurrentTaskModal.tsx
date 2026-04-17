@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X as CloseIcon, 
@@ -16,11 +19,15 @@ import {
   Wand2 as MagicIcon
 } from 'lucide-react';
 import cronstrue from 'cronstrue';
-import { agentsApi, type Agent } from '../api/agents';
+import { agentsApi } from '../api/agents';
 import { recurrentTasksApi, type RecurrentTask, RecurrentTaskStatus } from '../api/recurrent-tasks';
 import { TaskPriority } from '../api/tasks';
 import { useNotification } from '../hooks/useNotification';
 import MarkdownField from './MarkdownField';
+import {
+  recurrentTaskSchema,
+  type RecurrentTaskFormValues,
+} from '../lib/taskFormSchemas';
 
 interface CreateRecurrentTaskModalProps {
   projectId: string;
@@ -30,35 +37,49 @@ interface CreateRecurrentTaskModalProps {
   initialData?: RecurrentTask;
 }
 
-const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
+const createRecurrentTaskDefaults: RecurrentTaskFormValues = {
+  title: '',
+  description: '',
+  cronExpression: '',
+  assigneeId: '',
+  priority: TaskPriority.MEDIUM,
+};
+
+const CreateRecurrentTaskModal = ({
   projectId,
   isOpen,
   onClose,
   onSuccess,
   initialData
-}) => {
+}: CreateRecurrentTaskModalProps) => {
   const { notifyApiError, notifyError } = useNotification();
-  const [loading, setLoading] = useState(false);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [fetchingAgents, setFetchingAgents] = useState(false);
   const [showAgentDropdown, setShowAgentDropdown] = useState(false);
-
-  // Form State
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [cronExpression, setCronExpression] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
-  const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
-  const [cronError, setCronError] = useState<string | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    register,
+    reset,
+    setValue,
+  } = useForm<RecurrentTaskFormValues>({
+    resolver: zodResolver(recurrentTaskSchema),
+    defaultValues: createRecurrentTaskDefaults,
+    mode: 'onBlur',
+  });
 
-  const cronInterpretation = (() => {
-    try {
-      return cronstrue.toString(cronExpression);
-    } catch {
-      return null;
-    }
-  })();
+  const cronExpression = useWatch({ control, name: 'cronExpression' });
+  const assigneeId = useWatch({ control, name: 'assigneeId' });
+  const priority = useWatch({ control, name: 'priority' });
+
+  const agentsQuery = useQuery({
+    queryKey: ['agents'],
+    enabled: isOpen,
+    queryFn: async () => {
+      const response = await agentsApi.findAll();
+      return response.data ?? [];
+    },
+  });
 
   const cronPresets = [
     { label: 'Every 10s', value: '*/10 * * * * *' },
@@ -70,106 +91,85 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
   ];
 
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      fetchAgents();
-      if (initialData) {
-        setTitle(initialData.title);
-        setDescription(initialData.description);
-        setCronExpression(initialData.cronExpression);
-        setAssigneeId(initialData.assignee.id);
-        setPriority(Number(initialData.priority) as TaskPriority);
-      }
-    } else {
-      // Reset form for create mode or when closing
-      setTitle('');
-      setDescription('');
-      setCronExpression('');
-      setAssigneeId('');
-      setPriority(TaskPriority.MEDIUM);
-      setCronError(null);
+
+    window.addEventListener('keydown', handleEsc);
+    reset(
+      initialData
+        ? {
+            title: initialData.title,
+            description: initialData.description,
+            cronExpression: initialData.cronExpression,
+            assigneeId: initialData.assignee.id,
+            priority: Number(initialData.priority),
+          }
+        : createRecurrentTaskDefaults,
+    );
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
       setIsWizardOpen(false);
-    }
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, initialData, onClose]);
+      setShowAgentDropdown(false);
+      reset(createRecurrentTaskDefaults);
+    };
+  }, [initialData, isOpen, onClose, reset]);
 
-  const fetchAgents = async () => {
-    try {
-      setFetchingAgents(true);
-      const res = await agentsApi.findAll();
-      setAgents(res.data || []);
-    } catch (error) {
-      console.error('Failed to fetch agents:', error);
-    } finally {
-      setFetchingAgents(false);
-    }
-  };
-
-  const validateCron = (cron: string) => {
-    if (!cron.trim()) {
-      setCronError('Cron expression is required');
-      return false;
-    }
-    // Support both 5 and 6 fields (seconds, minutes, hours, day of month, month, day of week)
-    const fields = cron.trim().split(/\s+/);
-    if (fields.length !== 5 && fields.length !== 6) {
-      setCronError('Invalid cron format (expected 5 or 6 fields)');
-      return false;
-    }
-    setCronError(null);
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title || !description || !assigneeId || !cronExpression) {
-      const missing = [];
-      if (!title) missing.push('title');
-      if (!description) missing.push('description');
-      if (!assigneeId) missing.push('assigneeId');
-      if (!cronExpression) missing.push('cronExpression');
-      notifyError('Validation Error', `Please fill in all required fields: ${missing.join(', ')}`);
+  useEffect(() => {
+    if (!isOpen || !agentsQuery.error) {
       return;
     }
 
-    if (!validateCron(cronExpression)) {
-      return;
-    }
+    notifyApiError(agentsQuery.error, 'Agents Load Failed');
+  }, [agentsQuery.error, isOpen, notifyApiError]);
 
-    try {
-      setLoading(true);
+  const createOrUpdateMutation = useMutation({
+    mutationFn: async (values: RecurrentTaskFormValues) => {
       if (initialData) {
         await recurrentTasksApi.update(projectId, initialData.id, {
-          title,
-          description,
-          cronExpression,
-          assigneeId,
-          priority,
+          title: values.title,
+          description: values.description,
+          cronExpression: values.cronExpression,
+          assigneeId: values.assigneeId,
+          priority: values.priority as TaskPriority,
         });
-      } else {
-        await recurrentTasksApi.create(projectId, {
-          title,
-          description,
-          cronExpression,
-          assigneeId,
-          priority,
-          status: RecurrentTaskStatus.ACTIVE,
-        });
+        return;
       }
 
+      await recurrentTasksApi.create(projectId, {
+        title: values.title,
+        description: values.description,
+        cronExpression: values.cronExpression,
+        assigneeId: values.assigneeId,
+        priority: values.priority as TaskPriority,
+        status: RecurrentTaskStatus.ACTIVE,
+      });
+    },
+    onSuccess: () => {
       onSuccess();
       onClose();
-    } catch (error) {
-      console.error('Failed to save recurrent task:', error);
+    },
+    onError: (error) => {
       notifyApiError(error, 'Operation Failed');
-    } finally {
-      setLoading(false);
+    },
+  });
+
+  const cronInterpretation = useMemo(() => {
+    if (!cronExpression || errors.cronExpression) {
+      return null;
     }
-  };
+
+    try {
+      return cronstrue.toString(cronExpression);
+    } catch {
+      return null;
+    }
+  }, [cronExpression, errors.cronExpression]);
 
   const getPriorityLabel = (p: TaskPriority) => {
     switch (p) {
@@ -181,7 +181,22 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
     }
   };
 
-  const selectedAgent = agents.find(a => a.id === assigneeId);
+  const agents = agentsQuery.data ?? [];
+  const selectedAgent = agents.find((agent) => agent.id === assigneeId);
+  const fetchingAgents = agentsQuery.isPending || agentsQuery.isFetching;
+  const loading = createOrUpdateMutation.isPending;
+
+  const handleSave = handleSubmit(
+    async (values) => {
+      await createOrUpdateMutation.mutateAsync(values);
+    },
+    () => {
+      notifyError(
+        'Validation Error',
+        'Please fill in all required fields before deploying the task.',
+      );
+    },
+  );
 
   if (!isOpen) return null;
 
@@ -214,7 +229,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col">
+          <form onSubmit={handleSave} className="flex flex-col">
             {/* Modal Content */}
             <div className="p-8 space-y-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
               {/* Section 1: Task Identity */}
@@ -230,17 +245,22 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                       type="text"
                       className="w-full bg-surface-container-lowest border-none rounded-lg p-3 text-on-surface placeholder:text-outline-variant focus:ring-1 focus:ring-tertiary transition-all"
                       placeholder="e.g., Daily Market Sweep"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                      {...register('title')}
                     />
                   </div>
-                  <MarkdownField
-                    label="Description"
-                    value={description}
-                    onChange={setDescription}
-                    placeholder="Briefly describe the objective of this task... You can use markdown for formatting."
-                    height="h-32"
-                    helperText="Supports GitHub Flavored Markdown"
+                  <Controller
+                    control={control}
+                    name="description"
+                    render={({ field }) => (
+                      <MarkdownField
+                        label="Description"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Briefly describe the objective of this task... You can use markdown for formatting."
+                        height="h-32"
+                        helperText="Supports GitHub Flavored Markdown"
+                      />
+                    )}
                   />
                 </div>
               </section>
@@ -293,9 +313,9 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                               key={agent.id}
                               className="p-3 hover:bg-surface-container-low rounded cursor-pointer flex items-center gap-3 transition-colors group"
                               onClick={() => {
-                                setAssigneeId(agent.id);
-                                setShowAgentDropdown(false);
-                              }}
+                                 setValue('assigneeId', agent.id, { shouldDirty: true, shouldValidate: true });
+                                 setShowAgentDropdown(false);
+                               }}
                               data-testid={`agent-option-${agent.id}`}
                             >
                               <div className="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -313,17 +333,22 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                   </AnimatePresence>
                   
                   {/* Hidden select for accessibility/testing */}
-                  <select 
-                    className="sr-only" 
-                    value={assigneeId} 
-                    onChange={(e) => setAssigneeId(e.target.value)}
-                  >
-                    <option value="">Select Agent</option>
-                    {agents.map(agent => (
-                      <option key={agent.id} value={agent.id}>{agent.name}</option>
-                    ))}
-                  </select>
-                </div>
+                   <select
+                     className="sr-only"
+                     value={assigneeId}
+                     onChange={(event) =>
+                       setValue('assigneeId', event.target.value, {
+                         shouldDirty: true,
+                         shouldValidate: true,
+                       })
+                     }
+                   >
+                     <option value="">Select Agent</option>
+                     {agents.map((agent) => (
+                       <option key={agent.id} value={agent.id}>{agent.name}</option>
+                     ))}
+                   </select>
+                 </div>
               </section>
 
               {/* Section 3 & 4: Scheduling & Priority */}
@@ -337,15 +362,10 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                     <div className="relative flex items-center gap-2">
                       <div className="relative flex-1">
                         <input
-                          required
-                          className={`w-full bg-surface-container-lowest border-none rounded-lg p-3 font-mono text-sm text-secondary focus:ring-1 transition-all pr-10 ${cronError ? 'ring-1 ring-error' : 'focus:ring-secondary'}`}
+                         required
+                          className={`w-full bg-surface-container-lowest border-none rounded-lg p-3 font-mono text-sm text-secondary focus:ring-1 transition-all pr-10 ${errors.cronExpression ? 'ring-1 ring-error' : 'focus:ring-secondary'}`}
                           type="text"
-                          value={cronExpression}
-                          onChange={(e) => {
-                            setCronExpression(e.target.value);
-                            if (cronError) validateCron(e.target.value);
-                          }}
-                          onBlur={(e) => validateCron(e.target.value)}
+                          {...register('cronExpression')}
                           placeholder="e.g. 0 0 * * *"
                         />
                         <CodeIconLucide size={16} className="absolute right-3 top-3.5 text-outline-variant" />
@@ -375,13 +395,15 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {cronPresets.map((preset) => (
-                                <button
-                                  key={preset.value}
-                                  type="button"
-                                  onClick={() => {
-                                    setCronExpression(preset.value);
-                                    setCronError(null);
-                                  }}
+                                     <button
+                                   key={preset.value}
+                                   type="button"
+                                   onClick={() => {
+                                     setValue('cronExpression', preset.value, {
+                                       shouldDirty: true,
+                                       shouldValidate: true,
+                                     });
+                                   }}
                                   className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${
                                     cronExpression === preset.value
                                       ? 'bg-secondary text-on-secondary border-secondary shadow-lg shadow-secondary/20'
@@ -397,7 +419,7 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                       )}
                     </AnimatePresence>
 
-                    {cronInterpretation && !cronError && (
+                    {cronInterpretation && !errors.cronExpression && (
                       <div className="flex items-center gap-2 text-[11px] text-secondary font-medium bg-secondary/5 px-3 py-2 rounded-lg border border-secondary/10 animate-in fade-in slide-in-from-left-2">
                         <TranslateIcon size={14} className="shrink-0" />
                         <span>{cronInterpretation}</span>
@@ -415,10 +437,10 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                       </p>
                     </div>
 
-                    {cronError && (
+                    {errors.cronExpression?.message && (
                       <p className="text-[10px] text-error px-1 flex items-center gap-1.5 font-medium">
                         <PriorityIcon size={12} />
-                        {cronError}
+                        {errors.cronExpression.message}
                       </p>
                     )}
                   </div>
@@ -434,7 +456,12 @@ const CreateRecurrentTaskModal: React.FC<CreateRecurrentTaskModalProps> = ({
                       <button
                         key={p}
                         type="button"
-                        onClick={() => setPriority(p)}
+                        onClick={() =>
+                          setValue('priority', p, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
                         className={`flex-1 py-2 text-[10px] font-bold rounded transition-all ${
                           Number(priority) === Number(p)
                             ? (p === TaskPriority.CRITICAL ? 'bg-error/20 text-error' : 'bg-surface-container-high text-primary') 

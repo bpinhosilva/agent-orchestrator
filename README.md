@@ -124,6 +124,7 @@ SCHEDULER_ENABLED=true
 DB_LOGGING=false
 SERVE_STATIC_UI=true
 CHECK_PENDING_MIGRATIONS_ON_STARTUP=false
+LOG_LEVEL=error
 ```
 
 ## Database setup
@@ -169,10 +170,12 @@ npm run dev
 
 That starts:
 
-- UI dev server: `http://localhost:5173`
-- API: `http://localhost:3000/api/v1`
+- UI dev server: `http://localhost:5173` (accessible from your network)
+- API: `http://localhost:3000/api/v1` (accessible from your network)
 - Swagger UI: `http://localhost:3000/api` (non-production only)
 - Health endpoint: `http://localhost:3000/health`
+
+By default, the development servers bind to `0.0.0.0`, allowing access from other devices on the same network using your machine's local IP address.
 
 If you only want the API in watch mode:
 

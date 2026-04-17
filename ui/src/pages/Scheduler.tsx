@@ -15,13 +15,15 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { recurrentTasksApi, type RecurrentTask, RecurrentTaskStatus } from '../api/recurrent-tasks';
-import CreateRecurrentTaskModal from '../components/CreateRecurrentTaskModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useNotification } from '../hooks/useNotification';
 import { useProject } from '../hooks/useProject';
-import { useState } from 'react';
+import { usePersistentFlag } from '../hooks/usePersistentFlag';
+import { lazy, Suspense, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+const CreateRecurrentTaskModal = lazy(() => import('../components/CreateRecurrentTaskModal'));
 
 const Scheduler: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
@@ -30,16 +32,12 @@ const Scheduler: React.FC = () => {
   const queryClient = useQueryClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showInsight, setShowInsight] = useState(() => {
-    const saved = localStorage.getItem('scheduler_show_insight');
-    return saved === null ? true : saved === 'true';
-  });
+  const [showInsight, setShowInsight] = usePersistentFlag('scheduler_show_insight', true);
   const [editingTask, setEditingTask] = useState<RecurrentTask | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<RecurrentTask | null>(null);
 
   const handleDismissInsight = () => {
     setShowInsight(false);
-    localStorage.setItem('scheduler_show_insight', 'false');
   };
 
   const queryKey = ['recurrent-tasks', activeProject?.id] as const;
@@ -374,16 +372,18 @@ const Scheduler: React.FC = () => {
         </motion.div>
       )}
 
-      <CreateRecurrentTaskModal 
-        projectId={activeProject.id}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={() => {
-          setIsModalOpen(false);
-          queryClient.invalidateQueries({ queryKey });
-        }}
-        initialData={editingTask}
-      />
+      <Suspense fallback={null}>
+        <CreateRecurrentTaskModal
+          projectId={activeProject.id}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            queryClient.invalidateQueries({ queryKey });
+          }}
+          initialData={editingTask}
+        />
+      </Suspense>
 
       <ConfirmDialog
         isOpen={!!deleteTarget}

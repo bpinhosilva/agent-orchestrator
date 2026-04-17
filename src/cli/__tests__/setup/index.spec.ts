@@ -15,6 +15,7 @@ const mockMaybeSetupAdmin = maybeSetupAdmin as jest.MockedFunction<
 >;
 
 const fakeAnswers: SetupAnswers = {
+  host: '127.0.0.1',
   port: '3001',
   dbType: 'sqlite',
   databaseUrl: '',
@@ -70,6 +71,7 @@ describe('handleSetup', () => {
     await handleSetup({}, fs);
 
     const content = writtenContent();
+    expect(content).toContain('HOST=127.0.0.1');
     expect(content).toContain('PORT=3001');
     expect(content).toContain('DB_TYPE=sqlite');
     expect(content).toContain('SCHEDULER_ENABLED=true');

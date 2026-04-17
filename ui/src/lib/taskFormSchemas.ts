@@ -42,6 +42,11 @@ const createTaskStatusValues = [
   TaskStatus.REVIEW,
 ] as const;
 
+const isValidCronFieldCount = (cronExpression: string) => {
+  const fields = cronExpression.trim().split(/\s+/);
+  return fields.length === 5 || fields.length === 6;
+};
+
 export const taskDetailSchema = z.object({
   title: z
     .string()
@@ -77,6 +82,28 @@ export const createTaskSchema = z.object({
   priority: taskPrioritySchema,
   assigneeId: z.string(),
   projectId: z.string().trim().min(1, 'Target project is required'),
+});
+
+export const recurrentTaskSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Task name is required')
+    .max(120, 'Task name must be 120 characters or fewer'),
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Description is required')
+    .max(2000, 'Description must be 2000 characters or fewer'),
+  cronExpression: z
+    .string()
+    .trim()
+    .min(1, 'Cron expression is required')
+    .refine(isValidCronFieldCount, {
+      message: 'Invalid cron format (expected 5 or 6 fields)',
+    }),
+  assigneeId: z.string().trim().min(1, 'Please select an agent'),
+  priority: taskPrioritySchema,
 });
 
 const attributeValue = z
@@ -128,6 +155,14 @@ export type CreateTaskFormValues = {
   priority: number;
   assigneeId: string;
   projectId: string;
+};
+
+export type RecurrentTaskFormValues = {
+  title: string;
+  description: string;
+  cronExpression: string;
+  assigneeId: string;
+  priority: number;
 };
 
 export type CreateAgentFormValues = {

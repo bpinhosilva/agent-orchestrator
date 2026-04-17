@@ -100,6 +100,14 @@ Banderas soportadas:
 - `--regenerate-jwt-secret`
 - `-y, --yes`
 
+### `run`
+
+Inicia el servidor del orquestador en modo separado.
+
+Banderas soportadas:
+
+- `--log-level <nivel>`: Establece el nivel de registro (`fatal`, `error`, `warn`, `log`, `debug`, `verbose`). Por defecto es `error` en producción.
+
 ### `logs`
 
 ```bash

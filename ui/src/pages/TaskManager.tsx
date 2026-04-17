@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useCallback, useMemo } from 'react';
 import { ListPlus, ArrowRight, ShieldAlert, Layout } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TaskBoard from '../components/tasks/TaskBoard';
 import TaskCard from '../components/tasks/TaskCard';
 import TaskStats from '../components/tasks/TaskStats';
-import CreateTaskModal from '../components/tasks/CreateTaskModal';
 import ArchiveZone from '../components/tasks/ArchiveZone';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppErrorBoundary from '../components/AppErrorBoundary';
@@ -16,89 +15,49 @@ import { useTaskSSE } from '../hooks/useTaskSSE';
 import { useTaskDnD } from '../hooks/useTaskDnD';
 import { tasksApi, TaskStatus, type Task as ApiTask } from '../api/tasks';
 import { cn } from '../lib/cn';
+import { usePersistentFlag } from '../hooks/usePersistentFlag';
 import type { Task as ComponentTask } from '../components/tasks/types';
+import {
+  applyTaskServerUpdate,
+  mapApiTaskToBoardTask,
+  sortBoardTasks,
+  updateBoardTaskStatus,
+} from './taskManagerState';
 
-function mapApiTaskToComponentTask(task: ApiTask, projectId: string): ComponentTask {
-  return {
-    id: task.id,
-    status: task.status as ComponentTask['status'],
-    code: `#TASK-${task.id.substring(0, 4).toUpperCase()}`,
-    title: task.title,
-    priority: task.priority as ComponentTask['priority'],
-    agent: {
-      name: task.assignee?.name || 'Unassigned',
-      emoji: task.assignee?.emoji,
-      colorClass: 'bg-surface-container-highest border-outline-variant/30',
-    },
-    isActive: task.status === 'in-progress',
-    progress: task.status === 'done' ? 100 : task.status === 'in-progress' ? 50 : 0,
-    projectId,
-    updatedAt: task.updatedAt,
-  };
-}
-
-function sortTasks(a: ComponentTask, b: ComponentTask): number {
-  if (a.status === 'backlog' && b.status === 'backlog') {
-    const diff = (a.priority || 0) - (b.priority || 0);
-    return diff !== 0 ? diff : a.id.localeCompare(b.id);
-  }
-  if (a.status !== 'backlog' && b.status !== 'backlog') {
-    const diff = new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
-    return diff !== 0 ? diff : a.id.localeCompare(b.id);
-  }
-  return 0;
-}
+const CreateTaskModal = lazy(() => import('../components/tasks/CreateTaskModal'));
 
 const TaskManager: React.FC = () => {
   const { activeProject, loading: projectLoading } = useProject();
   const { notifyError } = useNotification();
   const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [tasks, setTasks] = useState<ComponentTask[]>([]);
 
-  const [skipConfirm, setSkipConfirm] = useState(() => {
-    return localStorage.getItem('skipArchiveConfirm') === 'true';
-  });
+  const [skipConfirm, setSkipConfirm] = usePersistentFlag('skipArchiveConfirm', false);
   const [checkValue, setCheckValue] = useState(false);
 
   const queryKey = useMemo(() => ['tasks', activeProject?.id] as const, [activeProject?.id]);
 
-  const { data: serverTasks, isLoading: loadingTasks } = useQuery({
+  const { data: tasks = [], isLoading: loadingTasks } = useQuery({
     queryKey,
     queryFn: async () => {
       const allTasksData = await tasksApi.fetchAll(activeProject!.id);
-      return allTasksData.filter(t => t.status !== 'archived');
+      return allTasksData
+        .filter((task) => task.status !== 'archived')
+        .map((task) => mapApiTaskToBoardTask(task, activeProject!.id))
+        .sort(sortBoardTasks);
     },
     enabled: Boolean(activeProject?.id),
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 
-  useEffect(() => {
-    if (!serverTasks) return;
-    const mapped = serverTasks.map(t => mapApiTaskToComponentTask(t, activeProject!.id));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTasks([...mapped].sort(sortTasks));
-  }, [serverTasks, activeProject]);
-
   const handleSseUpdate = useCallback((event: string, updatedTaskData: ApiTask) => {
     if (!activeProject || updatedTaskData.projectId !== activeProject.id) return;
 
-    const mappedTask = mapApiTaskToComponentTask(updatedTaskData, activeProject.id);
-
-    setTasks(prevTasks => {
-      if (event === 'deleted' || updatedTaskData.status === 'archived') {
-        return prevTasks.filter(t => t.id !== updatedTaskData.id);
-      }
-      
-      const exists = prevTasks.some(t => t.id === updatedTaskData.id);
-      if (exists) {
-        return prevTasks.map(t => t.id === updatedTaskData.id ? mappedTask : t).sort(sortTasks);
-      } else {
-        return [mappedTask, ...prevTasks].sort(sortTasks);
-      }
-    });
-  }, [activeProject]);
+    queryClient.setQueryData<ComponentTask[]>(queryKey, (currentTasks = []) =>
+      applyTaskServerUpdate(currentTasks, event, updatedTaskData, activeProject.id),
+    );
+  }, [activeProject, queryClient, queryKey]);
 
   useTaskSSE(activeProject?.id, handleSseUpdate);
 
@@ -109,22 +68,28 @@ const TaskManager: React.FC = () => {
   const handleStatusChange = useCallback(async (taskId: string, newStatus: string) => {
      if (!activeProject) return;
      try {
-       await tasksApi.update(activeProject.id, taskId, { status: newStatus as TaskStatus });
-       if (newStatus === 'archived') {
-         setTasks(prev => prev.filter(t => t.id !== taskId));
-       } else {
-         setTasks(prev => prev.map(t => t.id === taskId ? { 
-            ...t, 
-            status: newStatus as ComponentTask['status'],
-            isActive: newStatus === 'in-progress'
-          } : t));
-       }
-     } catch (error) {
-       console.error('Failed to update task status:', error);
-      notifyError('Status Update Failed', 'Failed to update task status in the neural mesh.');
-      queryClient.invalidateQueries({ queryKey });
-    }
-  }, [activeProject, notifyError, queryClient, queryKey]);
+        await tasksApi.update(activeProject.id, taskId, { status: newStatus as TaskStatus });
+        queryClient.setQueryData<ComponentTask[]>(queryKey, (currentTasks = []) =>
+          updateBoardTaskStatus(currentTasks, taskId, newStatus as ComponentTask['status']),
+        );
+      } catch {
+        notifyError('Status Update Failed', 'Failed to update task status in the neural mesh.');
+       queryClient.invalidateQueries({ queryKey });
+      }
+   }, [activeProject, notifyError, queryClient, queryKey]);
+
+  const setCachedTasks = useCallback<React.Dispatch<React.SetStateAction<ComponentTask[]>>>(
+    (nextTasks) => {
+      queryClient.setQueryData<ComponentTask[]>(queryKey, (currentTasks = []) => {
+        if (typeof nextTasks === 'function') {
+          return nextTasks(currentTasks);
+        }
+
+        return nextTasks;
+      });
+    },
+    [queryClient, queryKey],
+  );
 
   const {
     activeId,
@@ -137,19 +102,23 @@ const TaskManager: React.FC = () => {
     setIsConfirmOpen,
     pendingArchiveId,
     setPendingArchiveId,
-  } = useTaskDnD({ tasks, setTasks, onStatusChange: handleStatusChange, skipArchiveConfirm: skipConfirm });
+  } = useTaskDnD({
+    tasks,
+    setTasks: setCachedTasks,
+    onStatusChange: handleStatusChange,
+    skipArchiveConfirm: skipConfirm,
+  });
 
   const confirmArchive = useCallback(async () => {
     if (pendingArchiveId) {
       if (checkValue) {
-        localStorage.setItem('skipArchiveConfirm', 'true');
         setSkipConfirm(true);
       }
       await handleStatusChange(pendingArchiveId, 'archived');
     }
     setIsConfirmOpen(false);
     setPendingArchiveId(null);
-  }, [pendingArchiveId, checkValue, handleStatusChange, setIsConfirmOpen, setPendingArchiveId]);
+  }, [checkValue, handleStatusChange, pendingArchiveId, setIsConfirmOpen, setPendingArchiveId, setSkipConfirm]);
 
   const activeTask = useMemo(
     () => tasks.find((task) => task.id === activeId),
@@ -262,11 +231,13 @@ const TaskManager: React.FC = () => {
         </div>
       </div>
 
-      <CreateTaskModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-        onCreated={handleTaskCreated}
-      />
+      <Suspense fallback={null}>
+        <CreateTaskModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreated={handleTaskCreated}
+        />
+      </Suspense>
 
       {/* Kanban Board */}
       <AppErrorBoundary

@@ -32,7 +32,8 @@ describe('AuthContext', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize with null user and loading true', async () => {
+  it('should initialize with null user and loading true without logging expected restore failures', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(authApi.me).mockRejectedValue(new Error('Not authenticated'));
 
     render(
@@ -46,6 +47,9 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading')).toHaveTextContent('false');
     });
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   it('should login successfully', async () => {

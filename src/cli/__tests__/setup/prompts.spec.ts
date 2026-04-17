@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await */
 import {
+  promptHost,
   promptPort,
   promptDbType,
   promptDatabaseUrl,
@@ -29,6 +30,37 @@ function makeFakePrompter(responses: Record<string, unknown>): Prompter {
     },
   };
 }
+
+describe('promptHost', () => {
+  it('returns the trimmed host from the prompter answer', async () => {
+    const p = makeFakePrompter({ host: ' 127.0.0.1 ' });
+    await expect(promptHost(p)).resolves.toBe('127.0.0.1');
+  });
+
+  it('uses the supplied initial value as default', async () => {
+    const p = makeFakePrompter({ host: '0.0.0.0' });
+    await expect(promptHost(p, '0.0.0.0')).resolves.toBe('0.0.0.0');
+  });
+
+  it('fails validation when the host is empty', async () => {
+    let capturedValidate: ((v: string) => unknown) | undefined;
+    const p: Prompter = {
+      async prompt<T>(question: unknown): Promise<T> {
+        const q = question as {
+          name: string;
+          validate?: (v: string) => unknown;
+        };
+        capturedValidate = q.validate;
+        return { host: '' } as T;
+      },
+    };
+    await promptHost(p);
+    expect(capturedValidate).toBeDefined();
+    expect(capturedValidate!('')).toBe('Host address cannot be empty');
+    expect(capturedValidate!(' ')).toBe('Host address cannot be empty');
+    expect(capturedValidate!('127.0.0.1')).toBe(true);
+  });
+});
 
 describe('promptPort', () => {
   it('returns the validated port from the prompter answer', async () => {
@@ -335,6 +367,7 @@ describe('runSetupPrompts', () => {
           const q = question as { name: string };
           called.push(q.name);
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: [],
@@ -373,6 +406,7 @@ describe('runSetupPrompts', () => {
           const q = question as { name: string };
           called.push(q.name);
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '5000',
             dbType: 'postgres',
             databaseUrl: dbUrl,
@@ -404,6 +438,7 @@ describe('runSetupPrompts', () => {
             capturedInitial = q.initial;
           }
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'postgres',
             databaseUrl: newUrl,
@@ -430,6 +465,7 @@ describe('runSetupPrompts', () => {
           const q = question as { name: string };
           called.push(q.name);
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: ['gemini'],
@@ -457,6 +493,7 @@ describe('runSetupPrompts', () => {
           const q = question as { name: string };
           called.push(q.name);
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: ['anthropic'],
@@ -482,6 +519,7 @@ describe('runSetupPrompts', () => {
         async prompt<T>(question: unknown): Promise<T> {
           const q = question as { name: string };
           const staticResponses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: ['gemini', 'anthropic'],
@@ -509,6 +547,7 @@ describe('runSetupPrompts', () => {
           const q = question as { name: string };
           called.push(q.name);
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: [],
@@ -541,6 +580,7 @@ describe('runSetupPrompts', () => {
           const q = question as { name: string; initial?: unknown };
           // Return the initial value to simulate user accepting the default
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: q.initial ?? '3000',
             dbType: 'sqlite',
             providers: [],
@@ -561,6 +601,7 @@ describe('runSetupPrompts', () => {
 
     it('auto-generates JWT secrets when blank and no existing env', async () => {
       const p = makeFakePrompter({
+        host: '127.0.0.1',
         port: '3000',
         dbType: 'sqlite',
         providers: [],
@@ -586,6 +627,7 @@ describe('runSetupPrompts', () => {
             called['initial'] = q.initial;
           }
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: [],
@@ -612,6 +654,7 @@ describe('runSetupPrompts', () => {
             capturedInitial = q.initial;
           }
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: ['gemini'],
@@ -642,6 +685,7 @@ describe('runSetupPrompts', () => {
             capturedInitial = q.initial;
           }
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: ['anthropic'],
@@ -673,6 +717,7 @@ describe('runSetupPrompts', () => {
             capturedInitial = q.initial;
           }
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'postgres',
             databaseUrl: dbUrl,
@@ -699,6 +744,7 @@ describe('runSetupPrompts', () => {
             capturedInitial = q.initial;
           }
           const responses: Record<string, unknown> = {
+            host: '127.0.0.1',
             port: '3000',
             dbType: 'sqlite',
             providers: [],
