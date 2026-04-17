@@ -5,6 +5,8 @@ jest.mock('../../process-manager', () => ({
   assertBuildExists: jest.fn(),
   findManagedProcess: jest.fn(),
   formatProcessSummary: jest.fn(() => 'PID: 42\nPort: 15789'),
+  isManagedProcess: jest.fn(() => true),
+  removeRuntimeState: jest.fn(),
   startServer: jest.fn(() => ({ pid: 42, host: '127.0.0.1', port: '15789' })),
 }));
 
@@ -105,6 +107,24 @@ describe('run command', () => {
 
     expect(consoleErrSpy).toHaveBeenCalledWith(
       expect.stringContaining('Invalid log level'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('detects early crash and prints log tail when process dies immediately', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockReturnValue({
+      pid: 42,
+      host: '127.0.0.1',
+      port: '15789',
+    });
+    (processManager.isManagedProcess as jest.Mock).mockReturnValue(false);
+
+    await program.parseAsync(['node', 'cli', 'run']);
+
+    expect(processManager.removeRuntimeState).toHaveBeenCalled();
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Server process exited immediately'),
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
