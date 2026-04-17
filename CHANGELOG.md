@@ -1,3 +1,10 @@
+# [1.0.0-alpha.41](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.40...v1.0.0-alpha.41) (2026-04-17)
+
+
+### Bug Fixes
+
+* update collisionDetection to return an empty array in TaskManager tests ([b64158e](https://github.com/bpinhosilva/agent-orchestrator/commit/b64158e61c76a0d148900d36cb9f05784e5d5461))
+
 # [1.0.0-alpha.40](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0-alpha.39...v1.0.0-alpha.40) (2026-04-17)
 
 
