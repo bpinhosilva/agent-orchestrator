@@ -97,7 +97,7 @@ const TaskDetail = () => {
       title: taskQuery.data.title,
       description: taskQuery.data.description,
       status: normalizedStatus,
-      priority: taskQuery.data.priority,
+      priority: Number(taskQuery.data.priority),
       assigneeId: taskQuery.data.assignee?.id ?? '',
     });
   }, [reset, taskQuery.data]);
