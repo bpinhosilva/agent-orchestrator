@@ -1,3 +1,12 @@
+## [1.1.1](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.0...v1.1.1) (2026-04-19)
+
+
+### Bug Fixes
+
+* enhance static file serving to handle dotfile directories correctly ([89ea96a](https://github.com/bpinhosilva/agent-orchestrator/commit/89ea96a9d58abd029515c16c5e222af6dbe6226e))
+* update priority handling in task forms and add comprehensive tests ([a3414d5](https://github.com/bpinhosilva/agent-orchestrator/commit/a3414d5584379ff9701252e9df9aafcbf5b3681e))
+* update priority handling in task schemas and tests for better validation ([858b48d](https://github.com/bpinhosilva/agent-orchestrator/commit/858b48dcfadeefdd5597d81f6597dace2c9e9ee2))
+
 # [1.1.0](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.0.0...v1.1.0) (2026-04-17)
 
 
