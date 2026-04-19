@@ -82,7 +82,7 @@ describe('TaskDetail – priority field', () => {
     vi.clearAllMocks();
     vi.mocked(agentsApi.findAll).mockResolvedValue({
       data: [],
-    } as Awaited<ReturnType<typeof agentsApi.findAll>>);
+    } as unknown as Awaited<ReturnType<typeof agentsApi.findAll>>);
   });
 
   it('does not show "Priority is required" when saving after editing the title without touching priority', async () => {

@@ -23,7 +23,7 @@ const taskPriorityValues = [
 ] as const;
 
 const taskPrioritySchema = z
-  .coerce.number({ error: 'Priority is required' })
+  .number({ error: 'Priority is required' })
   .int()
   .refine((value) => taskPriorityValues.includes(value as (typeof taskPriorityValues)[number]), {
     message: 'Select a valid priority level',
