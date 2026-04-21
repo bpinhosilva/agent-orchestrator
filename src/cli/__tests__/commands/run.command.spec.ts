@@ -13,8 +13,13 @@ jest.mock('../../utils', () => ({
   verifyServerStartup: jest.fn(() => Promise.resolve(true)),
 }));
 
+jest.mock('../../../database/migration-state', () => ({
+  checkPendingMigrations: jest.fn(),
+}));
+
 import * as processManager from '../../process-manager';
 import * as utils from '../../utils';
+import * as migrationState from '../../../database/migration-state';
 
 describe('run command', () => {
   let program: Command;
@@ -32,6 +37,11 @@ describe('run command', () => {
     exitSpy = jest
       .spyOn(process, 'exit')
       .mockImplementation(() => undefined as never);
+    // Default: no pending migrations
+    (migrationState.checkPendingMigrations as jest.Mock).mockResolvedValue({
+      hasPending: false,
+      isEmpty: false,
+    });
   });
 
   afterEach(() => {
@@ -128,5 +138,36 @@ describe('run command', () => {
 
     expect(utils.verifyServerStartup).toHaveBeenCalledWith(42);
     expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('detects pending migrations and exits with helpful message', async () => {
+    (migrationState.checkPendingMigrations as jest.Mock).mockResolvedValue({
+      hasPending: true,
+      isEmpty: false,
+    });
+
+    await program.parseAsync(['node', 'cli', 'run']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Pending database migrations detected'),
+    );
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('agent-orchestrator migrate --yes'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('proceeds normally when no migrations are pending', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockReturnValue({
+      pid: 42,
+      host: '127.0.0.1',
+      port: '15789',
+    });
+
+    await program.parseAsync(['node', 'cli', 'run']);
+
+    expect(migrationState.checkPendingMigrations).toHaveBeenCalled();
+    expect(processManager.startServer).toHaveBeenCalled();
   });
 });

@@ -6,6 +6,7 @@ import {
   formatProcessSummary,
   startServer,
 } from '../process-manager';
+import { checkPendingMigrations } from '../../database/migration-state';
 import { MAIN_FILE, PACKAGE_ROOT } from '../constants';
 
 const VALID_LOG_LEVELS = [
@@ -37,6 +38,22 @@ export function registerRunCommand(program: Command): void {
               `Invalid log level "${options.logLevel}". Valid values: ${VALID_LOG_LEVELS.join(', ')}`,
             );
           }
+        }
+
+        // Check for pending migrations before starting
+        const { hasPending } = await checkPendingMigrations({
+          assumePendingOnError: true,
+        });
+
+        if (hasPending) {
+          console.error(
+            'Pending database migrations detected.\n' +
+              'Run the following command before starting the server:\n\n' +
+              '  agent-orchestrator migrate --yes\n\n' +
+              'Then run:\n\n' +
+              '  agent-orchestrator run',
+          );
+          process.exit(1);
         }
 
         const existingProcess = findManagedProcess();
