@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.1...v1.1.2) (2026-04-21)
+
+
+### Bug Fixes
+
+* add migration checks for pending database migrations and correct FK in recurrent_task_execs ([9978f4e](https://github.com/bpinhosilva/agent-orchestrator/commit/9978f4eef9af69449326f97422cc857aa3d7a0e3))
+
 ## [1.1.1](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.0...v1.1.1) (2026-04-19)
 
 
