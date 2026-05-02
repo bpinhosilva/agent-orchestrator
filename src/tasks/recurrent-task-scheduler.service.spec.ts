@@ -442,6 +442,46 @@ describe('RecurrentTaskSchedulerService', () => {
       );
     });
 
+    it('should replace an inactive registered cron job for an active task', async () => {
+      const { CronJob } = jest.requireMock<{ CronJob: jest.Mock }>('cron');
+      let jobExists = true;
+      const inactiveJob = {
+        stop: jest.fn(),
+        isActive: false,
+        cronTime: { source: '5 0 * * *' },
+      };
+
+      mockSchedulerRegistry.getCronJobs.mockReturnValue(
+        new Map([['recurrent-task-task-1', inactiveJob]]),
+      );
+      mockSchedulerRegistry.doesExist.mockImplementation(() => jobExists);
+      mockSchedulerRegistry.deleteCronJob.mockImplementation(() => {
+        jobExists = false;
+      });
+      mockRecurrentTaskRepository.find.mockResolvedValue([
+        {
+          id: 'task-1',
+          title: 'Daily report',
+          cronExpression: '5 0 * * *',
+          status: RecurrentTaskStatus.ACTIVE,
+          assignee: { id: 'agent-1' },
+        },
+      ]);
+
+      await service.onApplicationBootstrap();
+
+      expect(inactiveJob.stop).toHaveBeenCalled();
+      expect(mockSchedulerRegistry.deleteCronJob).toHaveBeenCalledWith(
+        'recurrent-task-task-1',
+      );
+      expect(CronJob).toHaveBeenCalledWith('5 0 * * *', expect.any(Function));
+      expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalledWith(
+        'recurrent-task-task-1',
+        expect.any(Object),
+      );
+      expect(mockCronJobInstance.start).toHaveBeenCalled();
+    });
+
     it('should not throw when CronJob constructor throws for an invalid cron expression', async () => {
       const { CronJob } = jest.requireMock<{ CronJob: jest.Mock }>('cron');
       CronJob.mockImplementationOnce(() => {

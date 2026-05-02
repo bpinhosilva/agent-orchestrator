@@ -118,17 +118,14 @@ export class RecurrentTaskSchedulerService
       if (name.startsWith('recurrent-task-')) {
         const taskId = name.replace('recurrent-task-', '');
         const task = activeTasks.find((t) => t.id === taskId);
+        const jobIsInactive = !job.isActive;
 
-        // If task is no longer active, or cron expression changed, stop and delete
-        const jobWithCron = job as unknown as {
-          stop: () => void;
-          cronTime: { source: string };
-        };
+        // If task is no longer active, the cron expression changed, or the
+        // in-memory job became inactive, stop and recreate it from DB state.
         if (
           !activeTaskIds.has(taskId) ||
-          (task &&
-            jobWithCron.cronTime &&
-            jobWithCron.cronTime.source !== task.cronExpression)
+          jobIsInactive ||
+          (task && job.cronTime && job.cronTime.source !== task.cronExpression)
         ) {
           void job.stop();
           this.schedulerRegistry.deleteCronJob(name);
