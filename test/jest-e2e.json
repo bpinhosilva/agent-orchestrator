@@ -1,5 +1,9 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
@@ -7,6 +11,7 @@
     "^.+\\.ts$": "ts-jest"
   },
   "moduleNameMapper": {
-    "^@anthropic-ai/claude-agent-sdk$": "<rootDir>/mocks/claude-sdk.js"
+    "^@anthropic-ai/claude-agent-sdk$": "<rootDir>/mocks/claude-sdk.js",
+    "^uuid$": "<rootDir>/mocks/uuid.js"
   }
 }

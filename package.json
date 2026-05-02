@@ -155,8 +155,10 @@
     "@angular-devkit/core": "^21.2.5",
     "@angular-devkit/schematics": "^21.2.5",
     "typeorm": {
-      "glob": "^13.0.0"
-    }
+      "glob": "^13.0.0",
+      "uuid": "^14.0.0"
+    },
+    "uuid": "^14.0.0"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -183,6 +185,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
-    "maxWorkers": 1
+    "maxWorkers": 1,
+    "moduleNameMapper": {
+      "^uuid$": "<rootDir>/../test/mocks/uuid.js"
+    }
   }
 }
