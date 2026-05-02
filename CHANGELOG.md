@@ -1,3 +1,11 @@
+## [1.1.3](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.2...v1.1.3) (2026-05-02)
+
+
+### Bug Fixes
+
+* add UUID support and Postman collection generation ([a4bfd77](https://github.com/bpinhosilva/agent-orchestrator/commit/a4bfd7733d7a28ba3bc06748a6dce1ca27c5c466))
+* update cron job handling to replace inactive jobs for active tasks ([3d01155](https://github.com/bpinhosilva/agent-orchestrator/commit/3d01155f3f8f5be127e2bace79ede889502e4ec8))
+
 ## [1.1.2](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.1...v1.1.2) (2026-04-21)
 
 
