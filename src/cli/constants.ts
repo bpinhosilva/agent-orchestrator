@@ -8,6 +8,7 @@ export const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
 export const PACKAGE_JSON_PATH = path.join(PACKAGE_ROOT, 'package.json');
 export const MAIN_FILE = path.join(PACKAGE_ROOT, 'dist/main.js');
 export const UI_INDEX_FILE = path.join(PACKAGE_ROOT, 'dist/ui/index.html');
+export const PRELOAD_FILE = path.join(PACKAGE_ROOT, 'dist/cli/preload.js');
 
 // These are set at process start before any imports, so the env var is always present
 export const PID_DIR =

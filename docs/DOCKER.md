@@ -37,6 +37,9 @@ Create a `.env` file in the project root. The production stack requires:
 | `ADMIN_NAME` | ❌ | `Admin` | Admin user display name |
 | `DOMAIN` | ❌ | `localhost` | Domain name for Caddy virtual host and TLS |
 | `ALLOWED_ORIGINS` | ❌ | `https://localhost` | Comma-separated allowed CORS origins |
+| `LOG_ROTATION_MAX_SIZE_MB` | ❌ | — | Enable rotated file logs and set the max active log size in MB |
+| `LOG_ROTATION_MAX_FILES` | ❌ | — | Enable rotated file logs and set the max number of timestamped archives to keep |
+| `AGENT_ORCHESTRATOR_HOME` | ❌ | — | Optional writable runtime directory for rotated log files; when omitted, Docker log files use the system temp directory (typically `/tmp/server.log`) |
 
 Minimal `.env` for local use:
 
@@ -51,6 +54,11 @@ JWT_REFRESH_SECRET=<at-least-32-char-secret>
 # Admin seed
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change_me
+
+# Optional rotated file logs inside the API container
+# LOG_ROTATION_MAX_SIZE_MB=10
+# LOG_ROTATION_MAX_FILES=4
+# AGENT_ORCHESTRATOR_HOME=/tmp/agent-orchestrator
 ```
 
 > Use strong randomly generated values for `JWT_SECRET` and `JWT_REFRESH_SECRET` in any environment that handles real data.
@@ -81,6 +89,13 @@ docker compose logs -f        # follow logs
 docker compose down           # stop, keep data volumes
 docker compose down -v        # stop and delete all volumes (wipes the database)
 ```
+
+### Docker logging and optional file rotation
+
+- `docker compose logs` remains the primary log stream because the API still writes to stdout/stderr.
+- If you set `LOG_ROTATION_MAX_SIZE_MB` and `LOG_ROTATION_MAX_FILES`, the app also writes rotated files with a stable active path named `server.log`.
+- Without `AGENT_ORCHESTRATOR_HOME`, rotated Docker log files use the system temp directory (typically `/tmp/server.log`).
+- If you want the rotated files to survive container recreation, set `AGENT_ORCHESTRATOR_HOME` to a writable mounted directory and mount that path as a volume.
 
 ### Upgrading
 
@@ -218,6 +233,12 @@ docker compose logs api
 ```
 
 Common causes: missing or invalid `JWT_SECRET`, failed database connection, pending migrations blocking startup (`CHECK_PENDING_MIGRATIONS_ON_STARTUP=true`).
+
+If you enabled rotated file logs, also inspect the active file log:
+
+```bash
+docker compose exec api sh -c 'tail -n 100 ${AGENT_ORCHESTRATOR_HOME:-/tmp}/server.log'
+```
 
 ### 502 Bad Gateway from Caddy
 

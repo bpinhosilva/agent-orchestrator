@@ -10,6 +10,9 @@ import type {
 } from '../types';
 import { maybeSetupAdmin } from './admin';
 import { runSetupPrompts, type SetupAnswers } from './prompts';
+import { parsePositiveInt } from './validators';
+
+const LOG_ROTATION_DEFAULTS = { maxSizeMb: 10, maxFiles: 4 } as const;
 
 const SENSITIVE_FLAG_ENV_VARS: [keyof SetupCommandOptions, string, string][] = [
   ['geminiKey', 'GEMINI_API_KEY', '--gemini-key'],
@@ -37,6 +40,20 @@ export async function handleSetup(
 
   const existingEnv = readEnvFile(ENV_PATH, fsDep);
 
+  if (
+    opts.logMaxSizeMb !== undefined &&
+    (!Number.isInteger(opts.logMaxSizeMb) || opts.logMaxSizeMb <= 0)
+  ) {
+    throw new Error('Invalid logMaxSizeMb. Expected a positive integer.');
+  }
+
+  if (
+    opts.logMaxFiles !== undefined &&
+    (!Number.isInteger(opts.logMaxFiles) || opts.logMaxFiles <= 0)
+  ) {
+    throw new Error('Invalid logMaxFiles. Expected a positive integer.');
+  }
+
   // Resolve a sensitive value: CLI flag > process env var > existing .env value
   const resolveSecret = (
     flagValue: string | undefined,
@@ -44,6 +61,34 @@ export async function handleSetup(
     existingKey: string,
   ): string =>
     flagValue ?? process.env[envVar] ?? existingEnv[existingKey] ?? '';
+
+  // Resolve a positive-integer config value: flag > existing env > default
+  const resolvePositiveInt = (
+    flagValue: number | undefined,
+    existingKey: string,
+    defaultValue: number,
+  ): number => {
+    if (
+      flagValue !== undefined &&
+      Number.isInteger(flagValue) &&
+      flagValue > 0
+    ) {
+      return flagValue;
+    }
+    const fromEnv = parsePositiveInt(existingEnv[existingKey]);
+    return fromEnv ?? defaultValue;
+  };
+
+  const logMaxSizeMb = resolvePositiveInt(
+    opts.logMaxSizeMb,
+    'LOG_ROTATION_MAX_SIZE_MB',
+    LOG_ROTATION_DEFAULTS.maxSizeMb,
+  );
+  const logMaxFiles = resolvePositiveInt(
+    opts.logMaxFiles,
+    'LOG_ROTATION_MAX_FILES',
+    LOG_ROTATION_DEFAULTS.maxFiles,
+  );
 
   let answers: SetupAnswers;
   if (opts.yes) {
@@ -93,6 +138,8 @@ export async function handleSetup(
     {
       ...existingEnv,
       SCHEDULER_ENABLED: answers.schedulerEnabled ? 'true' : 'false',
+      LOG_ROTATION_MAX_SIZE_MB: String(logMaxSizeMb),
+      LOG_ROTATION_MAX_FILES: String(logMaxFiles),
     },
     {
       host: answers.host,

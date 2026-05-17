@@ -187,6 +187,8 @@ Supported flags:
 - `--admin-password <password>`
 - `--skip-admin-setup`
 - `--regenerate-jwt-secret`
+- `--log-max-size-mb <mb>`: Persist the max active log size in MB before rotation (default: `10`)
+- `--log-max-files <count>`: Persist the max number of rotated log files to keep (default: `4`)
 - `-y, --yes`
 
 ### `run`
@@ -196,6 +198,8 @@ Start the orchestrator server in detached mode.
 Supported flags:
 
 - `--log-level <level>`: Set the log level (`fatal`, `error`, `warn`, `log`, `debug`, `verbose`). Defaults to `error` in production.
+- `--log-max-size-mb <mb>`: One-off override for the max active log size in MB before rotation
+- `--log-max-files <count>`: One-off override for the max number of rotated log files to keep
 
 ### `status`
 
@@ -272,6 +276,8 @@ Default runtime home is `${HOME}/.agent-orchestrator` unless `AGENT_ORCHESTRATOR
 - Process metadata: `~/.agent-orchestrator/process.json` by default
 - Log file: `~/.agent-orchestrator/server.log` by default
 
+The packaged CLI/runtime rotates `server.log` when it reaches the configured size threshold. By default it rotates at `10 MB` and keeps `4` timestamped archives alongside the active file.
+
 ## Notes
 
 - `setup` accepts both `postgres://...` and `postgresql://...` URLs.
@@ -284,3 +290,4 @@ Default runtime home is `${HOME}/.agent-orchestrator` unless `AGENT_ORCHESTRATOR
 - `setup` is the preferred way to seed the initial admin user for packaged runtime installs.
 - Passing API keys or passwords as CLI flags exposes them in process tables and shell history. Use `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`, `DATABASE_URL`, or `SETUP_ADMIN_PASSWORD` environment variables instead.
 - When running the dev server (`npm run dev`) alongside CLI commands, the CLI defaults to `~/.agent-orchestrator/local.sqlite` while the dev server uses `./local.sqlite`. Set `AGENT_ORCHESTRATOR_HOME=$(pwd)` to make CLI commands target the project root database.
+- Docker keeps stdout/stderr as the primary log stream. If you opt into file rotation in containers with `LOG_ROTATION_MAX_SIZE_MB` / `LOG_ROTATION_MAX_FILES`, logs are written to the system temp directory by default (typically `/tmp/server.log`) unless `AGENT_ORCHESTRATOR_HOME` points to another writable directory.

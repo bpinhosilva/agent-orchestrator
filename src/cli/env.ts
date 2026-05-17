@@ -128,6 +128,8 @@ export function buildEnvContent(
     'ANTHROPIC_API_KEY',
     'OLLAMA_HOST',
     'OLLAMA_API_KEY',
+    'LOG_ROTATION_MAX_SIZE_MB',
+    'LOG_ROTATION_MAX_FILES',
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
   ];

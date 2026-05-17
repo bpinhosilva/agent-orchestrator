@@ -64,4 +64,95 @@ describe('setup command', () => {
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
+
+  it('passes logMaxSizeMb to handleSetup when --log-max-size-mb is valid', async () => {
+    mockHandleSetup.mockResolvedValue(undefined);
+    await program.parseAsync([
+      'node',
+      'cli',
+      'setup',
+      '--log-max-size-mb',
+      '20',
+    ]);
+    expect(mockHandleSetup).toHaveBeenCalledWith(
+      expect.objectContaining({ logMaxSizeMb: 20 }),
+    );
+  });
+
+  it('passes logMaxFiles to handleSetup when --log-max-files is valid', async () => {
+    mockHandleSetup.mockResolvedValue(undefined);
+    await program.parseAsync(['node', 'cli', 'setup', '--log-max-files', '6']);
+    expect(mockHandleSetup).toHaveBeenCalledWith(
+      expect.objectContaining({ logMaxFiles: 6 }),
+    );
+  });
+
+  it('exits with error for --log-max-size-mb 0 (non-positive)', async () => {
+    await program.parseAsync([
+      'node',
+      'cli',
+      'setup',
+      '--log-max-size-mb',
+      '0',
+    ]);
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(mockHandleSetup).not.toHaveBeenCalled();
+  });
+
+  it('exits with error for --log-max-size-mb 1.5 (decimal)', async () => {
+    await program.parseAsync([
+      'node',
+      'cli',
+      'setup',
+      '--log-max-size-mb',
+      '1.5',
+    ]);
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(mockHandleSetup).not.toHaveBeenCalled();
+  });
+
+  it('exits with error for --log-max-size-mb 10foo (malformed)', async () => {
+    await program.parseAsync([
+      'node',
+      'cli',
+      'setup',
+      '--log-max-size-mb',
+      '10foo',
+    ]);
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(mockHandleSetup).not.toHaveBeenCalled();
+  });
+
+  it('exits with error for --log-max-size-mb 1e2 (scientific notation)', async () => {
+    await program.parseAsync([
+      'node',
+      'cli',
+      'setup',
+      '--log-max-size-mb',
+      '1e2',
+    ]);
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(mockHandleSetup).not.toHaveBeenCalled();
+  });
+
+  it('exits with error for --log-max-files -2 (negative)', async () => {
+    await program.parseAsync(['node', 'cli', 'setup', '--log-max-files', '-2']);
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-files'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(mockHandleSetup).not.toHaveBeenCalled();
+  });
 });

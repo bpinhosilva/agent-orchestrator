@@ -125,6 +125,9 @@ DB_LOGGING=false
 SERVE_STATIC_UI=true
 CHECK_PENDING_MIGRATIONS_ON_STARTUP=false
 LOG_LEVEL=error
+# Ajustes opcionales de rotación en archivo para runtime empaquetado / Docker
+# LOG_ROTATION_MAX_SIZE_MB=10
+# LOG_ROTATION_MAX_FILES=4
 ```
 
 ## Configuración de la base de datos
@@ -204,6 +207,8 @@ agent-orchestrator stop
 
 Al ejecutar la aplicación empaquetada o una construcción de producción con la UI estática habilitada, el panel de control se sirve desde `http://localhost:15789` por defecto.
 
+Por defecto, la CLI/runtime empaquetada sigue escribiendo en `${AGENT_ORCHESTRATOR_HOME}/server.log`, rotando el archivo activo en **10 MB** y conservando **4** archivos archivados con marca temporal. Puedes persistir otros valores con `agent-orchestrator setup --log-max-size-mb <mb> --log-max-files <count>` y sobrescribirlos para una sola ejecución con `agent-orchestrator run --log-max-size-mb <mb> --log-max-files <count>`.
+
 ## Docker
 
 El repositorio incluye tres puntos de entrada de Compose:
@@ -215,6 +220,8 @@ Todas las pilas de Compose requieren las variables de base de datos en `.env`: `
 | `docker-compose.yml` | Pila de estilo producción con PostgreSQL, API y UI servida por Caddy |
 | `docker-compose.dev.yml` | Pila de desarrollo con recarga en caliente de API y servidor de desarrollo Vite para UI |
 | `docker-compose.test.yml` | Pila de integración para verificaciones de migración, CLI/runtime, API y UI |
+
+En Docker, stdout/stderr sigue siendo el flujo principal de logs, así que `docker compose logs` continúa funcionando igual. Si también quieres archivos rotados dentro del contenedor, define `LOG_ROTATION_MAX_SIZE_MB` y `LOG_ROTATION_MAX_FILES`; por defecto la API escribe en el directorio temporal del sistema (normalmente `/tmp/server.log`), o en `${AGENT_ORCHESTRATOR_HOME}/server.log` si defines un directorio de runtime con permisos de escritura.
 
 ### Pila de estilo producción
 

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { resolveActionOptions, verifyServerStartup } from '../utils';
 import type { RunCommandOptions } from '../types';
+import { parsePositiveInt } from '../setup/validators';
 import {
   findManagedProcess,
   formatProcessSummary,
@@ -26,6 +27,16 @@ export function registerRunCommand(program: Command): void {
       '--log-level <level>',
       'Set the log level (fatal, error, warn, log, debug, verbose)',
     )
+    .option(
+      '--log-max-size-mb <mb>',
+      'One-off override: max log file size in MB before rotation',
+      (v: string) => parsePositiveInt(v) ?? Number.NaN,
+    )
+    .option(
+      '--log-max-files <count>',
+      'One-off override: max number of rotated log files to keep',
+      (v: string) => parsePositiveInt(v) ?? Number.NaN,
+    )
     .action(async (...args: unknown[]) => {
       try {
         const options = resolveActionOptions<RunCommandOptions>(args);
@@ -36,6 +47,28 @@ export function registerRunCommand(program: Command): void {
           ) {
             throw new Error(
               `Invalid log level "${options.logLevel}". Valid values: ${VALID_LOG_LEVELS.join(', ')}`,
+            );
+          }
+        }
+
+        if (options.logMaxSizeMb !== undefined) {
+          if (
+            !Number.isInteger(options.logMaxSizeMb) ||
+            options.logMaxSizeMb <= 0
+          ) {
+            throw new Error(
+              `Invalid --log-max-size-mb "${options.logMaxSizeMb}". Must be a positive integer.`,
+            );
+          }
+        }
+
+        if (options.logMaxFiles !== undefined) {
+          if (
+            !Number.isInteger(options.logMaxFiles) ||
+            options.logMaxFiles <= 0
+          ) {
+            throw new Error(
+              `Invalid --log-max-files "${options.logMaxFiles}". Must be a positive integer.`,
             );
           }
         }
@@ -66,7 +99,11 @@ export function registerRunCommand(program: Command): void {
 
         console.log('Starting Agent Orchestrator in background...');
 
-        const { pid, host, port } = startServer({ logLevel: options.logLevel });
+        const { pid, host, port } = startServer({
+          logLevel: options.logLevel,
+          logMaxSizeMb: options.logMaxSizeMb,
+          logMaxFiles: options.logMaxFiles,
+        });
 
         const survived = await verifyServerStartup(pid);
         if (!survived) {

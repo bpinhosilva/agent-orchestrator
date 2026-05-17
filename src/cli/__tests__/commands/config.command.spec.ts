@@ -96,4 +96,19 @@ describe('config show command', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('setup'));
   });
+
+  it('displays LOG_ROTATION_MAX_SIZE_MB and LOG_ROTATION_MAX_FILES when present', async () => {
+    (envModule.readEnvFile as jest.Mock).mockReturnValue({
+      ...sampleEnv,
+      LOG_ROTATION_MAX_SIZE_MB: '10',
+      LOG_ROTATION_MAX_FILES: '4',
+    });
+    await program.parseAsync(['node', 'cli', 'config', 'show']);
+
+    const allOutput = consoleSpy.mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join('\n');
+    expect(allOutput).toContain('LOG_ROTATION_MAX_SIZE_MB=10');
+    expect(allOutput).toContain('LOG_ROTATION_MAX_FILES=4');
+  });
 });

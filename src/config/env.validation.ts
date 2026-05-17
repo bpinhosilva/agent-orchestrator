@@ -18,4 +18,10 @@ export const envValidationSchema = Joi.object({
     .default('development'),
   ALLOWED_ORIGINS: Joi.string().optional(),
   SCHEDULER_ENABLED: Joi.boolean().default(true),
+  LOG_ROTATION_MAX_SIZE_MB: Joi.string()
+    .pattern(/^[1-9]\d*$/)
+    .optional(),
+  LOG_ROTATION_MAX_FILES: Joi.string()
+    .pattern(/^[1-9]\d*$/)
+    .optional(),
 });

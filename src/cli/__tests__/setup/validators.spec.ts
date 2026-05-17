@@ -84,3 +84,49 @@ describe('normalizeProviders', () => {
     expect(normalizeProviders(['Gemini', 'gemini'])).toEqual(['gemini']);
   });
 });
+
+import { parsePositiveInt } from '../../setup/validators';
+
+describe('parsePositiveInt', () => {
+  it('returns the integer for a valid positive integer string', () => {
+    expect(parsePositiveInt('10')).toBe(10);
+    expect(parsePositiveInt('1')).toBe(1);
+    expect(parsePositiveInt('999')).toBe(999);
+  });
+
+  it('returns undefined for zero', () => {
+    expect(parsePositiveInt('0')).toBeUndefined();
+  });
+
+  it('returns undefined for negative integers', () => {
+    expect(parsePositiveInt('-1')).toBeUndefined();
+  });
+
+  it('returns undefined for decimal strings (e.g. 1.5)', () => {
+    expect(parsePositiveInt('1.5')).toBeUndefined();
+  });
+
+  it('returns undefined for scientific notation strings (e.g. 1e2)', () => {
+    expect(parsePositiveInt('1e2')).toBeUndefined();
+  });
+
+  it('returns undefined for malformed strings (e.g. 10foo)', () => {
+    expect(parsePositiveInt('10foo')).toBeUndefined();
+  });
+
+  it('returns undefined for non-numeric strings', () => {
+    expect(parsePositiveInt('abc')).toBeUndefined();
+  });
+
+  it('returns undefined for undefined input', () => {
+    expect(parsePositiveInt(undefined)).toBeUndefined();
+  });
+
+  it('returns undefined for strings with a leading plus sign (e.g. +10)', () => {
+    expect(parsePositiveInt('+10')).toBeUndefined();
+  });
+
+  it('returns undefined for strings with a leading zero (e.g. 01)', () => {
+    expect(parsePositiveInt('01')).toBeUndefined();
+  });
+});

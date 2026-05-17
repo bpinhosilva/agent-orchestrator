@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { resolveActionOptions } from '../utils';
 import type { SetupCommandOptions } from '../types';
 import { handleSetup } from '../setup/index';
+import { parsePositiveInt } from '../setup/validators';
 import {
   checkPendingMigrations,
   runMigrations,
@@ -53,10 +54,35 @@ export function registerSetupCommand(program: Command): void {
       '--regenerate-jwt-secret',
       'Generate a new JWT secret instead of preserving the existing one',
     )
+    .option(
+      '--log-max-size-mb <mb>',
+      'Max log file size in MB before rotation (default: 10)',
+      (v: string) => parsePositiveInt(v) ?? Number.NaN,
+    )
+    .option(
+      '--log-max-files <count>',
+      'Max number of rotated log files to keep (default: 4)',
+      (v: string) => parsePositiveInt(v) ?? Number.NaN,
+    )
     .action(async (...args: unknown[]) => {
       const opts = resolveActionOptions<SetupCommandOptions>(args);
       console.log('Starting setup...');
       try {
+        if (opts.logMaxSizeMb !== undefined) {
+          if (!Number.isInteger(opts.logMaxSizeMb) || opts.logMaxSizeMb <= 0) {
+            throw new Error(
+              `Invalid --log-max-size-mb "${opts.logMaxSizeMb}". Must be a positive integer.`,
+            );
+          }
+        }
+        if (opts.logMaxFiles !== undefined) {
+          if (!Number.isInteger(opts.logMaxFiles) || opts.logMaxFiles <= 0) {
+            throw new Error(
+              `Invalid --log-max-files "${opts.logMaxFiles}". Must be a positive integer.`,
+            );
+          }
+        }
+
         await handleSetup(opts);
 
         if (opts.yes) {

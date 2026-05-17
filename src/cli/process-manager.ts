@@ -8,6 +8,7 @@ import {
   PROCESS_FILE,
   MAIN_FILE,
   UI_INDEX_FILE,
+  PRELOAD_FILE,
   LOG_FILE,
   ENV_PATH,
   PACKAGE_ROOT,
@@ -253,6 +254,7 @@ export function getChildEnvironment(pidDir = PID_DIR): NodeJS.ProcessEnv {
 export function assertBuildExists(
   mainFile = MAIN_FILE,
   uiIndexFile = UI_INDEX_FILE,
+  preloadFile = PRELOAD_FILE,
   fsDep: FileSystem = realFs,
 ): void {
   if (!fsDep.existsSync(mainFile)) {
@@ -264,6 +266,12 @@ export function assertBuildExists(
   if (!fsDep.existsSync(uiIndexFile)) {
     throw new Error(
       `Missing UI build at ${uiIndexFile}. Run "npm run build:all" so the packaged CLI starts the full application.`,
+    );
+  }
+
+  if (!fsDep.existsSync(preloadFile)) {
+    throw new Error(
+      `Missing CLI preload build at ${preloadFile}. Run "npm run build:all" before using the CLI runtime.`,
     );
   }
 }
@@ -452,14 +460,19 @@ export async function stopManagedProcessById(
  * that no instance is already running before calling this.
  */
 export function startServer(
-  options: { logLevel?: string } = {},
+  options: {
+    logLevel?: string;
+    logMaxSizeMb?: number;
+    logMaxFiles?: number;
+  } = {},
   mainFile = MAIN_FILE,
   packageRoot = PACKAGE_ROOT,
   logFile = LOG_FILE,
   pidDir = PID_DIR,
   envPath = ENV_PATH,
 ): { pid: number; host: string; port: string } {
-  assertBuildExists(mainFile, UI_INDEX_FILE);
+  const preloadFile = path.join(packageRoot, 'dist/cli/preload.js');
+  assertBuildExists(mainFile, UI_INDEX_FILE, preloadFile);
 
   if (!fs.existsSync(pidDir)) {
     fs.mkdirSync(pidDir, { recursive: true, mode: 0o700 });
@@ -469,35 +482,36 @@ export function startServer(
   if (options.logLevel) {
     env.LOG_LEVEL = options.logLevel;
   }
-
-  const logFd = fs.openSync(logFile, 'a');
-  try {
-    const child = spawn('node', [mainFile], {
-      detached: true,
-      stdio: ['ignore', logFd, logFd],
-      cwd: packageRoot,
-      env,
-    });
-
-    const pid = child.pid;
-    if (!pid) throw new Error('Failed to determine spawned process PID.');
-
-    const port = getConfiguredPort(envPath);
-    const host = getConfiguredHost(envPath);
-
-    persistProcessMetadata({
-      pid,
-      cwd: packageRoot,
-      mainPath: mainFile,
-      host,
-      port,
-      logFile,
-      startedAt: new Date().toISOString(),
-    });
-
-    child.unref();
-    return { pid, host, port };
-  } finally {
-    fs.closeSync(logFd);
+  if (options.logMaxSizeMb !== undefined) {
+    env.LOG_ROTATION_MAX_SIZE_MB = String(options.logMaxSizeMb);
   }
+  if (options.logMaxFiles !== undefined) {
+    env.LOG_ROTATION_MAX_FILES = String(options.logMaxFiles);
+  }
+
+  const child = spawn('node', ['--require', preloadFile, mainFile], {
+    detached: true,
+    stdio: ['ignore', 'ignore', 'ignore'],
+    cwd: packageRoot,
+    env,
+  });
+
+  const pid = child.pid;
+  if (!pid) throw new Error('Failed to determine spawned process PID.');
+
+  const port = getConfiguredPort(envPath);
+  const host = getConfiguredHost(envPath);
+
+  persistProcessMetadata({
+    pid,
+    cwd: packageRoot,
+    mainPath: mainFile,
+    host,
+    port,
+    logFile,
+    startedAt: new Date().toISOString(),
+  });
+
+  child.unref();
+  return { pid, host, port };
 }

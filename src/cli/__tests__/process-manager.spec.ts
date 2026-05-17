@@ -20,6 +20,7 @@ const FAKE_PROCESS_FILE = `${FAKE_PID_DIR}/process.json`;
 const FAKE_LOG_FILE = `${FAKE_PID_DIR}/server.log`;
 const FAKE_ENV_PATH = `${FAKE_PID_DIR}/.env`;
 const FAKE_UI_FILE = '/app/dist/ui/index.html';
+const FAKE_PRELOAD_FILE = '/app/dist/cli/preload.js';
 
 function buildFakeFs(overrides: Partial<FileSystem> = {}): FileSystem {
   return {
@@ -223,24 +224,42 @@ describe('assertBuildExists', () => {
     const fakeFs = buildFakeFs({
       existsSync: jest
         .fn()
-        .mockImplementation((p: string) => p === FAKE_UI_FILE),
+        .mockImplementation(
+          (p: string) => p === FAKE_UI_FILE || p === FAKE_PRELOAD_FILE,
+        ),
     });
-    expect(() => assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, fakeFs)).toThrow(
-      'Missing backend build',
-    );
+    expect(() =>
+      assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, FAKE_PRELOAD_FILE, fakeFs),
+    ).toThrow('Missing backend build');
   });
   it('throws when UI file is missing', () => {
     const fakeFs = buildFakeFs({
-      existsSync: jest.fn().mockImplementation((p: string) => p === FAKE_MAIN),
+      existsSync: jest
+        .fn()
+        .mockImplementation(
+          (p: string) => p === FAKE_MAIN || p === FAKE_PRELOAD_FILE,
+        ),
     });
-    expect(() => assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, fakeFs)).toThrow(
-      'Missing UI build',
-    );
+    expect(() =>
+      assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, FAKE_PRELOAD_FILE, fakeFs),
+    ).toThrow('Missing UI build');
+  });
+  it('throws when preload file is missing', () => {
+    const fakeFs = buildFakeFs({
+      existsSync: jest
+        .fn()
+        .mockImplementation(
+          (p: string) => p === FAKE_MAIN || p === FAKE_UI_FILE,
+        ),
+    });
+    expect(() =>
+      assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, FAKE_PRELOAD_FILE, fakeFs),
+    ).toThrow('Missing CLI preload build');
   });
   it('does not throw when both exist', () => {
     const fakeFs = buildFakeFs({ existsSync: jest.fn().mockReturnValue(true) });
     expect(() =>
-      assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, fakeFs),
+      assertBuildExists(FAKE_MAIN, FAKE_UI_FILE, FAKE_PRELOAD_FILE, fakeFs),
     ).not.toThrow();
   });
 });
