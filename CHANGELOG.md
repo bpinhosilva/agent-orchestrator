@@ -1,3 +1,16 @@
+# [1.2.0](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.3...v1.2.0) (2026-05-17)
+
+
+### Bug Fixes
+
+* **tests:** move startServer tests to isolated spec using jest.mock ([8ede64a](https://github.com/bpinhosilva/agent-orchestrator/commit/8ede64a8e68175bbbe6ed3c076b682cd8412c25e))
+* **ui:** add missing test peers ([8c3d1a8](https://github.com/bpinhosilva/agent-orchestrator/commit/8c3d1a8b6941d5eb6e0ca38e7645c7b6b56b314a))
+
+
+### Features
+
+* **cli:** add runtime log rotation ([7ccd9f2](https://github.com/bpinhosilva/agent-orchestrator/commit/7ccd9f23a19ee8de0d5c000b178f2b4d9e990f08))
+
 ## [1.1.3](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.2...v1.1.3) (2026-05-02)
 
 
