@@ -125,6 +125,9 @@ DB_LOGGING=false
 SERVE_STATIC_UI=true
 CHECK_PENDING_MIGRATIONS_ON_STARTUP=false
 LOG_LEVEL=error
+# Configurações opcionais de rotação em arquivo para runtime empacotado / Docker
+# LOG_ROTATION_MAX_SIZE_MB=10
+# LOG_ROTATION_MAX_FILES=4
 ```
 
 ## Configuração do Banco de Dados
@@ -194,13 +197,19 @@ npm run start:dev
 ### Modo empacotado/runtime
 
 ```bash
+agent-orchestrator setup
 agent-orchestrator run
 agent-orchestrator status
 agent-orchestrator logs --lines 50
+agent-orchestrator restart
 agent-orchestrator stop
+agent-orchestrator config show
+agent-orchestrator rotate-secrets
 ```
 
 Ao executar o aplicativo empacotado ou uma build de produção com UI estática ativada, o painel é servido em `http://localhost:15789` por padrão.
+
+Por padrão, a CLI/runtime empacotada continua escrevendo em `${AGENT_ORCHESTRATOR_HOME}/server.log`, rotacionando o arquivo ativo em **10 MB** e mantendo **4** arquivos arquivados com timestamp. Você pode persistir outros padrões com `agent-orchestrator setup --log-max-size-mb <mb> --log-max-files <count>` e sobrescrevê-los para uma única execução com `agent-orchestrator run --log-max-size-mb <mb> --log-max-files <count>`.
 
 ## Docker
 
@@ -213,6 +222,8 @@ Todos os stacks Compose requerem as variáveis de banco de dados no `.env`: `POS
 | `docker-compose.yml` | Stack estilo produção com PostgreSQL, API, e UI servida via Caddy |
 | `docker-compose.dev.yml` | Stack de desenvolvimento com recarregamento a quente da API e servidor dev Vite para a UI |
 | `docker-compose.test.yml` | Stack de integração para verificação de migrações, CLI/runtime, API e alcançabilidade da UI |
+
+No Docker, stdout/stderr continua sendo o fluxo principal de logs, então `docker compose logs` segue funcionando como antes. Se você também quiser arquivos rotacionados dentro do container, defina `LOG_ROTATION_MAX_SIZE_MB` e `LOG_ROTATION_MAX_FILES`; por padrão a API grava no diretório temporário do sistema (normalmente `/tmp/server.log`), ou em `${AGENT_ORCHESTRATOR_HOME}/server.log` se você definir um diretório de runtime gravável.
 
 ### Stack estilo produção
 

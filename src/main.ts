@@ -15,6 +15,10 @@ import {
 import { getDefaultPort } from './config/port.defaults';
 import { getDefaultHost } from './config/host.defaults';
 import { isEnvEnabled, loadRuntimeEnv } from './config/runtime-paths';
+import {
+  initRuntimeLogger,
+  persistRuntimeLoggerInitFailure,
+} from './config/runtime-logger';
 
 const logger = new Logger('Bootstrap');
 
@@ -49,6 +53,13 @@ async function ensureDatabaseIsReadyForStartup() {
 }
 
 async function bootstrap() {
+  try {
+    initRuntimeLogger();
+  } catch (err) {
+    persistRuntimeLoggerInitFailure(String(err));
+    throw err;
+  }
+
   await ensureDatabaseIsReadyForStartup();
 
   const nodeEnv = process.env.NODE_ENV || 'development';

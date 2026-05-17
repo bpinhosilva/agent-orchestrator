@@ -187,6 +187,68 @@ describe('buildEnvContent', () => {
     );
     expect(content).toContain('CUSTOM_KEY=custom-value');
   });
+
+  it('includes LOG_ROTATION_MAX_SIZE_MB when present in currentEnv', () => {
+    const content = buildEnvContent(
+      { LOG_ROTATION_MAX_SIZE_MB: '20' },
+      basicConfig,
+      '',
+      '',
+      '',
+      's',
+      'r',
+    );
+    expect(content).toContain('LOG_ROTATION_MAX_SIZE_MB=20');
+  });
+
+  it('includes LOG_ROTATION_MAX_FILES when present in currentEnv', () => {
+    const content = buildEnvContent(
+      { LOG_ROTATION_MAX_FILES: '8' },
+      basicConfig,
+      '',
+      '',
+      '',
+      's',
+      'r',
+    );
+    expect(content).toContain('LOG_ROTATION_MAX_FILES=8');
+  });
+
+  it('omits log rotation keys when absent from currentEnv', () => {
+    const content = buildEnvContent({}, basicConfig, '', '', '', 's', 'r');
+    expect(content).not.toContain('LOG_ROTATION_MAX_SIZE_MB');
+    expect(content).not.toContain('LOG_ROTATION_MAX_FILES');
+  });
+
+  it('places LOG_ROTATION_MAX_SIZE_MB and LOG_ROTATION_MAX_FILES after OLLAMA keys and before JWT keys', () => {
+    const content = buildEnvContent(
+      {
+        LOG_ROTATION_MAX_SIZE_MB: '10',
+        LOG_ROTATION_MAX_FILES: '4',
+      },
+      basicConfig,
+      '',
+      '',
+      '',
+      's',
+      'r',
+      '',
+      'http://127.0.0.1:11434',
+    );
+    const lines = content.split('\n').filter(Boolean);
+    const ollamaHostIdx = lines.findIndex((l) => l.startsWith('OLLAMA_HOST'));
+    const sizeMbIdx = lines.findIndex((l) =>
+      l.startsWith('LOG_ROTATION_MAX_SIZE_MB'),
+    );
+    const maxFilesIdx = lines.findIndex((l) =>
+      l.startsWith('LOG_ROTATION_MAX_FILES'),
+    );
+    const jwtIdx = lines.findIndex((l) => l.startsWith('JWT_SECRET'));
+    expect(sizeMbIdx).toBeGreaterThan(ollamaHostIdx);
+    expect(maxFilesIdx).toBeGreaterThan(ollamaHostIdx);
+    expect(jwtIdx).toBeGreaterThan(sizeMbIdx);
+    expect(jwtIdx).toBeGreaterThan(maxFilesIdx);
+  });
 });
 
 describe('writePrivateFile', () => {

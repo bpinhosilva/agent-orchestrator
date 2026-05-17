@@ -53,3 +53,18 @@ export function normalizeProviders(values: string[] = []): SupportedProvider[] {
   if (errors.length) throw new Error(errors.join('\n'));
   return result;
 }
+
+/**
+ * Parses a string as a positive integer.
+ * Returns the integer when the value is a strict positive integer string,
+ * or `undefined` when the input is `undefined`, a decimal, or non-numeric.
+ */
+export function parsePositiveInt(
+  value: string | undefined,
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (!/^[1-9]\d*$/.test(value)) {
+    return undefined;
+  }
+  return Number(value);
+}

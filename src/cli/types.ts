@@ -44,6 +44,8 @@ export interface SetupCommandOptions {
   adminEmail?: string;
   adminPassword?: string;
   regenerateJwtSecret?: boolean;
+  logMaxSizeMb?: number;
+  logMaxFiles?: number;
 }
 
 export type BasicPromptConfig =
@@ -80,6 +82,8 @@ export interface LogsCommandOptions {
 
 export interface RunCommandOptions {
   logLevel?: string;
+  logMaxSizeMb?: number;
+  logMaxFiles?: number;
 }
 
 export interface StatusCommandOptions {

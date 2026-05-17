@@ -99,6 +99,8 @@ Banderas soportadas:
 - `--admin-password <contraseña>`
 - `--skip-admin-setup`
 - `--regenerate-jwt-secret`
+- `--log-max-size-mb <mb>`: Persiste el tamaño máximo del log activo en MB antes de la rotación (por defecto: `10`)
+- `--log-max-files <count>`: Persiste el número máximo de archivos rotados con marca temporal que se deben conservar (por defecto: `4`)
 - `-y, --yes`
 
 ### `run`
@@ -108,6 +110,8 @@ Inicia el servidor del orquestador en modo separado.
 Banderas soportadas:
 
 - `--log-level <nivel>`: Establece el nivel de registro (`fatal`, `error`, `warn`, `log`, `debug`, `verbose`). Por defecto es `error` en producción.
+- `--log-max-size-mb <mb>`: Sobrescritura de una sola ejecución para el tamaño máximo del log activo en MB antes de la rotación
+- `--log-max-files <count>`: Sobrescritura de una sola ejecución para el número máximo de archivos rotados que se deben conservar
 
 ### `logs`
 
@@ -133,9 +137,12 @@ El home por defecto del runtime es `${HOME}/.agent-orchestrator` a menos que `AG
 - Metadatos del proceso: `~/.agent-orchestrator/process.json` por defecto
 - Archivo de registro: `~/.agent-orchestrator/server.log` por defecto
 
+La CLI/runtime empaquetada rota `server.log` cuando alcanza el límite configurado. Por defecto, la rotación ocurre en `10 MB` y conserva `4` archivos archivados con marca temporal junto al archivo activo.
+
 ## Notas
 
 - `setup` acepta tanto URLs `postgres://...` como `postgresql://...`.
 - `run` requiere tanto `dist/main.js` como `dist/ui/index.html`.
 - `stop` no confía solo en el archivo PID; verifica la forma del proceso esperado y puede recuperarse de estados de runtime obsoletos.
 - `setup` es la forma preferida de sembrar el usuario administrador inicial para instalaciones de runtime empaquetadas.
+- En Docker, stdout/stderr sigue siendo el flujo principal de logs. Si activas la rotación en archivo con `LOG_ROTATION_MAX_SIZE_MB` / `LOG_ROTATION_MAX_FILES`, los logs se escriben en el directorio temporal del sistema por defecto (normalmente `/tmp/server.log`), salvo que `AGENT_ORCHESTRATOR_HOME` apunte a otro directorio grabable.

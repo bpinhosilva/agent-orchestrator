@@ -37,6 +37,9 @@ Crea un archivo `.env` en la raíz del proyecto. La pila de producción requiere
 | `ADMIN_NAME` | ❌ | `Admin` | Nombre para mostrar del usuario administrador |
 | `DOMAIN` | ❌ | `localhost` | Nombre de dominio para el virtual host y TLS de Caddy |
 | `ALLOWED_ORIGINS` | ❌ | `https://localhost` | Orígenes CORS permitidos separados por comas |
+| `LOG_ROTATION_MAX_SIZE_MB` | ❌ | — | Activa logs en archivo rotados y define el tamaño máximo del archivo activo en MB |
+| `LOG_ROTATION_MAX_FILES` | ❌ | — | Activa logs en archivo rotados y define el número máximo de archivos archivados con marca temporal |
+| `AGENT_ORCHESTRATOR_HOME` | ❌ | — | Directorio de runtime grabable opcional para logs rotados; cuando se omite, los logs en archivo de Docker usan el directorio temporal del sistema (normalmente `/tmp/server.log`) |
 
 `.env` mínimo para uso local:
 
@@ -51,6 +54,11 @@ JWT_REFRESH_SECRET=<at-least-32-char-secret>
 # Admin seed
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change_me
+
+# Logs en archivo rotados opcionales dentro del contenedor de la API
+# LOG_ROTATION_MAX_SIZE_MB=10
+# LOG_ROTATION_MAX_FILES=4
+# AGENT_ORCHESTRATOR_HOME=/tmp/agent-orchestrator
 ```
 
 > Usa valores largos generados aleatoriamente para `JWT_SECRET` y `JWT_REFRESH_SECRET` en cualquier entorno que maneje datos reales.
@@ -81,6 +89,13 @@ docker compose logs -f        # seguir los logs
 docker compose down           # detener, conservar volúmenes de datos
 docker compose down -v        # detener y eliminar todos los volúmenes (borra la base de datos)
 ```
+
+### Logging en Docker y rotación opcional en archivo
+
+- `docker compose logs` sigue siendo el flujo principal de logs porque la API todavía escribe en stdout/stderr.
+- Si defines `LOG_ROTATION_MAX_SIZE_MB` y `LOG_ROTATION_MAX_FILES`, la app también escribe archivos rotados con una ruta activa estable llamada `server.log`.
+- Sin `AGENT_ORCHESTRATOR_HOME`, los logs rotados de Docker usan el directorio temporal del sistema (normalmente `/tmp/server.log`).
+- Si quieres que los archivos rotados sobrevivan a la recreación del contenedor, configura `AGENT_ORCHESTRATOR_HOME` con un directorio grabable montado como volumen.
 
 ### Actualización
 
@@ -218,6 +233,12 @@ docker compose logs api
 ```
 
 Causas comunes: `JWT_SECRET` ausente o inválido, fallo en la conexión a la base de datos, migraciones pendientes bloqueando el inicio (`CHECK_PENDING_MIGRATIONS_ON_STARTUP=true`).
+
+Si activaste logs en archivo rotados, inspecciona también el archivo de log activo:
+
+```bash
+docker compose exec api sh -c 'tail -n 100 ${AGENT_ORCHESTRATOR_HOME:-/tmp}/server.log'
+```
 
 ### 502 Bad Gateway de Caddy
 

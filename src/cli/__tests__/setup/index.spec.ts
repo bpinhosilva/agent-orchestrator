@@ -293,4 +293,74 @@ describe('handleSetup', () => {
     await expect(handleSetup({}, throwingFs)).rejects.toThrow('disk full');
     expect(mockMaybeSetupAdmin).not.toHaveBeenCalled();
   });
+
+  // Log rotation: --yes mode defaults (10 MB, 4 files) when no prior value
+  it('writes default log rotation values in --yes mode when not previously set', async () => {
+    const { fs, writtenContent } = makeFakeFs(null);
+
+    await handleSetup({ yes: true }, fs);
+
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_SIZE_MB=10');
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_FILES=4');
+  });
+
+  // Log rotation: --yes mode preserves existing values
+  it('preserves existing log rotation values in --yes mode', async () => {
+    const { fs, writtenContent } = makeFakeFs(
+      'LOG_ROTATION_MAX_SIZE_MB=20\nLOG_ROTATION_MAX_FILES=8\n',
+    );
+
+    await handleSetup({ yes: true }, fs);
+
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_SIZE_MB=20');
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_FILES=8');
+  });
+
+  // Log rotation: --yes mode honours explicit flag overrides
+  it('uses --log-max-size-mb and --log-max-files flags in --yes mode', async () => {
+    const { fs, writtenContent } = makeFakeFs(null);
+
+    await handleSetup({ yes: true, logMaxSizeMb: 50, logMaxFiles: 10 }, fs);
+
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_SIZE_MB=50');
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_FILES=10');
+  });
+
+  // Log rotation: interactive mode preserves existing values
+  it('preserves existing log rotation values in interactive mode', async () => {
+    const { fs, writtenContent } = makeFakeFs(
+      'LOG_ROTATION_MAX_SIZE_MB=15\nLOG_ROTATION_MAX_FILES=6\n',
+    );
+
+    await handleSetup({}, fs);
+
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_SIZE_MB=15');
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_FILES=6');
+  });
+
+  // Log rotation: interactive mode writes defaults when not previously set
+  it('writes default log rotation values in interactive mode when not previously set', async () => {
+    const { fs, writtenContent } = makeFakeFs(null);
+
+    await handleSetup({}, fs);
+
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_SIZE_MB=10');
+    expect(writtenContent()).toContain('LOG_ROTATION_MAX_FILES=4');
+  });
+
+  it('rejects an explicitly invalid logMaxSizeMb passed to handleSetup', async () => {
+    const { fs } = makeFakeFs(null);
+
+    await expect(
+      handleSetup({ yes: true, logMaxSizeMb: 0 }, fs),
+    ).rejects.toThrow('Invalid logMaxSizeMb');
+  });
+
+  it('rejects an explicitly invalid logMaxFiles passed to handleSetup', async () => {
+    const { fs } = makeFakeFs(null);
+
+    await expect(
+      handleSetup({ yes: true, logMaxFiles: -1 }, fs),
+    ).rejects.toThrow('Invalid logMaxFiles');
+  });
 });

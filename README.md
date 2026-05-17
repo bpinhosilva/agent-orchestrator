@@ -132,6 +132,9 @@ DB_LOGGING=false
 SERVE_STATIC_UI=true
 CHECK_PENDING_MIGRATIONS_ON_STARTUP=false
 LOG_LEVEL=error
+# Optional packaged-runtime / Docker file-rotation settings
+# LOG_ROTATION_MAX_SIZE_MB=10
+# LOG_ROTATION_MAX_FILES=4
 ```
 
 ## Database setup
@@ -215,6 +218,8 @@ agent-orchestrator rotate-secrets
 
 When running the packaged app or a production build with static UI enabled, the dashboard is served from `http://localhost:15789` by default.
 
+By default, the packaged CLI/runtime keeps writing to `${AGENT_ORCHESTRATOR_HOME}/server.log`, rotating the active file at **10 MB** and retaining **4** timestamped archives. You can persist different defaults with `agent-orchestrator setup --log-max-size-mb <mb> --log-max-files <count>` and override them for a single launch with `agent-orchestrator run --log-max-size-mb <mb> --log-max-files <count>`.
+
 ## Docker
 
 > For the full Docker guide, see [docs/DOCKER.md](docs/DOCKER.md).
@@ -226,6 +231,8 @@ The repository ships three Compose entrypoints:
 | `docker-compose.yml` | Production-style stack with PostgreSQL, API, and Caddy-served UI |
 | `docker-compose.dev.yml` | Development stack with API hot reload and Vite UI dev server |
 | `docker-compose.test.yml` | Integration stack for migration, CLI/runtime, API, and UI checks |
+
+Docker keeps stdout/stderr as the primary log stream, so `docker compose logs` continues to work as before. If you also want rotated in-container log files, set `LOG_ROTATION_MAX_SIZE_MB` and `LOG_ROTATION_MAX_FILES`; the API container writes to the system temp directory by default (typically `/tmp/server.log`), or `${AGENT_ORCHESTRATOR_HOME}/server.log` if you set a writable runtime home.
 
 ### Production-style stack
 

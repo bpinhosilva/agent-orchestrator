@@ -170,4 +170,118 @@ describe('run command', () => {
     expect(migrationState.checkPendingMigrations).toHaveBeenCalled();
     expect(processManager.startServer).toHaveBeenCalled();
   });
+
+  it('passes logMaxSizeMb to startServer when --log-max-size-mb is given', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockReturnValue({
+      pid: 42,
+      host: '127.0.0.1',
+      port: '15789',
+    });
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-max-size-mb', '25']);
+
+    expect(processManager.startServer).toHaveBeenCalledWith(
+      expect.objectContaining({ logMaxSizeMb: 25 }),
+    );
+  });
+
+  it('passes logMaxFiles to startServer when --log-max-files is given', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+    (processManager.startServer as jest.Mock).mockReturnValue({
+      pid: 42,
+      host: '127.0.0.1',
+      port: '15789',
+    });
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-max-files', '8']);
+
+    expect(processManager.startServer).toHaveBeenCalledWith(
+      expect.objectContaining({ logMaxFiles: 8 }),
+    );
+  });
+
+  it('exits with error for invalid (non-positive) --log-max-size-mb', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-max-size-mb', '0']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('exits with error for invalid (non-positive) --log-max-files', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-max-files', '-1']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-files'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('exits with error for decimal --log-max-size-mb (e.g. 1.5)', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync([
+      'node',
+      'cli',
+      'run',
+      '--log-max-size-mb',
+      '1.5',
+    ]);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('exits with error for malformed --log-max-size-mb (e.g. 10foo)', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync([
+      'node',
+      'cli',
+      'run',
+      '--log-max-size-mb',
+      '10foo',
+    ]);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('exits with error for scientific notation --log-max-size-mb (e.g. 1e2)', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync([
+      'node',
+      'cli',
+      'run',
+      '--log-max-size-mb',
+      '1e2',
+    ]);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-size-mb'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('exits with error for decimal --log-max-files (e.g. 2.5)', async () => {
+    (processManager.findManagedProcess as jest.Mock).mockReturnValue(null);
+
+    await program.parseAsync(['node', 'cli', 'run', '--log-max-files', '2.5']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      expect.stringContaining('log-max-files'),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
 });

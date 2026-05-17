@@ -96,6 +96,8 @@ Flags suportadas:
 - `--admin-password <password>`
 - `--skip-admin-setup`
 - `--regenerate-jwt-secret`
+- `--log-max-size-mb <mb>`: Persiste o tamanho máximo do log ativo em MB antes da rotação (padrão: `10`)
+- `--log-max-files <count>`: Persiste o número máximo de arquivos rotacionados com timestamp a manter (padrão: `4`)
 - `-y, --yes`
 
 ### `run`
@@ -105,6 +107,8 @@ Inicia o servidor do orchestrator em modo desanexado.
 Flags suportadas:
 
 - `--log-level <nivel>`: Define o nível de log (`fatal`, `error`, `warn`, `log`, `debug`, `verbose`). O padrão é `error` em produção.
+- `--log-max-size-mb <mb>`: Sobrescrita para uma única execução do tamanho máximo do log ativo em MB antes da rotação
+- `--log-max-files <count>`: Sobrescrita para uma única execução do número máximo de arquivos rotacionados a manter
 
 ### `logs`
 
@@ -130,9 +134,12 @@ O diretório padrão de runtime é `${HOME}/.agent-orchestrator` a não ser que 
 - Metadados do processo: `~/.agent-orchestrator/process.json` por padrão
 - Arquivo de log: `~/.agent-orchestrator/server.log` por padrão
 
+A CLI/runtime empacotada rotaciona `server.log` quando ele atinge o limite configurado. Por padrão, a rotação acontece em `10 MB` e mantém `4` arquivos arquivados com timestamp ao lado do arquivo ativo.
+
 ## Notas
 
 - `setup` aceita ambas as URLs `postgres://...` e `postgresql://...`.
 - `run` requer os arquivos `dist/main.js` e `dist/ui/index.html`.
 - `stop` não confia apenas no arquivo PID; ele verifica a conformidade do processo esperado e pode se recuperar de estados de runtime antigos.
 - `setup` é a forma preferida de popular o usuário administrador inicial para instalações do runtime empacotado.
+- No Docker, stdout/stderr continua sendo o fluxo principal de logs. Se você optar por rotação em arquivo com `LOG_ROTATION_MAX_SIZE_MB` / `LOG_ROTATION_MAX_FILES`, os logs serão gravados no diretório temporário do sistema por padrão (normalmente `/tmp/server.log`), a menos que `AGENT_ORCHESTRATOR_HOME` aponte para outro diretório gravável.

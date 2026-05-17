@@ -24,4 +24,4 @@ COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
 EXPOSE 3000
-CMD ["dist/main.js"]
+CMD ["--require", "dist/cli/preload.js", "dist/main.js"]
