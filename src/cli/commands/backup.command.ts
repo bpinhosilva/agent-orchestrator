@@ -9,6 +9,7 @@ import type { BackupCommandOptions } from '../types';
 
 type BackupTarget = 'db';
 type SupportedDbType = 'sqlite' | 'postgres';
+const DEFAULT_BACKUP_DESTINATION = path.join(PID_DIR, 'backups');
 
 interface TableRef {
   name: string;
@@ -43,7 +44,12 @@ function detectDbType(type: unknown): SupportedDbType {
   if (isSqliteDriver(type as never)) {
     return 'sqlite';
   }
-  return 'postgres';
+  if (type === 'postgres') {
+    return 'postgres';
+  }
+  throw new Error(
+    `Unsupported database type "${String(type)}". Backup currently supports sqlite and postgres.`,
+  );
 }
 
 async function listTables(
@@ -93,7 +99,7 @@ export function registerBackupCommand(program: Command): void {
     .option(
       '-d, --destination <path>',
       'Destination folder for backup files',
-      path.join(PID_DIR, 'backups'),
+      DEFAULT_BACKUP_DESTINATION,
     )
     .action(async (target: string, ...args: unknown[]) => {
       const opts = resolveActionOptions<BackupCommandOptions>(args);
@@ -101,11 +107,11 @@ export function registerBackupCommand(program: Command): void {
         console.error(
           `Unsupported backup target "${target}". Only "db" is currently supported.`,
         );
-        process.exit(1);
+        process.exitCode = 1;
         return;
       }
 
-      const destination = opts.destination ?? path.join(PID_DIR, 'backups');
+      const destination = opts.destination ?? DEFAULT_BACKUP_DESTINATION;
       const timestamp = buildTimestamp();
       const filename = `agent-orchestrator-backup-${target}-${timestamp}.json.gz`;
       const outputPath = path.join(destination, filename);
@@ -118,14 +124,17 @@ export function registerBackupCommand(program: Command): void {
         const dbType = detectDbType(dataSource.options.type);
         const tables = await listTables(dbType, (sql) => dataSource.query(sql));
         const tableData = await Promise.all(
-          tables.map(async (table) => ({
-            name: table.name,
-            schema: table.schema,
-            rows: await fetchTableRows(
+          tables.map(async (table) => {
+            const rows = await fetchTableRows(
               (sql) => dataSource.query(sql),
               tableSelectSql(dbType, table),
-            ),
-          })),
+            );
+            return {
+              name: table.name,
+              ...(table.schema ? { schema: table.schema } : {}),
+              rows,
+            };
+          }),
         );
 
         const backupPayload = {
@@ -136,15 +145,13 @@ export function registerBackupCommand(program: Command): void {
           tables: tableData,
         };
 
-        const compressed = gzipSync(
-          Buffer.from(JSON.stringify(backupPayload), 'utf8'),
-        );
+        const compressed = gzipSync(Buffer.from(JSON.stringify(backupPayload)));
         fs.writeFileSync(outputPath, compressed);
         console.log(`Backup created: ${outputPath}`);
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error(`Backup failed: ${errorMessage}`);
-        process.exit(1);
+        process.exitCode = 1;
       } finally {
         if (dataSource.isInitialized) {
           await dataSource.destroy();

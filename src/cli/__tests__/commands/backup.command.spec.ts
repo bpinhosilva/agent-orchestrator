@@ -35,14 +35,16 @@ jest.mock('../../utils', () => {
 import { createDataSource } from '../../../config/typeorm';
 
 interface MockDataSource {
-  options: { type: 'postgres' | 'better-sqlite3' };
+  options: { type: 'postgres' | 'better-sqlite3' | 'mysql' };
   isInitialized: boolean;
   initialize: jest.Mock<Promise<DataSource>, []>;
   destroy: jest.Mock<Promise<void>, []>;
   query: jest.Mock<Promise<unknown>, [string]>;
 }
 
-function makeDataSource(type: 'postgres' | 'better-sqlite3'): MockDataSource {
+function makeDataSource(
+  type: 'postgres' | 'better-sqlite3' | 'mysql',
+): MockDataSource {
   const ds: MockDataSource = {
     options: { type },
     isInitialized: false,
@@ -69,6 +71,7 @@ describe('backup command', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-06-01T12:34:56.789Z'));
+    process.exitCode = undefined;
     program = new Command();
     program.exitOverride();
     registerBackupCommand(program);
@@ -81,6 +84,7 @@ describe('backup command', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    process.exitCode = undefined;
     consoleSpy.mockRestore();
     consoleErrSpy.mockRestore();
     exitSpy.mockRestore();
@@ -173,6 +177,21 @@ describe('backup command', () => {
       'Unsupported backup target "assets". Only "db" is currently supported.',
     );
     expect(createDataSource).not.toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(process.exitCode).toBe(1);
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it('fails when runtime database type is not sqlite or postgres', async () => {
+    const ds = makeDataSource('mysql');
+    jest
+      .mocked(createDataSource)
+      .mockReturnValue(ds as unknown as ReturnType<typeof createDataSource>);
+
+    await program.parseAsync(['node', 'cli', 'backup', 'db']);
+
+    expect(consoleErrSpy).toHaveBeenCalledWith(
+      'Backup failed: Unsupported database type "mysql". Backup currently supports sqlite and postgres.',
+    );
+    expect(process.exitCode).toBe(1);
   });
 });
