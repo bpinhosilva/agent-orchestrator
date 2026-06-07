@@ -110,6 +110,10 @@ export interface RotateSecretsCommandOptions {
   yes?: boolean;
 }
 
+export interface BackupCommandOptions {
+  destination?: string;
+}
+
 export interface ProcessMetadata {
   pid: number;
   cwd: string;

@@ -54,6 +54,7 @@ The published package includes the backend build and the UI bundle required by `
 | `config show` | Display the current runtime configuration with secrets masked by default |
 | `reset-password` | Reset a user's password and revoke all their active sessions |
 | `rotate-secrets` | Generate new JWT secrets, update the runtime `.env`, and restart the server |
+| `backup` | Create compressed runtime backups (currently `db` only) |
 
 ## Common flows
 
@@ -264,6 +265,17 @@ Supported flags:
 agent-orchestrator migrate --yes
 agent-orchestrator migrate --force --yes
 ```
+
+### `backup`
+
+```bash
+agent-orchestrator backup db
+agent-orchestrator backup db --destination /some/folder
+```
+
+Supported flags:
+
+- `-d, --destination <path>`: Destination folder for backup files (default: `${AGENT_ORCHESTRATOR_HOME}/backups`)
 
 ## Runtime files
 

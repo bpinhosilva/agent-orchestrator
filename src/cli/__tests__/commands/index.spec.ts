@@ -34,6 +34,12 @@ jest.mock('../../commands/reset-password.command', () => ({
 jest.mock('../../commands/rotate-secrets.command', () => ({
   registerRotateSecretsCommand: jest.fn(),
 }));
+jest.mock('../../commands/seed-admin.command', () => ({
+  registerSeedAdminCommand: jest.fn(),
+}));
+jest.mock('../../commands/backup.command', () => ({
+  registerBackupCommand: jest.fn(),
+}));
 
 import { registerSetupCommand } from '../../commands/setup.command';
 import { registerRunCommand } from '../../commands/run.command';
@@ -46,6 +52,8 @@ import { registerHealthCommand } from '../../commands/health.command';
 import { registerConfigCommand } from '../../commands/config.command';
 import { registerResetPasswordCommand } from '../../commands/reset-password.command';
 import { registerRotateSecretsCommand } from '../../commands/rotate-secrets.command';
+import { registerSeedAdminCommand } from '../../commands/seed-admin.command';
+import { registerBackupCommand } from '../../commands/backup.command';
 
 const ALL_REGISTER_FNS = [
   registerSetupCommand,
@@ -59,6 +67,8 @@ const ALL_REGISTER_FNS = [
   registerConfigCommand,
   registerResetPasswordCommand,
   registerRotateSecretsCommand,
+  registerSeedAdminCommand,
+  registerBackupCommand,
 ];
 
 describe('registerAllCommands', () => {
@@ -66,7 +76,7 @@ describe('registerAllCommands', () => {
     jest.clearAllMocks();
   });
 
-  it('registers all 11 commands on the program', () => {
+  it('registers all commands on the program', () => {
     const program = new Command();
     registerAllCommands(program);
 

@@ -11,6 +11,7 @@ import { registerConfigCommand } from './config.command';
 import { registerResetPasswordCommand } from './reset-password.command';
 import { registerRotateSecretsCommand } from './rotate-secrets.command';
 import { registerSeedAdminCommand } from './seed-admin.command';
+import { registerBackupCommand } from './backup.command';
 
 export function registerAllCommands(program: Command): void {
   registerSetupCommand(program);
@@ -25,4 +26,5 @@ export function registerAllCommands(program: Command): void {
   registerResetPasswordCommand(program);
   registerRotateSecretsCommand(program);
   registerSeedAdminCommand(program);
+  registerBackupCommand(program);
 }
