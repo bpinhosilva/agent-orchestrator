@@ -1,4 +1,4 @@
-# Agent Orchestrator
+# Agent Orchestrator 
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/bpinhosilva/agent-orchestrator/main/docs/assets/lupy-mascot.webp" alt="Lupy, the Agent Orchestrator mascot" width="500" />
