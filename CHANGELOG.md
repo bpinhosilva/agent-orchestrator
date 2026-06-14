@@ -1,3 +1,15 @@
+# [1.3.0](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.2.0...v1.3.0) (2026-06-14)
+
+
+### Bug Fixes
+
+* update version and dependencies in package.json and package-lock.json ([aa1c0c1](https://github.com/bpinhosilva/agent-orchestrator/commit/aa1c0c1ac6b41d89ecaa0dccd423122287b0b988))
+
+
+### Features
+
+* force the version after creating backup feature ([790356c](https://github.com/bpinhosilva/agent-orchestrator/commit/790356c85fac8ac0d850f6ce7998904eea1c7226))
+
 # [1.2.0](https://github.com/bpinhosilva/agent-orchestrator/compare/v1.1.3...v1.2.0) (2026-05-17)
 
 
